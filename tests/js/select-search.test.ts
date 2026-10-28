@@ -6,9 +6,16 @@ import { field, schema } from './fixtures';
 
 function setup() {
     const store = createFormStore(
-        schema([field('data.country', 'select', { props: { options: [], searchable: true, async: true, searchDebounce: 250 } })], {
-            country: null,
-        }),
+        schema(
+            [
+                field('data.country', 'select', {
+                    props: { options: [], searchable: true, async: true, searchDebounce: 250 },
+                }),
+            ],
+            {
+                country: null,
+            },
+        ),
     );
     const search = vi
         .spyOn(store, 'search')
