@@ -1,15 +1,7 @@
-import { reactive, ref } from 'vue';
+import { ref } from 'vue';
 import type { LiveConfig, UpdatePatch, UpdateRequest } from '../schema/types';
-
-export interface RequestLogEntry {
-    seq: number;
-    changed: string[];
-    status: 'pending' | 'ok' | 'stale' | 'aborted' | 'error';
-    startedAt: number;
-    ms: number | null;
-    patch: UpdatePatch | null;
-    error: string | null;
-}
+import { RequestLog } from './log';
+import type { RequestLogEntry } from './log';
 
 export interface RequestQueueOptions {
     /** Build the request body for the given sequence number and changed paths. */
@@ -19,6 +11,8 @@ export interface RequestQueueOptions {
     send: (request: UpdateRequest, signal: AbortSignal) => Promise<UpdatePatch>;
     apply: (patch: UpdatePatch, versions: Map<string, number>) => void;
     onError?: (error: unknown) => void;
+    /** Shared request history; a private one is created when omitted. */
+    log?: RequestLog;
 }
 
 /**
@@ -30,7 +24,7 @@ export interface RequestQueueOptions {
  * - Responses for anything but the latest sequence number are ignored.
  */
 export class RequestQueue {
-    readonly log = reactive<RequestLogEntry[]>([]);
+    readonly requests: RequestLog;
 
     readonly busy = ref(false);
 
@@ -44,7 +38,13 @@ export class RequestQueue {
 
     private waiters: Array<() => void> = [];
 
-    constructor(private readonly options: RequestQueueOptions) {}
+    constructor(private readonly options: RequestQueueOptions) {
+        this.requests = options.log ?? new RequestLog();
+    }
+
+    get log(): RequestLogEntry[] {
+        return this.requests.entries;
+    }
 
     notify(path: string, live: LiveConfig): void {
         this.pending.add(path);
@@ -101,26 +101,17 @@ export class RequestQueue {
         const controller = new AbortController();
         const versions = this.options.snapshotVersions();
         const request = this.options.buildRequest(seq, paths);
-        const entry: RequestLogEntry = reactive({
-            seq,
-            changed: paths,
-            status: 'pending',
-            startedAt: Date.now(),
-            ms: null,
-            patch: null,
-            error: null,
-        });
+        const entry = this.requests.start('update', paths, null, seq);
 
         this.pending.clear();
         this.inflight = { controller, paths, seq };
         this.busy.value = true;
-        this.log.unshift(entry);
-        this.log.splice(25);
 
         try {
             const patch = await this.options.send(request, controller.signal);
             entry.ms = Date.now() - entry.startedAt;
             entry.patch = patch;
+            entry.response = patch;
 
             if (seq !== this.seq || patch.seq !== seq) {
                 entry.status = 'stale';

@@ -17,6 +17,7 @@ import { evaluateExpression } from './expressions';
 import { HttpError, postJson, uploadFile } from './http';
 import { eachNode, mergeNode } from './patch';
 import { clone, deletePath, getPath, overlaps, replaceRow, setPath, startsWithPath } from './paths';
+import { RequestLog } from './log';
 import { RequestQueue } from './queue';
 import { newRowKey } from './rows';
 import { isPlainObject } from './values';
@@ -326,7 +327,9 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
         ((url: string, request: UpdateRequest, signal: AbortSignal) =>
             postJson<UpdatePatch>(url, request, signal));
 
+    const requests = new RequestLog();
     const queue = new RequestQueue({
+        log: requests,
         buildRequest: (seq, changed) => ({
             token: schema.token ?? '',
             seq,
@@ -436,9 +439,15 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
         query: string,
         signal?: AbortSignal,
     ): Promise<SelectOption[]> {
-        const response = await postJson<{ options: SelectOption[] }>(
-            schema.endpoints.search,
-            { token: schema.token, path, search: query, state: { data: clone(state.data) } },
+        const response = await requests.track(
+            'search',
+            [path],
+            query === '' ? '(empty search)' : `“${query}”`,
+            postJson<{ options: SelectOption[] }>(
+                schema.endpoints.search,
+                { token: schema.token, path, search: query, state: { data: clone(state.data) } },
+                signal,
+            ),
             signal,
         );
 
@@ -451,10 +460,16 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
         onProgress: (percent: number) => void,
         signal?: AbortSignal,
     ): Promise<UploadResult> {
-        const request = uploadFile(
-            schema.endpoints.upload,
-            { token: schema.token ?? '', path, file },
-            onProgress,
+        const request = requests.track(
+            'upload',
+            [path],
+            file.name,
+            uploadFile(
+                schema.endpoints.upload,
+                { token: schema.token ?? '', path, file },
+                onProgress,
+                signal,
+            ),
             signal,
         );
         const tracked = request.finally(() => {
@@ -488,7 +503,7 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
         focusRequest,
         root,
         queue,
-        log: queue.log,
+        log: requests.entries,
         get,
         set,
         blur,

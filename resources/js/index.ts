@@ -14,7 +14,7 @@ export type { ComponentResolver } from './composables/registry';
 
 export { createFormStore, defaultLiveConfig } from './core/store';
 export type { FormStore, FormStoreOptions, SubmitOptions } from './core/store';
-export type { RequestLogEntry } from './core/queue';
+export type { RequestKind, RequestLogEntry } from './core/log';
 export { evaluateCondition } from './core/conditions';
 export { evaluateExpression } from './core/expressions';
 export { getPath, overlaps } from './core/paths';
