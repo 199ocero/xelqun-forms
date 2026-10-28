@@ -1,0 +1,45 @@
+{
+    "state": {
+        "data": {
+            "title": null
+        }
+    },
+    "components": [
+        {
+            "key": "data.title",
+            "type": "text-input",
+            "hidden": false,
+            "path": "data.title",
+            "label": "Title",
+            "hint": null,
+            "placeholder": null,
+            "required": false,
+            "disabled": false,
+            "rules": {
+                "visible": null,
+                "required": null,
+                "disabled": null
+            },
+            "computed": null,
+            "live": {
+                "mode": "blur",
+                "ms": null
+            },
+            "span": null,
+            "props": {
+                "inputType": "text",
+                "numeric": false,
+                "integer": false,
+                "min": null,
+                "max": null,
+                "step": null,
+                "maxLength": null,
+                "prefix": null,
+                "suffix": null,
+                "autocomplete": null
+            },
+            "children": [],
+            "deps": []
+        }
+    ]
+}

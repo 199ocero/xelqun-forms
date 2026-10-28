@@ -1,0 +1,655 @@
+[
+    {
+        "name": "multiplies two refs",
+        "src": "qty * price",
+        "state": {
+            "data": {
+                "qty": 2,
+                "price": 10.5
+            }
+        },
+        "expected": 21,
+        "ast": {
+            "op": "*",
+            "args": [
+                {
+                    "ref": "data.qty"
+                },
+                {
+                    "ref": "data.price"
+                }
+            ]
+        }
+    },
+    {
+        "name": "string numbers are numbers",
+        "src": "qty * price",
+        "state": {
+            "data": {
+                "qty": "3",
+                "price": "4"
+            }
+        },
+        "expected": 12,
+        "ast": {
+            "op": "*",
+            "args": [
+                {
+                    "ref": "data.qty"
+                },
+                {
+                    "ref": "data.price"
+                }
+            ]
+        }
+    },
+    {
+        "name": "missing values count as zero",
+        "src": "qty * price",
+        "state": {
+            "data": {
+                "qty": null
+            }
+        },
+        "expected": 0,
+        "ast": {
+            "op": "*",
+            "args": [
+                {
+                    "ref": "data.qty"
+                },
+                {
+                    "ref": "data.price"
+                }
+            ]
+        }
+    },
+    {
+        "name": "non numeric strings count as zero",
+        "src": "qty + 1",
+        "state": {
+            "data": {
+                "qty": "abc"
+            }
+        },
+        "expected": 1,
+        "ast": {
+            "op": "+",
+            "args": [
+                {
+                    "ref": "data.qty"
+                },
+                {
+                    "lit": 1
+                }
+            ]
+        }
+    },
+    {
+        "name": "division by zero is zero",
+        "src": "a / b",
+        "state": {
+            "data": {
+                "a": 5,
+                "b": 0
+            }
+        },
+        "expected": 0,
+        "ast": {
+            "op": "/",
+            "args": [
+                {
+                    "ref": "data.a"
+                },
+                {
+                    "ref": "data.b"
+                }
+            ]
+        }
+    },
+    {
+        "name": "modulo by zero is zero",
+        "src": "a % b",
+        "state": {
+            "data": {
+                "a": 5,
+                "b": 0
+            }
+        },
+        "expected": 0,
+        "ast": {
+            "op": "%",
+            "args": [
+                {
+                    "ref": "data.a"
+                },
+                {
+                    "ref": "data.b"
+                }
+            ]
+        }
+    },
+    {
+        "name": "modulo keeps dividend sign",
+        "src": "a % b",
+        "state": {
+            "data": {
+                "a": -7,
+                "b": 3
+            }
+        },
+        "expected": -1,
+        "ast": {
+            "op": "%",
+            "args": [
+                {
+                    "ref": "data.a"
+                },
+                {
+                    "ref": "data.b"
+                }
+            ]
+        }
+    },
+    {
+        "name": "precedence",
+        "src": "1 + 2 * 3 - 4 / 2",
+        "state": {
+            "data": []
+        },
+        "expected": 5,
+        "ast": {
+            "op": "-",
+            "args": [
+                {
+                    "op": "+",
+                    "args": [
+                        {
+                            "lit": 1
+                        },
+                        {
+                            "op": "*",
+                            "args": [
+                                {
+                                    "lit": 2
+                                },
+                                {
+                                    "lit": 3
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "op": "/",
+                    "args": [
+                        {
+                            "lit": 4
+                        },
+                        {
+                            "lit": 2
+                        }
+                    ]
+                }
+            ]
+        }
+    },
+    {
+        "name": "parentheses",
+        "src": "(1 + 2) * 3",
+        "state": {
+            "data": []
+        },
+        "expected": 9,
+        "ast": {
+            "op": "*",
+            "args": [
+                {
+                    "op": "+",
+                    "args": [
+                        {
+                            "lit": 1
+                        },
+                        {
+                            "lit": 2
+                        }
+                    ]
+                },
+                {
+                    "lit": 3
+                }
+            ]
+        }
+    },
+    {
+        "name": "unary minus",
+        "src": "-a + 10",
+        "state": {
+            "data": {
+                "a": 4
+            }
+        },
+        "expected": 6,
+        "ast": {
+            "op": "+",
+            "args": [
+                {
+                    "op": "neg",
+                    "args": [
+                        {
+                            "ref": "data.a"
+                        }
+                    ]
+                },
+                {
+                    "lit": 10
+                }
+            ]
+        }
+    },
+    {
+        "name": "float results",
+        "src": "0.1 + 0.2",
+        "state": {
+            "data": []
+        },
+        "expected": 0.30000000000000004,
+        "ast": {
+            "op": "+",
+            "args": [
+                {
+                    "lit": 0.1
+                },
+                {
+                    "lit": 0.2
+                }
+            ]
+        }
+    },
+    {
+        "name": "sum over wildcard",
+        "src": "sum(items.*.subtotal)",
+        "state": {
+            "data": {
+                "items": {
+                    "a": {
+                        "subtotal": 21
+                    },
+                    "b": {
+                        "subtotal": "12.5"
+                    }
+                }
+            }
+        },
+        "expected": 33.5,
+        "ast": {
+            "fn": "sum",
+            "args": [
+                {
+                    "ref": "data.items.*.subtotal"
+                }
+            ]
+        }
+    },
+    {
+        "name": "sum of empty list",
+        "src": "sum(items.*.subtotal)",
+        "state": {
+            "data": {
+                "items": []
+            }
+        },
+        "expected": 0,
+        "ast": {
+            "fn": "sum",
+            "args": [
+                {
+                    "ref": "data.items.*.subtotal"
+                }
+            ]
+        }
+    },
+    {
+        "name": "count rows",
+        "src": "count(items.*)",
+        "state": {
+            "data": {
+                "items": {
+                    "a": [],
+                    "b": [],
+                    "c": []
+                }
+            }
+        },
+        "expected": 3,
+        "ast": {
+            "fn": "count",
+            "args": [
+                {
+                    "ref": "data.items.*"
+                }
+            ]
+        }
+    },
+    {
+        "name": "avg",
+        "src": "avg(items.*.qty)",
+        "state": {
+            "data": {
+                "items": {
+                    "a": {
+                        "qty": 1
+                    },
+                    "b": {
+                        "qty": 2
+                    }
+                }
+            }
+        },
+        "expected": 1.5,
+        "ast": {
+            "fn": "avg",
+            "args": [
+                {
+                    "ref": "data.items.*.qty"
+                }
+            ]
+        }
+    },
+    {
+        "name": "min and max",
+        "src": "max(items.*.qty) - min(items.*.qty)",
+        "state": {
+            "data": {
+                "items": {
+                    "a": {
+                        "qty": 1
+                    },
+                    "b": {
+                        "qty": 9
+                    }
+                }
+            }
+        },
+        "expected": 8,
+        "ast": {
+            "op": "-",
+            "args": [
+                {
+                    "fn": "max",
+                    "args": [
+                        {
+                            "ref": "data.items.*.qty"
+                        }
+                    ]
+                },
+                {
+                    "fn": "min",
+                    "args": [
+                        {
+                            "ref": "data.items.*.qty"
+                        }
+                    ]
+                }
+            ]
+        }
+    },
+    {
+        "name": "round half away from zero",
+        "src": "round(2.5) + round(-2.5)",
+        "state": {
+            "data": []
+        },
+        "expected": 0,
+        "ast": {
+            "op": "+",
+            "args": [
+                {
+                    "fn": "round",
+                    "args": [
+                        {
+                            "lit": 2.5
+                        }
+                    ]
+                },
+                {
+                    "fn": "round",
+                    "args": [
+                        {
+                            "op": "neg",
+                            "args": [
+                                {
+                                    "lit": 2.5
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    },
+    {
+        "name": "round with precision",
+        "src": "round(a, 2)",
+        "state": {
+            "data": {
+                "a": 3.14159
+            }
+        },
+        "expected": 3.14,
+        "ast": {
+            "fn": "round",
+            "args": [
+                {
+                    "ref": "data.a"
+                },
+                {
+                    "lit": 2
+                }
+            ]
+        }
+    },
+    {
+        "name": "abs",
+        "src": "abs(a)",
+        "state": {
+            "data": {
+                "a": -3
+            }
+        },
+        "expected": 3,
+        "ast": {
+            "fn": "abs",
+            "args": [
+                {
+                    "ref": "data.a"
+                }
+            ]
+        }
+    },
+    {
+        "name": "if picks a branch",
+        "src": "if(type == 'business', 12, 0)",
+        "state": {
+            "data": {
+                "type": "business"
+            }
+        },
+        "expected": 12,
+        "ast": {
+            "fn": "if",
+            "args": [
+                {
+                    "op": "==",
+                    "args": [
+                        {
+                            "ref": "data.type"
+                        },
+                        {
+                            "lit": "business"
+                        }
+                    ]
+                },
+                {
+                    "lit": 12
+                },
+                {
+                    "lit": 0
+                }
+            ]
+        }
+    },
+    {
+        "name": "comparison",
+        "src": "a > 2 && b <= 3",
+        "state": {
+            "data": {
+                "a": 3,
+                "b": 3
+            }
+        },
+        "expected": true,
+        "ast": {
+            "op": "&&",
+            "args": [
+                {
+                    "op": ">",
+                    "args": [
+                        {
+                            "ref": "data.a"
+                        },
+                        {
+                            "lit": 2
+                        }
+                    ]
+                },
+                {
+                    "op": "<=",
+                    "args": [
+                        {
+                            "ref": "data.b"
+                        },
+                        {
+                            "lit": 3
+                        }
+                    ]
+                }
+            ]
+        }
+    },
+    {
+        "name": "logical or and not",
+        "src": "!a || b",
+        "state": {
+            "data": {
+                "a": 1,
+                "b": 0
+            }
+        },
+        "expected": false,
+        "ast": {
+            "op": "||",
+            "args": [
+                {
+                    "op": "!",
+                    "args": [
+                        {
+                            "ref": "data.a"
+                        }
+                    ]
+                },
+                {
+                    "ref": "data.b"
+                }
+            ]
+        }
+    },
+    {
+        "name": "string equality",
+        "src": "type == \"business\"",
+        "state": {
+            "data": {
+                "type": "business"
+            }
+        },
+        "expected": true,
+        "ast": {
+            "op": "==",
+            "args": [
+                {
+                    "ref": "data.type"
+                },
+                {
+                    "lit": "business"
+                }
+            ]
+        }
+    },
+    {
+        "name": "root reference",
+        "src": "$.discount * 2",
+        "state": {
+            "data": {
+                "discount": 5
+            }
+        },
+        "expected": 10,
+        "ast": {
+            "op": "*",
+            "args": [
+                {
+                    "ref": "data.discount"
+                },
+                {
+                    "lit": 2
+                }
+            ]
+        }
+    },
+    {
+        "name": "literals",
+        "src": "true && null == null",
+        "state": {
+            "data": []
+        },
+        "expected": true,
+        "ast": {
+            "op": "&&",
+            "args": [
+                {
+                    "lit": true
+                },
+                {
+                    "op": "==",
+                    "args": [
+                        {
+                            "lit": null
+                        },
+                        {
+                            "lit": null
+                        }
+                    ]
+                }
+            ]
+        }
+    },
+    {
+        "name": "whole floats become integers",
+        "src": "1.5 * 2",
+        "state": {
+            "data": []
+        },
+        "expected": 3,
+        "ast": {
+            "op": "*",
+            "args": [
+                {
+                    "lit": 1.5
+                },
+                {
+                    "lit": 2
+                }
+            ]
+        }
+    }
+]

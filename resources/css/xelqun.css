@@ -1,0 +1,159 @@
+/*
+ * Xelqun Forms styles. Import once in the app's Tailwind entry:
+ *   @import '@xelqun/forms/style.css';
+ * The @source below makes Tailwind scan the package's components.
+ */
+@source "../js";
+
+@theme inline {
+    --color-xq-background: var(--xq-background);
+    --color-xq-foreground: var(--xq-foreground);
+    --color-xq-card: var(--xq-card);
+    --color-xq-card-foreground: var(--xq-card-foreground);
+    --color-xq-popover: var(--xq-popover);
+    --color-xq-popover-foreground: var(--xq-popover-foreground);
+    --color-xq-primary: var(--xq-primary);
+    --color-xq-primary-foreground: var(--xq-primary-foreground);
+    --color-xq-secondary: var(--xq-secondary);
+    --color-xq-secondary-foreground: var(--xq-secondary-foreground);
+    --color-xq-muted: var(--xq-muted);
+    --color-xq-muted-foreground: var(--xq-muted-foreground);
+    --color-xq-accent: var(--xq-accent);
+    --color-xq-accent-foreground: var(--xq-accent-foreground);
+    --color-xq-destructive: var(--xq-destructive);
+    --color-xq-success: var(--xq-success);
+    --color-xq-border: var(--xq-border);
+    --color-xq-input: var(--xq-input);
+    --color-xq-ring: var(--xq-ring);
+    --radius-xq-sm: calc(var(--xq-radius) - 4px);
+    --radius-xq-md: calc(var(--xq-radius) - 2px);
+    --radius-xq-lg: var(--xq-radius);
+    --radius-xq-xl: calc(var(--xq-radius) + 4px);
+}
+
+:root {
+    --xq-radius: 0.625rem;
+    --xq-background: oklch(1 0 0);
+    --xq-foreground: oklch(0.2 0.01 270);
+    --xq-card: oklch(1 0 0);
+    --xq-card-foreground: oklch(0.2 0.01 270);
+    --xq-popover: oklch(1 0 0);
+    --xq-popover-foreground: oklch(0.2 0.01 270);
+    --xq-primary: oklch(0.5 0.2 272);
+    --xq-primary-foreground: oklch(0.99 0 0);
+    --xq-secondary: oklch(0.96 0.006 270);
+    --xq-secondary-foreground: oklch(0.25 0.02 270);
+    --xq-muted: oklch(0.965 0.004 270);
+    --xq-muted-foreground: oklch(0.52 0.015 270);
+    --xq-accent: oklch(0.955 0.012 272);
+    --xq-accent-foreground: oklch(0.25 0.04 272);
+    --xq-destructive: oklch(0.58 0.22 27);
+    --xq-success: oklch(0.6 0.15 155);
+    --xq-border: oklch(0.915 0.006 270);
+    --xq-input: oklch(0.885 0.008 270);
+    --xq-ring: oklch(0.55 0.19 272);
+}
+
+.dark,
+[data-xq-theme='dark'] {
+    --xq-background: oklch(0.17 0.008 270);
+    --xq-foreground: oklch(0.97 0.004 270);
+    --xq-card: oklch(0.205 0.01 270);
+    --xq-card-foreground: oklch(0.97 0.004 270);
+    --xq-popover: oklch(0.22 0.01 270);
+    --xq-popover-foreground: oklch(0.97 0.004 270);
+    --xq-primary: oklch(0.68 0.16 272);
+    --xq-primary-foreground: oklch(0.16 0.02 272);
+    --xq-secondary: oklch(0.27 0.012 270);
+    --xq-secondary-foreground: oklch(0.95 0.004 270);
+    --xq-muted: oklch(0.25 0.01 270);
+    --xq-muted-foreground: oklch(0.7 0.012 270);
+    --xq-accent: oklch(0.28 0.025 272);
+    --xq-accent-foreground: oklch(0.96 0.01 272);
+    --xq-destructive: oklch(0.68 0.19 25);
+    --xq-success: oklch(0.72 0.15 155);
+    --xq-border: oklch(1 0 0 / 10%);
+    --xq-input: oklch(1 0 0 / 14%);
+    --xq-ring: oklch(0.68 0.16 272);
+}
+
+/*
+ * Responsive grid driven by CSS variables set from the schema
+ * (see gridStyle() and spanStyle() in composables/layout.ts).
+ */
+/* Custom properties inherit, so reset them at each level to keep nested grids independent. */
+.xq-grid {
+    --xq-span: initial;
+    --xq-span-sm: initial;
+    --xq-span-md: initial;
+    --xq-span-lg: initial;
+    --xq-span-xl: initial;
+    display: grid;
+    gap: 1.25rem 1rem;
+    grid-template-columns: repeat(var(--xq-cols, 1), minmax(0, 1fr));
+}
+
+.xq-cell {
+    --xq-cols: initial;
+    --xq-cols-sm: initial;
+    --xq-cols-md: initial;
+    --xq-cols-lg: initial;
+    --xq-cols-xl: initial;
+    min-width: 0;
+    grid-column: var(--xq-span, auto);
+}
+
+@media (min-width: 40rem) {
+    .xq-grid {
+        grid-template-columns: repeat(var(--xq-cols-sm, var(--xq-cols, 1)), minmax(0, 1fr));
+    }
+
+    .xq-cell {
+        grid-column: var(--xq-span-sm, var(--xq-span, auto));
+    }
+}
+
+@media (min-width: 48rem) {
+    .xq-grid {
+        grid-template-columns: repeat(
+            var(--xq-cols-md, var(--xq-cols-sm, var(--xq-cols, 1))),
+            minmax(0, 1fr)
+        );
+    }
+
+    .xq-cell {
+        grid-column: var(--xq-span-md, var(--xq-span-sm, var(--xq-span, auto)));
+    }
+}
+
+@media (min-width: 64rem) {
+    .xq-grid {
+        grid-template-columns: repeat(
+            var(--xq-cols-lg, var(--xq-cols-md, var(--xq-cols-sm, var(--xq-cols, 1)))),
+            minmax(0, 1fr)
+        );
+    }
+
+    .xq-cell {
+        grid-column: var(--xq-span-lg, var(--xq-span-md, var(--xq-span-sm, var(--xq-span, auto))));
+    }
+}
+
+@media (min-width: 80rem) {
+    .xq-grid {
+        grid-template-columns: repeat(
+            var(
+                --xq-cols-xl,
+                var(--xq-cols-lg, var(--xq-cols-md, var(--xq-cols-sm, var(--xq-cols, 1))))
+            ),
+            minmax(0, 1fr)
+        );
+    }
+
+    .xq-cell {
+        grid-column: var(
+            --xq-span-xl,
+            var(--xq-span-lg, var(--xq-span-md, var(--xq-span-sm, var(--xq-span, auto))))
+        );
+    }
+}

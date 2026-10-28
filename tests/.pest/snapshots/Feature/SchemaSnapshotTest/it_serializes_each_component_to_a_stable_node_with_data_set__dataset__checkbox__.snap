@@ -1,0 +1,33 @@
+{
+    "state": {
+        "data": {
+            "terms": false
+        }
+    },
+    "components": [
+        {
+            "key": "data.terms",
+            "type": "checkbox",
+            "hidden": false,
+            "path": "data.terms",
+            "label": "Terms",
+            "hint": null,
+            "placeholder": null,
+            "required": false,
+            "disabled": false,
+            "rules": {
+                "visible": null,
+                "required": null,
+                "disabled": null
+            },
+            "computed": null,
+            "live": null,
+            "span": null,
+            "props": {
+                "description": "Read them first"
+            },
+            "children": [],
+            "deps": []
+        }
+    ]
+}

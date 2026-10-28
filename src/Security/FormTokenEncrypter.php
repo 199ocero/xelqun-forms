@@ -1,0 +1,72 @@
+<?php
+
+namespace Xelqun\Forms\Security;
+
+use Illuminate\Contracts\Encryption\DecryptException;
+use Illuminate\Contracts\Encryption\StringEncrypter;
+use Illuminate\Database\Eloquent\Model;
+use Xelqun\Forms\Exceptions\InvalidFormToken;
+use Xelqun\Forms\Form;
+
+final class FormTokenEncrypter
+{
+    public function __construct(private readonly StringEncrypter $encrypter) {}
+
+    public function encrypt(FormToken $token): string
+    {
+        return $this->encrypter->encryptString((string) json_encode($token->toArray()));
+    }
+
+    public function decrypt(string $value): FormToken
+    {
+        try {
+            $payload = json_decode($this->encrypter->decryptString($value), true, flags: JSON_THROW_ON_ERROR);
+        } catch (DecryptException|\JsonException) {
+            throw InvalidFormToken::make('the token could not be decrypted');
+        }
+
+        return FormToken::fromArray(is_array($payload) ? $payload : []);
+    }
+
+    /**
+     * Decrypt the token, check it and rebuild the form it describes.
+     */
+    public function resolveForm(string $value): Form
+    {
+        $token = $this->decrypt($value);
+
+        if (! is_subclass_of($token->formClass, Form::class)) {
+            throw InvalidFormToken::make('the token does not describe a form');
+        }
+
+        $ttl = (int) config('xelqun-forms.token_ttl', 720);
+
+        if ($ttl > 0 && $token->issuedAt !== null && $token->issuedAt < time() - $ttl * 60) {
+            throw InvalidFormToken::make('the token has expired, reload the page', 419);
+        }
+
+        if ((string) $token->userId !== (string) auth()->id()) {
+            throw InvalidFormToken::make('the token belongs to another user');
+        }
+
+        /** @var class-string<Form> $formClass */
+        $formClass = $token->formClass;
+        $record = null;
+
+        if ($token->recordKey !== null) {
+            $form = new $formClass(null, $token->context);
+            $model = $form->model() ?? throw InvalidFormToken::make('the form has no model to load the record from');
+            /** @var Model $instance */
+            $instance = new $model;
+            $record = $instance->newQuery()->findOrFail($token->recordKey);
+        }
+
+        $form = $formClass::make($record, $token->context);
+
+        if (! $form->authorize(auth()->user(), $record)) {
+            throw InvalidFormToken::make('this action is unauthorized');
+        }
+
+        return $form;
+    }
+}

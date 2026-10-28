@@ -1,0 +1,45 @@
+{
+    "state": {
+        "data": {
+            "size": null
+        }
+    },
+    "components": [
+        {
+            "key": "data.size",
+            "type": "radio",
+            "hidden": false,
+            "path": "data.size",
+            "label": "Size",
+            "hint": null,
+            "placeholder": null,
+            "required": false,
+            "disabled": false,
+            "rules": {
+                "visible": null,
+                "required": null,
+                "disabled": null
+            },
+            "computed": null,
+            "live": null,
+            "span": null,
+            "props": {
+                "options": [
+                    {
+                        "value": "s",
+                        "label": "Small",
+                        "description": null
+                    },
+                    {
+                        "value": "l",
+                        "label": "Large",
+                        "description": null
+                    }
+                ],
+                "inline": true
+            },
+            "children": [],
+            "deps": []
+        }
+    ]
+}

@@ -1,0 +1,53 @@
+<?php
+
+namespace Xelqun\Forms\Tests;
+
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+use Orchestra\Testbench\TestCase as Orchestra;
+use Xelqun\Forms\FormsServiceProvider;
+
+abstract class TestCase extends Orchestra
+{
+    protected function getPackageProviders($app): array
+    {
+        return [FormsServiceProvider::class];
+    }
+
+    protected function defineDatabaseMigrations(): void
+    {
+        Schema::create('countries', function (Blueprint $table): void {
+            $table->id();
+            $table->string('name');
+        });
+
+        Schema::create('regions', function (Blueprint $table): void {
+            $table->id();
+            $table->foreignId('country_id');
+            $table->string('name');
+        });
+
+        Schema::create('orders', function (Blueprint $table): void {
+            $table->id();
+            $table->string('customer');
+            $table->string('type')->default('individual');
+            $table->string('company')->nullable();
+            $table->foreignId('country_id')->nullable();
+            $table->foreignId('region_id')->nullable();
+            $table->decimal('total', 12, 2)->default(0);
+            $table->timestamps();
+        });
+
+        Schema::create('order_items', function (Blueprint $table): void {
+            $table->id();
+            $table->foreignId('order_id');
+            $table->unsignedInteger('sort')->default(0);
+            $table->string('product');
+            $table->decimal('qty', 12, 2);
+            $table->decimal('price', 12, 2);
+            $table->decimal('subtotal', 12, 2);
+            $table->string('attachment')->nullable();
+            $table->timestamps();
+        });
+    }
+}

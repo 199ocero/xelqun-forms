@@ -1,0 +1,68 @@
+{
+    "state": {
+        "data": {
+            "total": 0
+        }
+    },
+    "components": [
+        {
+            "key": "data.total",
+            "type": "text-input",
+            "hidden": false,
+            "path": "data.total",
+            "label": "Total",
+            "hint": null,
+            "placeholder": null,
+            "required": false,
+            "disabled": true,
+            "rules": {
+                "visible": null,
+                "required": null,
+                "disabled": null
+            },
+            "computed": {
+                "src": "round(sum(items.*.subtotal) * 1.12, 2)",
+                "ast": {
+                    "fn": "round",
+                    "args": [
+                        {
+                            "op": "*",
+                            "args": [
+                                {
+                                    "fn": "sum",
+                                    "args": [
+                                        {
+                                            "ref": "data.items.*.subtotal"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "lit": 1.12
+                                }
+                            ]
+                        },
+                        {
+                            "lit": 2
+                        }
+                    ]
+                }
+            },
+            "live": null,
+            "span": null,
+            "props": {
+                "inputType": "text",
+                "numeric": false,
+                "integer": false,
+                "min": null,
+                "max": null,
+                "step": null,
+                "maxLength": null,
+                "prefix": null,
+                "suffix": null,
+                "autocomplete": null
+            },
+            "children": [],
+            "deps": []
+        }
+    ]
+}

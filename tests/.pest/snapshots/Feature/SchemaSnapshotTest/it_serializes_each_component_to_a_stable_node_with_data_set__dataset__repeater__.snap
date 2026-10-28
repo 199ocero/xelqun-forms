@@ -1,0 +1,214 @@
+{
+    "state": {
+        "data": {
+            "items": {
+                "<uuid>": {
+                    "qty": 2,
+                    "subtotal": 4
+                }
+            }
+        }
+    },
+    "components": [
+        {
+            "key": "data.items",
+            "type": "repeater",
+            "hidden": false,
+            "path": "data.items",
+            "label": "Items",
+            "hint": null,
+            "placeholder": null,
+            "required": false,
+            "disabled": false,
+            "rules": {
+                "visible": null,
+                "required": null,
+                "disabled": null
+            },
+            "computed": null,
+            "live": null,
+            "span": null,
+            "props": {
+                "template": [
+                    {
+                        "key": "data.items.{row}.qty",
+                        "type": "text-input",
+                        "hidden": false,
+                        "path": "data.items.{row}.qty",
+                        "label": "Qty",
+                        "hint": null,
+                        "placeholder": null,
+                        "required": false,
+                        "disabled": false,
+                        "rules": {
+                            "visible": null,
+                            "required": null,
+                            "disabled": null
+                        },
+                        "computed": null,
+                        "live": null,
+                        "span": null,
+                        "props": {
+                            "inputType": "text",
+                            "numeric": true,
+                            "integer": false,
+                            "min": null,
+                            "max": null,
+                            "step": null,
+                            "maxLength": null,
+                            "prefix": null,
+                            "suffix": null,
+                            "autocomplete": null
+                        },
+                        "children": [],
+                        "deps": []
+                    },
+                    {
+                        "key": "data.items.{row}.subtotal",
+                        "type": "text-input",
+                        "hidden": false,
+                        "path": "data.items.{row}.subtotal",
+                        "label": "Subtotal",
+                        "hint": null,
+                        "placeholder": null,
+                        "required": false,
+                        "disabled": false,
+                        "rules": {
+                            "visible": null,
+                            "required": null,
+                            "disabled": null
+                        },
+                        "computed": {
+                            "src": "qty * 2",
+                            "ast": {
+                                "op": "*",
+                                "args": [
+                                    {
+                                        "ref": "data.items.{row}.qty"
+                                    },
+                                    {
+                                        "lit": 2
+                                    }
+                                ]
+                            }
+                        },
+                        "live": null,
+                        "span": null,
+                        "props": {
+                            "inputType": "text",
+                            "numeric": false,
+                            "integer": false,
+                            "min": null,
+                            "max": null,
+                            "step": null,
+                            "maxLength": null,
+                            "prefix": null,
+                            "suffix": null,
+                            "autocomplete": null
+                        },
+                        "children": [],
+                        "deps": []
+                    }
+                ],
+                "rows": {
+                    "<uuid>": [
+                        {
+                            "key": "data.items.<uuid>.qty",
+                            "type": "text-input",
+                            "hidden": false,
+                            "path": "data.items.<uuid>.qty",
+                            "label": "Qty",
+                            "hint": null,
+                            "placeholder": null,
+                            "required": false,
+                            "disabled": false,
+                            "rules": {
+                                "visible": null,
+                                "required": null,
+                                "disabled": null
+                            },
+                            "computed": null,
+                            "live": null,
+                            "span": null,
+                            "props": {
+                                "inputType": "text",
+                                "numeric": true,
+                                "integer": false,
+                                "min": null,
+                                "max": null,
+                                "step": null,
+                                "maxLength": null,
+                                "prefix": null,
+                                "suffix": null,
+                                "autocomplete": null
+                            },
+                            "children": [],
+                            "deps": []
+                        },
+                        {
+                            "key": "data.items.<uuid>.subtotal",
+                            "type": "text-input",
+                            "hidden": false,
+                            "path": "data.items.<uuid>.subtotal",
+                            "label": "Subtotal",
+                            "hint": null,
+                            "placeholder": null,
+                            "required": false,
+                            "disabled": false,
+                            "rules": {
+                                "visible": null,
+                                "required": null,
+                                "disabled": null
+                            },
+                            "computed": {
+                                "src": "qty * 2",
+                                "ast": {
+                                    "op": "*",
+                                    "args": [
+                                        {
+                                            "ref": "data.items.<uuid>.qty"
+                                        },
+                                        {
+                                            "lit": 2
+                                        }
+                                    ]
+                                }
+                            },
+                            "live": null,
+                            "span": null,
+                            "props": {
+                                "inputType": "text",
+                                "numeric": false,
+                                "integer": false,
+                                "min": null,
+                                "max": null,
+                                "step": null,
+                                "maxLength": null,
+                                "prefix": null,
+                                "suffix": null,
+                                "autocomplete": null
+                            },
+                            "children": [],
+                            "deps": []
+                        }
+                    ]
+                },
+                "newRow": {
+                    "qty": 1,
+                    "subtotal": null
+                },
+                "minItems": 1,
+                "maxItems": 3,
+                "addLabel": "Add line",
+                "itemLabel": "Line",
+                "orderable": true,
+                "columns": {
+                    "default": 1,
+                    "md": 2
+                }
+            },
+            "children": [],
+            "deps": []
+        }
+    ]
+}

@@ -1,0 +1,59 @@
+{
+    "state": {
+        "data": {
+            "city": null
+        }
+    },
+    "components": [
+        {
+            "key": "data#0",
+            "type": "fieldset",
+            "hidden": false,
+            "path": null,
+            "label": "Address",
+            "rules": {
+                "visible": null
+            },
+            "span": null,
+            "props": {
+                "columns": null
+            },
+            "children": [
+                {
+                    "key": "data.city",
+                    "type": "text-input",
+                    "hidden": false,
+                    "path": "data.city",
+                    "label": "City",
+                    "hint": null,
+                    "placeholder": null,
+                    "required": false,
+                    "disabled": false,
+                    "rules": {
+                        "visible": null,
+                        "required": null,
+                        "disabled": null
+                    },
+                    "computed": null,
+                    "live": null,
+                    "span": null,
+                    "props": {
+                        "inputType": "text",
+                        "numeric": false,
+                        "integer": false,
+                        "min": null,
+                        "max": null,
+                        "step": null,
+                        "maxLength": null,
+                        "prefix": null,
+                        "suffix": null,
+                        "autocomplete": null
+                    },
+                    "children": [],
+                    "deps": []
+                }
+            ],
+            "deps": []
+        }
+    ]
+}

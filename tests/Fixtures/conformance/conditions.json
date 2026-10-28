@@ -1,0 +1,167 @@
+[
+    {
+        "name": "eq strings",
+        "condition": { "op": "eq", "path": "data.type", "value": "business" },
+        "state": { "data": { "type": "business" } },
+        "expected": true
+    },
+    {
+        "name": "eq number and numeric string",
+        "condition": { "op": "eq", "path": "data.qty", "value": 2 },
+        "state": { "data": { "qty": "2.0" } },
+        "expected": true
+    },
+    {
+        "name": "eq null and empty string",
+        "condition": { "op": "eq", "path": "data.name", "value": null },
+        "state": { "data": { "name": "" } },
+        "expected": true
+    },
+    {
+        "name": "eq null and zero",
+        "condition": { "op": "eq", "path": "data.qty", "value": null },
+        "state": { "data": { "qty": 0 } },
+        "expected": false
+    },
+    {
+        "name": "eq boolean and string",
+        "condition": { "op": "eq", "path": "data.agree", "value": true },
+        "state": { "data": { "agree": "1" } },
+        "expected": true
+    },
+    {
+        "name": "eq boolean false and missing",
+        "condition": { "op": "eq", "path": "data.agree", "value": false },
+        "state": { "data": {} },
+        "expected": false
+    },
+    {
+        "name": "neq",
+        "condition": { "op": "neq", "path": "data.type", "value": "business" },
+        "state": { "data": { "type": "individual" } },
+        "expected": true
+    },
+    {
+        "name": "in list",
+        "condition": { "op": "in", "path": "data.status", "value": ["draft", "sent"] },
+        "state": { "data": { "status": "sent" } },
+        "expected": true
+    },
+    {
+        "name": "in with multi select",
+        "condition": { "op": "in", "path": "data.tags", "value": ["vip"] },
+        "state": { "data": { "tags": ["new", "vip"] } },
+        "expected": true
+    },
+    {
+        "name": "in with numeric strings",
+        "condition": { "op": "in", "path": "data.country", "value": [1, 2] },
+        "state": { "data": { "country": "2" } },
+        "expected": true
+    },
+    {
+        "name": "notIn",
+        "condition": { "op": "notIn", "path": "data.status", "value": ["draft"] },
+        "state": { "data": { "status": "sent" } },
+        "expected": true
+    },
+    {
+        "name": "gt numbers",
+        "condition": { "op": "gt", "path": "data.qty", "value": 10 },
+        "state": { "data": { "qty": "11" } },
+        "expected": true
+    },
+    {
+        "name": "gt null is false",
+        "condition": { "op": "gt", "path": "data.qty", "value": 0 },
+        "state": { "data": { "qty": null } },
+        "expected": false
+    },
+    {
+        "name": "gte equal",
+        "condition": { "op": "gte", "path": "data.qty", "value": 10 },
+        "state": { "data": { "qty": 10 } },
+        "expected": true
+    },
+    {
+        "name": "lt dates",
+        "condition": { "op": "lt", "path": "data.date", "value": "2026-01-01" },
+        "state": { "data": { "date": "2025-12-31" } },
+        "expected": true
+    },
+    {
+        "name": "lte",
+        "condition": { "op": "lte", "path": "data.qty", "value": 1 },
+        "state": { "data": { "qty": 2 } },
+        "expected": false
+    },
+    {
+        "name": "filled string",
+        "condition": { "op": "filled", "path": "data.name" },
+        "state": { "data": { "name": "  a " } },
+        "expected": true
+    },
+    {
+        "name": "filled whitespace is blank",
+        "condition": { "op": "filled", "path": "data.name" },
+        "state": { "data": { "name": "   " } },
+        "expected": false
+    },
+    {
+        "name": "filled false",
+        "condition": { "op": "filled", "path": "data.agree" },
+        "state": { "data": { "agree": false } },
+        "expected": true
+    },
+    {
+        "name": "filled empty list",
+        "condition": { "op": "filled", "path": "data.tags" },
+        "state": { "data": { "tags": [] } },
+        "expected": false
+    },
+    {
+        "name": "blank missing",
+        "condition": { "op": "blank", "path": "data.missing" },
+        "state": { "data": {} },
+        "expected": true
+    },
+    {
+        "name": "and",
+        "condition": {
+            "op": "and",
+            "args": [
+                { "op": "filled", "path": "data.a" },
+                { "op": "eq", "path": "data.b", "value": 1 }
+            ]
+        },
+        "state": { "data": { "a": "x", "b": 1 } },
+        "expected": true
+    },
+    {
+        "name": "or",
+        "condition": {
+            "op": "or",
+            "args": [
+                { "op": "filled", "path": "data.a" },
+                { "op": "eq", "path": "data.b", "value": 1 }
+            ]
+        },
+        "state": { "data": { "a": null, "b": 2 } },
+        "expected": false
+    },
+    {
+        "name": "not",
+        "condition": {
+            "op": "not",
+            "args": [{ "op": "eq", "path": "data.type", "value": "business" }]
+        },
+        "state": { "data": { "type": "business" } },
+        "expected": false
+    },
+    {
+        "name": "row path",
+        "condition": { "op": "eq", "path": "data.items.u1.kind", "value": "digital" },
+        "state": { "data": { "items": { "u1": { "kind": "digital" } } } },
+        "expected": true
+    }
+]

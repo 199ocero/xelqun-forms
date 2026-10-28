@@ -1,0 +1,49 @@
+{
+    "state": {
+        "data": {
+            "company": null
+        }
+    },
+    "components": [
+        {
+            "key": "data.company",
+            "type": "text-input",
+            "hidden": false,
+            "path": "data.company",
+            "label": "Company",
+            "hint": null,
+            "placeholder": null,
+            "required": false,
+            "disabled": false,
+            "rules": {
+                "visible": {
+                    "op": "eq",
+                    "path": "data.type",
+                    "value": "business"
+                },
+                "required": {
+                    "op": "filled",
+                    "path": "data.vat"
+                },
+                "disabled": null
+            },
+            "computed": null,
+            "live": null,
+            "span": null,
+            "props": {
+                "inputType": "text",
+                "numeric": false,
+                "integer": false,
+                "min": null,
+                "max": null,
+                "step": null,
+                "maxLength": null,
+                "prefix": null,
+                "suffix": null,
+                "autocomplete": null
+            },
+            "children": [],
+            "deps": []
+        }
+    ]
+}

@@ -1,0 +1,17 @@
+export { default as XqBadge } from './XqBadge.vue';
+export { default as XqButton } from './XqButton.vue';
+export { default as XqCalendar } from './XqCalendar.vue';
+export { default as XqCard } from './XqCard.vue';
+export { default as XqCheckbox } from './XqCheckbox.vue';
+export { default as XqCombobox } from './XqCombobox.vue';
+export { default as XqInput } from './XqInput.vue';
+export { default as XqLabel } from './XqLabel.vue';
+export { default as XqRadioGroup } from './XqRadioGroup.vue';
+export { default as XqRadioGroupItem } from './XqRadioGroupItem.vue';
+export { default as XqSelect } from './XqSelect.vue';
+export { default as XqSwitch } from './XqSwitch.vue';
+export { default as XqTabs } from './XqTabs.vue';
+export { default as XqTabsContent } from './XqTabsContent.vue';
+export { default as XqTabsList } from './XqTabsList.vue';
+export { default as XqTabsTrigger } from './XqTabsTrigger.vue';
+export { default as XqTextarea } from './XqTextarea.vue';

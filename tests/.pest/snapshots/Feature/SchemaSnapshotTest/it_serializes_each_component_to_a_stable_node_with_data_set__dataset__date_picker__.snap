@@ -1,0 +1,34 @@
+{
+    "state": {
+        "data": {
+            "starts_on": null
+        }
+    },
+    "components": [
+        {
+            "key": "data.starts_on",
+            "type": "date-picker",
+            "hidden": false,
+            "path": "data.starts_on",
+            "label": "Starts On",
+            "hint": null,
+            "placeholder": null,
+            "required": false,
+            "disabled": false,
+            "rules": {
+                "visible": null,
+                "required": null,
+                "disabled": null
+            },
+            "computed": null,
+            "live": null,
+            "span": null,
+            "props": {
+                "min": "2026-01-01",
+                "max": null
+            },
+            "children": [],
+            "deps": []
+        }
+    ]
+}

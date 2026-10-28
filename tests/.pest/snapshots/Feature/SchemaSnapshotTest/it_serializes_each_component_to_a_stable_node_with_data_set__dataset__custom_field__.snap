@@ -1,0 +1,33 @@
+{
+    "state": {
+        "data": {
+            "rating": null
+        }
+    },
+    "components": [
+        {
+            "key": "data.rating",
+            "type": "star-rating",
+            "hidden": false,
+            "path": "data.rating",
+            "label": "Rating",
+            "hint": null,
+            "placeholder": null,
+            "required": false,
+            "disabled": false,
+            "rules": {
+                "visible": null,
+                "required": null,
+                "disabled": null
+            },
+            "computed": null,
+            "live": null,
+            "span": null,
+            "props": {
+                "max": 5
+            },
+            "children": [],
+            "deps": []
+        }
+    ]
+}
