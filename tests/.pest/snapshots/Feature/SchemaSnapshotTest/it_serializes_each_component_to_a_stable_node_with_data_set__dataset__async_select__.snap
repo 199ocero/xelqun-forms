@@ -27,7 +27,8 @@
                 "options": [],
                 "searchable": true,
                 "multiple": false,
-                "async": true
+                "async": true,
+                "searchDebounce": 250
             },
             "children": [],
             "deps": []

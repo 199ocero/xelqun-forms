@@ -15,6 +15,9 @@ const isRemote = computed(() => !!props.node.props?.async);
 
 const remoteOptions = ref<SelectOption[]>([]);
 const loading = ref(false);
+const debounce = computed<number>(() => props.node.props?.searchDebounce ?? 250);
+const cache = new Map<string, SelectOption[]>();
+let lastTerm = '';
 let timer: ReturnType<typeof setTimeout> | null = null;
 let controller: AbortController | null = null;
 
@@ -28,22 +31,60 @@ function mergeOptions(first: SelectOption[], second: SelectOption[]): SelectOpti
     return [...first, ...second.filter((option) => !seen.has(String(option.value)))];
 }
 
-function onSearch(term: string): void {
+function cancelPendingSearch(): void {
+    if (timer) {
+        clearTimeout(timer);
+        timer = null;
+    }
+
+    controller?.abort();
+    loading.value = false;
+}
+
+/**
+ * Called only when the user types (not when the input text is reset after a
+ * selection, a clear or a blur). Waits for a pause in typing, skips empty and
+ * repeated terms, and reuses results it has already fetched.
+ */
+function onSearch(input: string): void {
     if (!isRemote.value) {
         return;
     }
 
-    if (timer) {
-        clearTimeout(timer);
+    const term = input.trim();
+
+    cancelPendingSearch();
+
+    if (term === '') {
+        lastTerm = '';
+        remoteOptions.value = options.value;
+
+        return;
+    }
+
+    if (term === lastTerm) {
+        return;
+    }
+
+    const cached = cache.get(term.toLowerCase());
+
+    if (cached) {
+        lastTerm = term;
+        remoteOptions.value = mergeOptions(cached, options.value);
+
+        return;
     }
 
     timer = setTimeout(async () => {
-        controller?.abort();
+        timer = null;
         controller = new AbortController();
         loading.value = true;
 
         try {
             const results = await store.search(path, term, controller.signal);
+
+            cache.set(term.toLowerCase(), results);
+            lastTerm = term;
             remoteOptions.value = mergeOptions(results, options.value);
         } catch (searchError) {
             if (!controller.signal.aborted) {
@@ -52,16 +93,10 @@ function onSearch(term: string): void {
         } finally {
             loading.value = false;
         }
-    }, 250);
+    }, debounce.value);
 }
 
-onBeforeUnmount(() => {
-    controller?.abort();
-
-    if (timer) {
-        clearTimeout(timer);
-    }
-});
+onBeforeUnmount(cancelPendingSearch);
 
 const hasValue = computed(
     () => value.value !== null && value.value !== undefined && value.value !== '',

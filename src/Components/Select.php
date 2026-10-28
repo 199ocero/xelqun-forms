@@ -35,6 +35,8 @@ class Select extends Field
 
     protected int $searchLimit = 50;
 
+    protected int $searchDebounce = 250;
+
     public function getType(): string
     {
         return 'select';
@@ -88,6 +90,16 @@ class Select extends Field
         $this->relationship = $name;
         $this->titleAttribute = $titleAttribute;
         $this->modifyRelationshipQueryUsing = $modifyQueryUsing;
+
+        return $this;
+    }
+
+    /**
+     * Milliseconds to wait after the last keystroke before searching the server.
+     */
+    public function searchDebounce(int $milliseconds): static
+    {
+        $this->searchDebounce = $milliseconds;
 
         return $this;
     }
@@ -305,6 +317,7 @@ class Select extends Field
             'searchable' => $this->isSearchable,
             'multiple' => $this->isMultiple,
             'async' => $isAsync,
+            'searchDebounce' => $this->searchDebounce,
         ];
     }
 }

@@ -41,7 +41,6 @@ watch(
     (options) => options.forEach((option) => labels.set(String(option.value), option.label)),
     { immediate: true, deep: true },
 );
-watch(searchTerm, (term) => emit('search', term));
 
 const selectedValues = computed<Value[]>(() => {
     if (Array.isArray(model.value)) {
@@ -113,6 +112,7 @@ function clear(): void {
             <ComboboxInput
                 :id="id"
                 v-model="searchTerm"
+                @input="emit('search', ($event.target as HTMLInputElement).value)"
                 :display-value="multiple ? undefined : labelFor"
                 :placeholder="selectedValues.length && multiple ? '' : (placeholder ?? 'Search…')"
                 :aria-invalid="invalid || undefined"

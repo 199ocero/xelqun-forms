@@ -36,7 +36,8 @@
                 ],
                 "searchable": false,
                 "multiple": false,
-                "async": false
+                "async": false,
+                "searchDebounce": 250
             },
             "children": [],
             "deps": []
