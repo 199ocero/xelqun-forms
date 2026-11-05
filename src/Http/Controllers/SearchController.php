@@ -6,10 +6,11 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Xelqun\Forms\Components\Select;
 use Xelqun\Forms\Security\FormTokenEncrypter;
+use Xelqun\Forms\Validation\FormValidator;
 
 class SearchController
 {
-    public function __invoke(Request $request, FormTokenEncrypter $tokens): JsonResponse
+    public function __invoke(Request $request, FormTokenEncrypter $tokens, FormValidator $validator): JsonResponse
     {
         $validated = $request->validate([
             'token' => ['required', 'string'],
@@ -22,7 +23,7 @@ class SearchController
         $data = $validated['state']['data'] ?? null;
 
         if (is_array($data)) {
-            $form->setData($data);
+            $validator->prepare($form, $data);
         }
 
         $field = $form->findComponent($validated['path']);

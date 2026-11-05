@@ -43,7 +43,7 @@ watch(store.focusRequest, (request) => {
 </script>
 
 <template>
-    <XqTabs v-model="active">
+    <XqTabs v-model="active" :unmount-on-hide="false">
         <XqTabsList>
             <XqTabsTrigger v-for="tab in tabs" :key="tab.key" :value="tab.key">
                 {{ tab.label }}

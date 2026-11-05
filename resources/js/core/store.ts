@@ -245,7 +245,7 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
 
         for (const key of keys) {
             if (!rows[key]) {
-                rows[key] = replaceRow(node.props?.template ?? [], key);
+                rows[key] = replaceRow(node.props?.template ?? [], key, node.props?.rowPlaceholder);
                 index(rows[key]);
             }
         }
@@ -309,6 +309,10 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
         const reordered: Record<string, unknown> = {};
         keys.forEach((rowKey) => (reordered[rowKey] = rows[rowKey]));
         setPath(state, node.path!, reordered);
+
+        const rowNodes = rowsOf(node);
+
+        node.props!.rows = Object.fromEntries(keys.map((rowKey) => [rowKey, rowNodes[rowKey]]));
         touchRows(node);
     }
 
@@ -473,7 +477,8 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
                 'input:not([type=hidden]), textarea, button, [tabindex]:not([tabindex="-1"])',
             );
 
-            if (target) {
+            // A closed tab stays mounted, and its panel opens a tick after the tab switches.
+            if (target && !target.closest('[hidden]')) {
                 element!.scrollIntoView?.({
                     block: 'center',
                     behavior: prefersReducedMotion() ? 'auto' : 'smooth',

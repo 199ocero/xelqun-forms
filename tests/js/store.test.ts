@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { nextTick } from 'vue';
 import { createFormStore } from '../../resources/js/core/store';
 import type { UpdatePatch, UpdateRequest } from '../../resources/js/schema/types';
-import { orderSchema } from './fixtures';
+import { field, orderSchema, schema } from './fixtures';
 
 function storeWithServer(reply: (request: UpdateRequest) => Partial<UpdatePatch>) {
     const requests: UpdateRequest[] = [];
@@ -20,6 +20,64 @@ function storeWithServer(reply: (request: UpdateRequest) => Partial<UpdatePatch>
 describe('form store', () => {
     beforeEach(() => vi.useFakeTimers());
     afterEach(() => vi.useRealTimers());
+
+    it('finds the first error in the order rows are shown after a move', () => {
+        const store = createFormStore(
+            schema(
+                [
+                    field('data.items', 'repeater', {
+                        props: {
+                            rows: {
+                                a: [field('data.items.a.qty')],
+                                b: [field('data.items.b.qty')],
+                            },
+                        },
+                    }),
+                ],
+                { items: { a: { qty: 1 }, b: { qty: 2 } } },
+            ),
+        );
+
+        store.moveRow(store.nodes.get('data.items')!, 'b', -1);
+        store.errors['data.items.a.qty'] = 'Required';
+        store.errors['data.items.b.qty'] = 'Required';
+        store.focusFirstError();
+
+        expect(store.focusRequest.value?.path).toBe('data.items.b.qty');
+    });
+
+    it('gives rows of a nested repeater their own paths', async () => {
+        const store = createFormStore(
+            schema(
+                [
+                    field('data.sections', 'repeater', {
+                        props: {
+                            rowPlaceholder: '{row}',
+                            newRow: { lines: {} },
+                            template: [
+                                field('data.sections.{row}.lines', 'repeater', {
+                                    props: {
+                                        rowPlaceholder: '{row:1}',
+                                        newRow: { qty: 1 },
+                                        template: [field('data.sections.{row}.lines.{row:1}.qty')],
+                                    },
+                                }),
+                            ],
+                        },
+                    }),
+                ],
+                { sections: {} },
+            ),
+        );
+
+        const section = store.addRow(store.nodes.get('data.sections')!);
+        await nextTick();
+
+        const line = store.addRow(store.nodes.get(`data.sections.${section}.lines`)!);
+        await nextTick();
+
+        expect(store.nodes.has(`data.sections.${section}.lines.${line}.qty`)).toBe(true);
+    });
 
     it('evaluates visibility conditions locally', () => {
         const { store, requests } = storeWithServer(() => ({}));

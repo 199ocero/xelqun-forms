@@ -1,0 +1,23 @@
+[
+    {
+        "name": "the first level leaves deeper placeholders alone",
+        "value": ["data.a.{row}.b.{row:1}.qty"],
+        "rowKey": "r1",
+        "placeholder": "{row}",
+        "expected": ["data.a.r1.b.{row:1}.qty"]
+    },
+    {
+        "name": "a deeper level leaves outer placeholders alone",
+        "value": ["data.a.{row}.b.{row:1}.qty"],
+        "rowKey": "r2",
+        "placeholder": "{row:1}",
+        "expected": ["data.a.{row}.b.r2.qty"]
+    },
+    {
+        "name": "every string below the value is replaced",
+        "value": [{ "path": "data.a.{row}.qty", "deps": ["data.a.{row}.price"], "size": 3 }],
+        "rowKey": "r1",
+        "placeholder": "{row}",
+        "expected": [{ "path": "data.a.r1.qty", "deps": ["data.a.r1.price"], "size": 3 }]
+    }
+]

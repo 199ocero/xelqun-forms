@@ -5,6 +5,7 @@ namespace Xelqun\Forms\Tests\Fixtures;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class Order extends Model
 {
@@ -24,5 +25,13 @@ class Order extends Model
     public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    /**
+     * @return MorphTo<Model, $this>
+     */
+    public function owner(): MorphTo
+    {
+        return $this->morphTo();
     }
 }

@@ -8,6 +8,11 @@ use Xelqun\Forms\Support\StatePath;
 /**
  * Writes form state inside server closures such as afterStateUpdated hooks.
  * Every write is sent back to the browser in the update patch.
+ *
+ * A write lasts for the current request. The browser shows the value, but on
+ * later requests a disabled or hidden field goes back to its server value,
+ * because the server can't tell the browser echoing this write from tampering.
+ * Closures should derive such values from fields the user can change.
  */
 final class Set
 {

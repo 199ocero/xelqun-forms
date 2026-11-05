@@ -78,7 +78,7 @@ abstract class Component
     public function visible(bool|Closure $condition = true): static
     {
         $this->hidden = $condition instanceof Closure
-            ? fn (): bool => ! $this->evaluate($condition)
+            ? static fn (Component $component): bool => ! $component->evaluate($condition)
             : ! $condition;
 
         return $this;
@@ -212,6 +212,21 @@ abstract class Component
     {
         for ($component = $this; $component !== null; $component = $component->getParent()) {
             if ($component->isHiddenStatically() || $component->isHiddenDynamically()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether a server rule could hide this component or one of its ancestors.
+     * Such a field's value only reaches the browser while the field is showing.
+     */
+    public function canBeHiddenOnServer(): bool
+    {
+        for ($component = $this; $component !== null; $component = $component->getParent()) {
+            if ($component->hidden !== false) {
                 return true;
             }
         }

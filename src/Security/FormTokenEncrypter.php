@@ -61,12 +61,12 @@ final class FormTokenEncrypter
             $record = $instance->newQuery()->findOrFail($token->recordKey);
         }
 
-        $form = $formClass::make($record, $token->context);
+        $form = new $formClass($record, $token->context);
 
         if (! $form->authorize(auth()->user(), $record)) {
             throw InvalidFormToken::make('this action is unauthorized');
         }
 
-        return $form;
+        return $form->fill();
     }
 }

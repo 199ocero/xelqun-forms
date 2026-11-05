@@ -1,8 +1,10 @@
 <?php
 
+use Illuminate\Support\Facades\DB;
 use Xelqun\Forms\Components\Repeater;
 use Xelqun\Forms\Tests\Fixtures\Order;
 use Xelqun\Forms\Tests\Fixtures\OrderForm;
+use Xelqun\Forms\Tests\Fixtures\SimpleOrderForm;
 
 function orderInput(array $items): array
 {
@@ -58,4 +60,34 @@ it('never updates rows that belong to another record', function () {
     ]));
 
     expect($foreignItem->fresh()->product)->toBe('Theirs');
+});
+
+/**
+ * Saves inside a transaction that fails once, as a retried deadlock would.
+ */
+function saveWithRetry(SimpleOrderForm $form, string $customer): void
+{
+    $attempt = 0;
+
+    DB::transaction(function () use ($form, $customer, &$attempt): void {
+        $form->save(['customer' => $customer]);
+
+        if (++$attempt === 1) {
+            throw new RuntimeException('Deadlock found when trying to get lock');
+        }
+    }, 2);
+}
+
+it('creates the record when a transaction retries the same form', function () {
+    saveWithRetry(SimpleOrderForm::make(), 'Ada');
+
+    expect(Order::query()->pluck('customer')->all())->toBe(['Ada']);
+});
+
+it('updates the record when a transaction retries the same form', function () {
+    $order = Order::query()->create(['customer' => 'Ada']);
+
+    saveWithRetry(SimpleOrderForm::make($order), 'Grace');
+
+    expect($order->fresh()->customer)->toBe('Grace');
 });

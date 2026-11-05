@@ -2,7 +2,7 @@
     "state": {
         "data": {
             "items": {
-                "<uuid>": {
+                "row-0": {
                     "qty": 2,
                     "subtotal": 4
                 }
@@ -110,13 +110,14 @@
                         "deps": []
                     }
                 ],
+                "rowPlaceholder": "{row}",
                 "rows": {
-                    "<uuid>": [
+                    "row-0": [
                         {
-                            "key": "data.items.<uuid>.qty",
+                            "key": "data.items.row-0.qty",
                             "type": "text-input",
                             "hidden": false,
-                            "path": "data.items.<uuid>.qty",
+                            "path": "data.items.row-0.qty",
                             "label": "Qty",
                             "hint": null,
                             "placeholder": null,
@@ -146,10 +147,10 @@
                             "deps": []
                         },
                         {
-                            "key": "data.items.<uuid>.subtotal",
+                            "key": "data.items.row-0.subtotal",
                             "type": "text-input",
                             "hidden": false,
-                            "path": "data.items.<uuid>.subtotal",
+                            "path": "data.items.row-0.subtotal",
                             "label": "Subtotal",
                             "hint": null,
                             "placeholder": null,
@@ -166,7 +167,7 @@
                                     "op": "*",
                                     "args": [
                                         {
-                                            "ref": "data.items.<uuid>.qty"
+                                            "ref": "data.items.row-0.qty"
                                         },
                                         {
                                             "lit": 2

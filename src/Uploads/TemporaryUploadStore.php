@@ -88,9 +88,12 @@ final class TemporaryUploadStore
     }
 
     /**
-     * Move the temporary file to its final disk and return the stored path.
+     * Copy the temporary file to its final disk and return the stored path.
+     *
+     * The temporary file stays until the caller deletes it. Every call makes a
+     * new copy at a new path, so the caller owns the file it gets back.
      */
-    public function finalize(string $id, string $disk, string $directory, string $visibility): string
+    public function promote(string $id, string $disk, string $directory, string $visibility): string
     {
         $metadata = $this->metadata($id) ?? throw new RuntimeException("Temporary upload [{$id}] does not exist.");
         $extension = $metadata['extension'];
@@ -99,13 +102,18 @@ final class TemporaryUploadStore
         $path = ltrim($directory.'/'.$filename, '/');
 
         $stream = $this->disk()->readStream($this->directory().'/'.$id);
-        Storage::disk($disk)->writeStream($path, $stream, ['visibility' => $visibility]);
 
-        if (is_resource($stream)) {
-            fclose($stream);
+        try {
+            $isStored = Storage::disk($disk)->writeStream($path, $stream, ['visibility' => $visibility]);
+        } finally {
+            if (is_resource($stream)) {
+                fclose($stream);
+            }
         }
 
-        $this->delete($id);
+        if ($isStored === false) {
+            throw new RuntimeException("Temporary upload [{$id}] could not be stored on disk [{$disk}].");
+        }
 
         return $path;
     }

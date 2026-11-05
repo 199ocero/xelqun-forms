@@ -11,7 +11,7 @@ use Xelqun\Forms\Uploads\TemporaryUploadStore;
 /**
  * Files are uploaded to a temporary endpoint as soon as they are picked, so
  * the state only ever holds a short token ("xq-tmp:...") or a stored path.
- * The file is moved to its final disk when the form is submitted.
+ * Saving the form stores the file on its final disk, see UploadBatch.
  */
 class FileUpload extends Field
 {
@@ -104,6 +104,16 @@ class FileUpload extends Field
         return $this->disk ?? (string) config('xelqun-forms.uploads.disk', 'public');
     }
 
+    public function getDirectory(): string
+    {
+        return $this->directory;
+    }
+
+    public function getVisibility(): string
+    {
+        return $this->visibility;
+    }
+
     /**
      * Rules for the uploaded file itself, checked by the upload endpoint.
      *
@@ -160,17 +170,6 @@ class FileUpload extends Field
                 }
             },
         ];
-    }
-
-    public function dehydrateState(mixed $value): mixed
-    {
-        $store = app(TemporaryUploadStore::class);
-
-        if (! is_string($value) || ! $store->isToken($value)) {
-            return $value;
-        }
-
-        return $store->finalize($store->idFromToken($value), $this->getDiskName(), $this->directory, $this->visibility);
     }
 
     protected function getProps(): array

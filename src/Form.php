@@ -4,11 +4,14 @@ namespace Xelqun\Forms;
 
 use Closure;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Database\Connection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use stdClass;
+use Throwable;
 use Xelqun\Forms\Components\Component;
 use Xelqun\Forms\Components\Field;
 use Xelqun\Forms\Components\FileUpload;
@@ -20,6 +23,7 @@ use Xelqun\Forms\Schema\SchemaVersion;
 use Xelqun\Forms\Security\FormToken;
 use Xelqun\Forms\Security\FormTokenEncrypter;
 use Xelqun\Forms\Support\StatePath;
+use Xelqun\Forms\Uploads\UploadBatch;
 use Xelqun\Forms\Validation\FormValidator;
 
 /**
@@ -130,6 +134,27 @@ class Form
     }
 
     /**
+     * Put the record back after a rollback. The model in memory can look saved
+     * while the database is not, and a retry would then write nothing.
+     *
+     * @param  TModel|null  $record
+     */
+    public function setRecord(?Model $record): void
+    {
+        $this->record = $record;
+    }
+
+    /**
+     * The connection this form's record is saved on.
+     */
+    public function getConnection(): Connection
+    {
+        return $this->record !== null || $this->model() !== null
+            ? $this->getModelInstance()->getConnection()
+            : DB::connection();
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function getContext(): array
@@ -181,9 +206,38 @@ class Form
             foreach ($this->mountedComponents as $index => $component) {
                 $component->mount($this, null, StatePath::ROOT, (string) $index);
             }
+
+            $this->ensureUniqueStatePaths($this->mountedComponents);
         }
 
         return $this->mountedComponents;
+    }
+
+    /**
+     * State, validation, live patches and the browser all address a field by
+     * its path, so two fields on one path would silently overwrite each other.
+     *
+     * @param  array<int, Component>  $components
+     */
+    private function ensureUniqueStatePaths(array $components): void
+    {
+        $paths = [];
+
+        self::eachField($components, function (Field $field) use (&$paths): void {
+            $path = $field->getStatePath();
+
+            if (isset($paths[$path])) {
+                throw new FormDefinitionException(
+                    "Two fields use the state path [{$path}]. Give them different names. To change a field's label, options or rules, use closures on one field.",
+                );
+            }
+
+            $paths[$path] = true;
+
+            if ($field instanceof Repeater) {
+                $this->ensureUniqueStatePaths($field->getTemplateComponents());
+            }
+        });
     }
 
     /**
@@ -217,6 +271,7 @@ class Form
         $this->walk(function (Component $component): void {
             if ($component instanceof Repeater) {
                 $component->discardUnsafeRows();
+                $component->restoreRowOrder();
             }
         });
 
@@ -266,6 +321,11 @@ class Form
         $values = StatePath::get($this->initialState, $pattern);
 
         return str_contains($pattern, '*') ? (array) $values : [$values];
+    }
+
+    public function hasInitialValue(string $path): bool
+    {
+        return Arr::has($this->initialState, $path);
     }
 
     /**
@@ -355,7 +415,7 @@ class Form
                 if (str_starts_with($key, $prefix)) {
                     $rowKey = explode('#', explode('.', substr($key, strlen($prefix)))[0])[0];
 
-                    if ($rowKey !== '' && $rowKey !== StatePath::ROW_PLACEHOLDER && Repeater::isSafeRowKey($rowKey)) {
+                    if ($rowKey !== '' && Repeater::isSafeRowKey($rowKey)) {
                         return $this->findComponent($key, $component->getRowComponents($rowKey));
                     }
                 }
@@ -436,7 +496,8 @@ class Form
     }
 
     /**
-     * The data with empty repeaters cast to objects, so JSON keeps "{}" instead of "[]".
+     * The data the browser receives: no value of a field hidden on the server,
+     * and empty repeaters cast to objects, so JSON keeps "{}" instead of "[]".
      *
      * @return array<string, mixed>|stdClass
      */
@@ -445,6 +506,16 @@ class Form
         $state = $this->state;
 
         $this->walk(function (Component $component) use (&$state): void {
+            if (! $component instanceof Field) {
+                return;
+            }
+
+            if ($component->isHiddenOnServer()) {
+                Arr::forget($state, $component->getStatePath());
+
+                return;
+            }
+
             if ($component instanceof Repeater && $component->getState() === []) {
                 data_set($state, $component->getStatePath(), new stdClass);
             }
@@ -487,6 +558,10 @@ class Form
      * values dropped, computed values recomputed, repeater rows as lists and
      * uploads moved to their final disk.
      *
+     * Uploads are final as soon as this returns. If you write the data yourself
+     * and that can fail, call this inside DB::transaction() so a rollback undoes
+     * them and the user can submit again. save() does this for you.
+     *
      * @param  Request|array<string, mixed>  $input
      * @return array<string, mixed>
      */
@@ -503,6 +578,21 @@ class Form
      */
     public function validateKeyed(Request|array $input): array
     {
+        $uploads = app(UploadBatch::class);
+        $data = $uploads->promote($this, $this->validateInput($input));
+        $uploads->settleWithTransaction($this->getConnection());
+
+        return $data;
+    }
+
+    /**
+     * Authorize and validate without touching any storage: uploads are still tokens.
+     *
+     * @param  Request|array<string, mixed>  $input
+     * @return array<string, mixed>
+     */
+    private function validateInput(Request|array $input): array
+    {
         abort_unless($this->authorize(auth()->user(), $this->record), 403);
 
         $data = $input instanceof Request ? $input->input(StatePath::ROOT, []) : ($input[StatePath::ROOT] ?? $input);
@@ -518,8 +608,16 @@ class Form
      */
     public function save(Request|array $input): Model
     {
-        $data = $this->validateKeyed($input);
-        $this->record = app(ModelPersister::class)->save($this, $data);
+        $uploads = app(UploadBatch::class);
+        $data = $uploads->promote($this, $this->validateInput($input));
+
+        try {
+            $this->record = app(ModelPersister::class)->save($this, $data, $uploads);
+        } catch (Throwable $exception) {
+            $uploads->discardUnlessSettled();
+
+            throw $exception;
+        }
 
         return $this->record;
     }

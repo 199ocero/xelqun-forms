@@ -11,7 +11,7 @@ const model = defineModel<string | number>();
     <TabsRoot
         v-model="model"
         data-slot="xq-tabs"
-        :unmount-on-hide="unmountOnHide ?? true"
+        :unmount-on-hide="unmountOnHide"
         :class="cn('gap-3 flex flex-col', props.class)"
     >
         <slot />

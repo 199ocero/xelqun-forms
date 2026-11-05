@@ -7,6 +7,7 @@ use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Validation\Rule;
 use LogicException;
 use Xelqun\Forms\Components\Concerns\HasOptions;
@@ -242,7 +243,7 @@ class Select extends Field
         $model = $this->getForm()->getModelInstanceFor($this);
         $relationship = $model->{$this->relationship}();
 
-        if (! $relationship instanceof BelongsTo) {
+        if (! $relationship instanceof BelongsTo || $relationship instanceof MorphTo) {
             throw new LogicException("Select relationship [{$this->relationship}] must be a BelongsTo relationship.");
         }
 

@@ -38,10 +38,7 @@ function nodeFor(object $component): string
 
     $schema = $form::make()->toSchema();
 
-    $json = json_encode(['state' => $schema['state'], 'components' => $schema['components']], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-
-    // Repeater rows get random UUID keys; replace them so snapshots stay stable.
-    return preg_replace('/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/', '<uuid>', (string) $json);
+    return (string) json_encode(['state' => $schema['state'], 'components' => $schema['components']], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
 }
 
 it('serializes each component to a stable node', function (object $component) {

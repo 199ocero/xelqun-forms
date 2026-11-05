@@ -3,11 +3,11 @@
 namespace Xelqun\Forms\Eloquent;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
 use Xelqun\Forms\Components\Component;
 use Xelqun\Forms\Components\Field;
 use Xelqun\Forms\Components\Repeater;
 use Xelqun\Forms\Form;
+use Xelqun\Forms\Uploads\UploadBatch;
 
 /**
  * Writes validated form data to a model and its relationships.
@@ -21,9 +21,16 @@ final class ModelPersister
      * @param  array<string, mixed>  $data  Validated, row-keyed data.
      * @return TModel
      */
-    public function save(Form $form, array $data): Model
+    public function save(Form $form, array $data, UploadBatch $uploads): Model
     {
-        return DB::transaction(function () use ($form, $data): Model {
+        $connection = $form->getConnection();
+
+        return $connection->transaction(function () use ($form, $data, $uploads, $connection): Model {
+            $uploads->settleWithTransaction($connection);
+
+            $recordBeforeSave = $form->getRecord() === null ? null : clone $form->getRecord();
+            $connection->afterRollBack(fn () => $form->setRecord($recordBeforeSave));
+
             $record = $form->getRecord() ?? $form->getModelInstance();
             $relationships = [];
             $attributes = [];

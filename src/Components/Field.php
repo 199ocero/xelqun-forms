@@ -295,6 +295,18 @@ abstract class Field extends Component
         $this->getForm()->setStateValue($this->getStatePath(), $value);
     }
 
+    /**
+     * The value this field had before any browser input. A null is a real
+     * value here. Only a row added in the browser has none, so it gets the default.
+     */
+    public function getServerState(): mixed
+    {
+        $form = $this->getForm();
+        $path = $this->getStatePath();
+
+        return $form->hasInitialValue($path) ? $form->getInitialValue($path) : $this->getDefaultState();
+    }
+
     public function isRequired(): bool
     {
         return (bool) $this->evaluate($this->required);
@@ -309,6 +321,11 @@ abstract class Field extends Component
     public function isDisabled(): bool
     {
         return (bool) $this->evaluate($this->disabled);
+    }
+
+    public function isDisabledStatically(): bool
+    {
+        return $this->disabled === true;
     }
 
     /**

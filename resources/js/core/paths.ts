@@ -3,6 +3,8 @@ import { isPlainObject } from './values';
 export const ROOT = 'data';
 export const ROW_PLACEHOLDER = '{row}';
 
+const ROW_PLACEHOLDER_PATTERN = /^\{row(:\d+)?\}$/;
+
 /**
  * Read a value by dot path. Paths containing "*" return a flat list,
  * matching Xelqun\Forms\Support\StatePath::get().
@@ -78,8 +80,12 @@ export function deletePath(state: Record<string, any>, path: string): void {
     }
 }
 
+function matchesAnySegment(segment: string): boolean {
+    return segment === '*' || ROW_PLACEHOLDER_PATTERN.test(segment);
+}
+
 /**
- * Whether two paths touch the same state ("*" and "{row}" match any segment).
+ * Whether two paths touch the same state ("*" and row placeholders match any segment).
  */
 export function overlaps(first: string, second: string): boolean {
     const a = first.split('.');
@@ -87,16 +93,7 @@ export function overlaps(first: string, second: string): boolean {
     const length = Math.min(a.length, b.length);
 
     for (let index = 0; index < length; index++) {
-        const left = a[index];
-        const right = b[index];
-
-        if (
-            left !== right &&
-            left !== '*' &&
-            right !== '*' &&
-            left !== ROW_PLACEHOLDER &&
-            right !== ROW_PLACEHOLDER
-        ) {
+        if (a[index] !== b[index] && !matchesAnySegment(a[index]) && !matchesAnySegment(b[index])) {
             return false;
         }
     }
@@ -109,10 +106,10 @@ export function startsWithPath(path: string, prefix: string): boolean {
 }
 
 /**
- * Deep-copy a value and replace every "{row}" placeholder in its strings.
+ * Deep-copy a value and replace one level's row placeholder in its strings.
  */
-export function replaceRow<T>(value: T, rowKey: string): T {
-    return JSON.parse(JSON.stringify(value).split(ROW_PLACEHOLDER).join(rowKey)) as T;
+export function replaceRow<T>(value: T, rowKey: string, placeholder = ROW_PLACEHOLDER): T {
+    return JSON.parse(JSON.stringify(value).split(placeholder).join(rowKey)) as T;
 }
 
 export function clone<T>(value: T): T {

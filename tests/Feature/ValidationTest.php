@@ -1,8 +1,13 @@
 <?php
 
 use Illuminate\Validation\ValidationException;
+use Xelqun\Forms\Components\TextInput;
+use Xelqun\Forms\Components\Toggle;
+use Xelqun\Forms\Conditions\When;
+use Xelqun\Forms\Form;
 use Xelqun\Forms\Tests\Fixtures\Country;
 use Xelqun\Forms\Tests\Fixtures\OrderForm;
+use Xelqun\Forms\Tests\Fixtures\RowVisibilityForm;
 
 beforeEach(function () {
     $this->country = Country::create(['name' => 'Philippines']);
@@ -34,6 +39,32 @@ it('keeps values of fields shown by conditions', function () {
     $data = OrderForm::make()->validate(['data' => orderData(['type' => 'business', 'company' => 'Acme'])]);
 
     expect($data['company'])->toBe('Acme');
+});
+
+it('evaluates a visible() closure against its own row', function () {
+    $data = RowVisibilityForm::make()->validate(['items' => [
+        'a' => ['kind' => 'custom', 'note' => 'Kept'],
+        'b' => ['kind' => 'plain', 'note' => 'Dropped'],
+    ]]);
+
+    expect($data['items'][0]['note'])->toBe('Kept')
+        ->and($data['items'][1])->not->toHaveKey('note');
+});
+
+it('leaves a field the user switched off out of computed values', function () {
+    $form = new class extends Form
+    {
+        public function schema(): array
+        {
+            return [
+                Toggle::make('has_fee'),
+                TextInput::make('fee')->numeric()->default(50)->visibleWhen(When::eq('has_fee', true)),
+                TextInput::make('total')->numeric()->computed('fee + 1')->disabled(),
+            ];
+        }
+    };
+
+    expect($form::make()->validate(['has_fee' => false, 'fee' => 9])['total'])->toBe(1);
 });
 
 it('recomputes computed values instead of trusting the client', function () {

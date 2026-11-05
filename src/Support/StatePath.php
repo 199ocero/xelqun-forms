@@ -11,6 +11,8 @@ final class StatePath
 
     public const string ROW_PLACEHOLDER = '{row}';
 
+    private const string ROW_PLACEHOLDER_PATTERN = '/^\{row(:\d+)?\}$/';
+
     /**
      * Resolve a path written by the developer against a container path.
      *
@@ -31,8 +33,24 @@ final class StatePath
     }
 
     /**
-     * Check whether two paths touch the same state. Wildcards ("*") match any
-     * segment, and a path overlaps every path below or above it.
+     * The placeholder for rows of a repeater nested inside $depth other
+     * repeaters. Each level has its own, so filling in a row key at one level
+     * leaves the others alone.
+     */
+    public static function rowPlaceholder(int $depth): string
+    {
+        return $depth === 0 ? self::ROW_PLACEHOLDER : '{row:'.$depth.'}';
+    }
+
+    public static function isRowPlaceholder(string $segment): bool
+    {
+        return preg_match(self::ROW_PLACEHOLDER_PATTERN, $segment) === 1;
+    }
+
+    /**
+     * Check whether two paths touch the same state. Wildcards ("*") and row
+     * placeholders match any segment, and a path overlaps every path below or
+     * above it.
      */
     public static function overlaps(string $first, string $second): bool
     {
@@ -44,13 +62,17 @@ final class StatePath
             $left = $firstSegments[$index];
             $right = $secondSegments[$index];
 
-            if ($left !== $right && $left !== '*' && $right !== '*'
-                && $left !== self::ROW_PLACEHOLDER && $right !== self::ROW_PLACEHOLDER) {
+            if ($left !== $right && ! self::matchesAnySegment($left) && ! self::matchesAnySegment($right)) {
                 return false;
             }
         }
 
         return true;
+    }
+
+    private static function matchesAnySegment(string $segment): bool
+    {
+        return $segment === '*' || self::isRowPlaceholder($segment);
     }
 
     /**
@@ -101,16 +123,16 @@ final class StatePath
     }
 
     /**
-     * Replace the row placeholder in every string of a serialized node.
+     * Replace one level's row placeholder in every string of a serialized node.
      *
      * @param  array<mixed>  $value
      * @return array<mixed>
      */
-    public static function replaceRow(array $value, string $rowKey): array
+    public static function replaceRow(array $value, string $rowKey, string $placeholder = self::ROW_PLACEHOLDER): array
     {
-        array_walk_recursive($value, function (mixed &$item) use ($rowKey): void {
+        array_walk_recursive($value, function (mixed &$item) use ($rowKey, $placeholder): void {
             if (is_string($item)) {
-                $item = str_replace(self::ROW_PLACEHOLDER, $rowKey, $item);
+                $item = str_replace($placeholder, $rowKey, $item);
             }
         });
 

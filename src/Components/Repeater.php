@@ -13,11 +13,17 @@ use Xelqun\Forms\Support\StatePath;
 
 /**
  * A list of rows that share one schema. Row state is keyed by stable string
- * keys (UUIDs, or "record-{id}" for related models), never by array index.
+ * keys, never by array index: "record-{id}" for related models, "stored-{hash}"
+ * for rows kept on the record, "row-{n}" for starter rows, and a UUID for rows
+ * added in the browser.
  */
 class Repeater extends Field
 {
     public const string RECORD_KEY_PREFIX = 'record-';
+
+    private const string STORED_ROW_KEY_PREFIX = 'stored-';
+
+    private const string STARTER_ROW_KEY_PREFIX = 'row-';
 
     private const string SAFE_ROW_KEY_PATTERN = '/^[A-Za-z0-9_-]+$/';
 
@@ -134,9 +140,26 @@ class Repeater extends Field
         return (string) ($this->evaluate($this->itemLabel) ?? 'Item');
     }
 
+    /**
+     * Stands for this repeater's row key in its template. Nested repeaters
+     * each use their own, or filling in one level would overwrite the others.
+     */
+    public function getRowPlaceholder(): string
+    {
+        $depth = 0;
+
+        for ($parent = $this->getParent(); $parent !== null; $parent = $parent->getParent()) {
+            if ($parent instanceof Repeater) {
+                $depth++;
+            }
+        }
+
+        return StatePath::rowPlaceholder($depth);
+    }
+
     protected function getChildContainer(): string
     {
-        return $this->getStatePath().'.'.StatePath::ROW_PLACEHOLDER;
+        return $this->getStatePath().'.'.$this->getRowPlaceholder();
     }
 
     protected function getChildContainerPattern(): string
@@ -239,9 +262,23 @@ class Repeater extends Field
         }
     }
 
-    public static function newRowKey(): string
+    /**
+     * Put rows back in the order the server filled them, with added rows after
+     * them. Reordering in the browser is only a button, so a repeater that may
+     * not be reordered has to enforce that here.
+     */
+    public function restoreRowOrder(): void
     {
-        return (string) Str::uuid();
+        $state = $this->getState();
+
+        if ($this->isOrderable || ! is_array($state)) {
+            return;
+        }
+
+        $filledRows = (array) $this->getForm()->getInitialValue($this->getStatePath());
+        $rows = array_replace(array_intersect_key($filledRows, $state), $state);
+
+        $this->getForm()->setStateValue($this->getStatePath(), $rows);
     }
 
     /**
@@ -287,7 +324,7 @@ class Repeater extends Field
             $rows = [];
 
             foreach ($items as $item) {
-                $rows[self::newRowKey()] = is_array($item) ? $item : [];
+                $rows[$this->filledRowKey($item, $rows)] = is_array($item) ? $item : [];
             }
 
             return $rows;
@@ -296,10 +333,66 @@ class Repeater extends Field
         $rows = [];
 
         for ($index = 0; $index < $this->defaultItems; $index++) {
-            $rows[self::newRowKey()] = null;
+            $rows[$this->filledRowKey(null, $rows)] = null;
         }
 
         return $rows;
+    }
+
+    /**
+     * The form is rebuilt on every request, so a key must come out the same
+     * each time or posted rows could not be matched to their server values.
+     *
+     * A stored row is keyed by its content, because other users can change the
+     * record: if another row is removed, this one keeps its key, and if this
+     * one changed, hasStaleRows() refuses it instead of guessing. The hash is
+     * keyed because rows can hold values the browser never sees.
+     *
+     * Starter rows are not shared with anyone, so their position is enough, and
+     * a default that differs per request such as now() can't make them stale.
+     *
+     * @param  array<string, mixed>  $rows  The rows keyed so far.
+     */
+    private function filledRowKey(mixed $item, array $rows): string
+    {
+        if (! $this->getForm()->getRecord()?->exists) {
+            return self::STARTER_ROW_KEY_PREFIX.count($rows);
+        }
+
+        $hash = hash_hmac('sha256', (string) json_encode($item), (string) config('app.key'));
+        $base = self::STORED_ROW_KEY_PREFIX.substr($hash, 0, 16);
+        $key = $base;
+
+        for ($copy = 1; array_key_exists($key, $rows); $copy++) {
+            $key = $base.'-'.$copy;
+        }
+
+        return $key;
+    }
+
+    /**
+     * Whether the browser posted a row the record no longer has. Its locked
+     * values can't be restored, so saving it would silently lose them.
+     */
+    private function hasStaleRows(): bool
+    {
+        $filledRows = (array) $this->getForm()->getInitialValue($this->getStatePath());
+
+        foreach ($this->getRowKeys() as $rowKey) {
+            if ($this->isRecordRowKey($rowKey) && ! array_key_exists($rowKey, $filledRows)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function isRecordRowKey(string $rowKey): bool
+    {
+        return str_starts_with($rowKey, self::STORED_ROW_KEY_PREFIX)
+            || ($this->relationship !== null
+                && $this->getForm()->getRecord()?->exists
+                && str_starts_with($rowKey, self::RECORD_KEY_PREFIX));
     }
 
     /**
@@ -326,7 +419,9 @@ class Repeater extends Field
         $state = [];
 
         Form::eachField($this->childComponents, function (Field $field) use (&$state): void {
-            $state[$field->getName()] = $field instanceof Repeater ? new stdClass : $field->getDefaultState();
+            if (! $field->isHiddenOnServer()) {
+                $state[$field->getName()] = $field instanceof Repeater ? new stdClass : $field->getDefaultState();
+            }
         });
 
         return $state;
@@ -343,6 +438,12 @@ class Repeater extends Field
         if ($this->maxItems !== null) {
             $rules[] = 'max:'.$this->maxItems;
         }
+
+        $rules[] = function (string $attribute, mixed $value, Closure $fail): void {
+            if ($this->hasStaleRows()) {
+                $fail(__(':attribute changed after you opened this form. Reload the page and try again.', ['attribute' => $this->getLabel()]));
+            }
+        };
 
         return [...$rules, ...$this->rules];
     }
@@ -371,6 +472,7 @@ class Repeater extends Field
 
         return [
             'template' => $template,
+            'rowPlaceholder' => $this->getRowPlaceholder(),
             'rows' => $rows === [] ? new stdClass : $rows,
             'newRow' => (object) $this->getNewRowState(),
             'minItems' => $this->minItems,

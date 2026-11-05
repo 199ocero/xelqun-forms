@@ -9,6 +9,8 @@ use Xelqun\Forms\Form;
 
 class DeniedForm extends Form
 {
+    public static bool $defaultRan = false;
+
     public function authorize(?Authenticatable $user, ?Model $record): bool
     {
         return false;
@@ -16,6 +18,10 @@ class DeniedForm extends Form
 
     public function schema(): array
     {
-        return [TextInput::make('name')];
+        return [TextInput::make('name')->default(function (): string {
+            self::$defaultRan = true;
+
+            return 'Ada';
+        })];
     }
 }

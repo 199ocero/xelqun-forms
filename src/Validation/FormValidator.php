@@ -19,6 +19,12 @@ use Xelqun\Forms\Support\StatePath;
  */
 final class FormValidator
 {
+    /**
+     * Passes in which a lock may be released again. Enough for real forms, whose
+     * locks settle quickly. After this they only grow, so prepare() always ends.
+     */
+    private const int RELEASING_PASSES = 5;
+
     /** @var array<string, array<int, mixed>> */
     private array $rules = [];
 
@@ -38,15 +44,52 @@ final class FormValidator
         $this->attributes = [];
         $this->kept = [];
 
-        $form->setData($data);
-        $this->replaceLockedValues($form, $form->getComponents(), true);
-        $form->recomputeComputedFields();
+        $this->prepare($form, $data);
 
         $this->collect($form->getComponents(), true, null);
 
         Validator::make($form->getState(), $this->rules, [], $this->attributes)->validate();
 
         return $this->dehydrate($form);
+    }
+
+    /**
+     * Load browser state into the form so server closures can trust what they
+     * read: fields the browser has no say over get their server value back, and
+     * computed values are recalculated. A field hidden in the browser with
+     * visibleWhen() only loses its posted value, because the user turned it off.
+     *
+     * Whether a field is locked can depend on another field that is locked, in
+     * any order, so this repeats from the posted data until the locks settle. A
+     * field wrongly hidden by a tampered value gets its own posted value back.
+     *
+     * Static hidden() and disabled() are locked before any closure runs, so no
+     * closure ever reads their posted value. A field locked by a closure can
+     * only be found by running closures, so those may read its posted value on
+     * the first pass and must not act on what they read. Only the result of
+     * the final pass decides anything.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function prepare(Form $form, array $data): void
+    {
+        $form->setData($data);
+
+        $posted = $form->getData();
+        $locks = $this->findLocks($form->getComponents(), [StatePath::ROOT => $posted], onlyStatic: true);
+        $this->applyLocks($form, $posted, $locks);
+
+        for ($pass = 0; ; $pass++) {
+            $found = $this->findLocks($form->getComponents(), [StatePath::ROOT => $posted]);
+            $next = $pass < self::RELEASING_PASSES ? $found : $locks + $found;
+
+            if ($this->describeLocks($next) === $this->describeLocks($locks)) {
+                return;
+            }
+
+            $locks = $next;
+            $this->applyLocks($form, $posted, $locks);
+        }
     }
 
     /**
@@ -81,18 +124,25 @@ final class FormValidator
     }
 
     /**
-     * Computed values must only see what the user may change: hidden fields lose
-     * their posted value, and disabled fields go back to their server value.
+     * Find the fields the browser has no say over.
+     *
+     * A field a closure hides has no value in the browser, so if it shows but
+     * nothing was posted for it, the server value stands in for one.
      *
      * @param  array<int, Component>  $components
+     * @param  array<string, mixed>  $posted  The posted state, under the "data" key.
+     * @return array<string, Field|null> State path => the field that gets its server
+     *                                   value back, or null to drop the posted value.
      */
-    private function replaceLockedValues(Form $form, array $components, bool $parentVisible): void
+    private function findLocks(array $components, array $posted, bool $parentVisible = true, bool $onlyStatic = false): array
     {
+        $locks = [];
+
         foreach ($components as $component) {
-            $visible = $parentVisible && $component->isVisibleInState();
+            $visible = $parentVisible && ($onlyStatic ? ! $component->isHiddenStatically() : $component->isVisibleInState());
 
             if (! $component instanceof Field) {
-                $this->replaceLockedValues($form, $component->getChildComponents(), $visible);
+                $locks += $this->findLocks($component->getChildComponents(), $posted, $visible, $onlyStatic);
 
                 continue;
             }
@@ -100,23 +150,61 @@ final class FormValidator
             $path = $component->getStatePath();
 
             if (! $visible) {
-                $form->forgetStateValue($path);
+                $locks[$path] = $onlyStatic || $component->isHiddenOnServer() ? $component : null;
 
                 continue;
             }
 
-            if ($component->isDisabledInState() && $component->getComputed() === null) {
-                $form->setStateValue($path, $form->getInitialValue($path) ?? $component->getDefaultState());
+            $disabled = $onlyStatic ? $component->isDisabledStatically() : $component->isDisabledInState();
+            $withheld = $component->canBeHiddenOnServer() && ! Arr::has($posted, $path);
+
+            if (($disabled && $component->getComputed() === null) || $withheld) {
+                $locks[$path] = $component;
 
                 continue;
             }
 
             if ($component instanceof Repeater) {
                 foreach ($component->getRows() as $rowComponents) {
-                    $this->replaceLockedValues($form, $rowComponents, true);
+                    $locks += $this->findLocks($rowComponents, $posted, true, $onlyStatic);
                 }
             }
         }
+
+        return $locks;
+    }
+
+    /**
+     * What makes two sets of locks the same: the paths, and how each is locked.
+     *
+     * @param  array<string, Field|null>  $locks
+     * @return array<string, bool>
+     */
+    private function describeLocks(array $locks): array
+    {
+        return array_map(fn (?Field $field): bool => $field !== null, $locks);
+    }
+
+    /**
+     * Start again from the posted data with these locks in place. Every locked
+     * value goes first, so a default closure can't read a posted one.
+     *
+     * @param  array<string, mixed>  $posted
+     * @param  array<string, Field|null>  $locks
+     */
+    private function applyLocks(Form $form, array $posted, array $locks): void
+    {
+        $form->setData($posted);
+
+        foreach (array_keys($locks) as $path) {
+            $form->forgetStateValue($path);
+        }
+
+        foreach (array_filter($locks) as $path => $field) {
+            $form->setStateValue($path, $field->getServerState());
+        }
+
+        $form->recomputeComputedFields();
     }
 
     /**

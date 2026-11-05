@@ -1,6 +1,6 @@
 # Xelqun Forms: planning document
 
-> Status: approved plan (2026-10-28), implemented through Milestone 9. See "Implementation status" at the end.
+> Status: approved plan (2026-10-28), implemented through Milestone 9. Parity work continues in [`parity-plan.md`](parity-plan.md), through Milestone 10. See "Implementation status" at the end.
 
 ## Context
 
@@ -440,7 +440,27 @@ Milestones 0–9 are built and tested. Milestone 9 added failure and loading fee
 | File upload inside a repeater row | browser test, package `UploadTest` |
 | Server errors on the correct nested field | browser tests (`Price (Item 2)`), package `ValidationTest` |
 
-**Test counts:** package Pest 163, package Vitest 145, playground Pest 32 (1 unit + 13 feature + 18 browser).
+**Test counts:** package Pest 274, package Vitest 180, playground feature and browser 38.
+
+### Milestone 10: foundations
+
+The first milestone of [`parity-plan.md`](parity-plan.md). It changes no public field API.
+
+- **One preparation step.** `FormValidator::prepare()` now runs for update, search and validate, so the values that decide anything are server values. Static `hidden()` and `disabled()` are locked before any closure runs. The rest repeats from the posted data until the locks settle, so a closure can safely read a locked field declared after it. After five passes locks can only be added, so it always ends and a long chain can't stop partway.
+- **Hidden values stay on the server.** A field hidden with `hidden()` sends no value to the browser, in the page state, in `newRow` or in a patch from a hook. Closures still read its server value. When a closure reveals the field, the patch brings the value along. `visibleWhen()` is different: the browser evaluates it, so it needs the value, and a field the user switched off simply stops counting.
+- **Uploads survive a failed save.** `UploadBatch` copies files before the transaction and deletes temporary files only after commit, on the connection the record is saved on. A real rollback deletes the copies, including one from a transaction around `save()`, and the tokens stay valid. An exception after the commit leaves the files alone. Each save gets its own copy, so a failed save can't delete another save's file, and a disk that refuses a file fails the save.
+- **Nesting-safe rows.** Each repeater level has its own placeholder (`{row}`, `{row:1}`), sent as `props.rowPlaceholder`. Starter rows are keyed `row-{n}`, and rows stored on a record `stored-{hash}` from their content, so a rebuilt form recognises them. If another user changed or removed a stored or related row, submitting it fails with a validation error asking the user to reload, instead of losing its locked values.
+- **One field per path.** Two fields on one state path now throw a `FormDefinitionException`, because state, validation, patches and the browser all address a field by its path. To vary a field, use closures on one field. Supporting duplicates would need a change to how nodes are keyed.
+- **Smaller fixes.** `visible(Closure)` reads the row it belongs to, closures no longer run before `authorize()`, `orderable(false)` is enforced on the server, `Select` refuses `MorphTo`, a locked `NULL` column stays `NULL`, retrying `save()` on the same form after a rollback writes the record, and the first error gets focus, including in a closed tab and after rows move.
+
+Limits to keep in mind:
+
+- A `computed()` expression runs in the browser too, and can't read a `hidden()` value there. The browser then shows a different total from the one the server saves. If a total depends on a hidden value, calculate it in a server closure.
+- A field locked by a closure can only be found by running closures, so on the first pass `hidden()` and `disabled()` closures may read a posted value that later gets locked. Only the final pass decides anything, but these closures must not act on what they read. Static `hidden()` and `disabled()` have no such window.
+- `validate()` makes uploads final as soon as it returns. Callers who write the data themselves should wrap it in `DB::transaction()`; `save()` does this for them.
+- A value a hook writes into a disabled or hidden field lasts one request. Later requests read the server's value, because the server can't tell the browser echoing it from tampering. Revisit in M12.
+- Stale rows are only detected for rows the browser posts. A row another user added is not posted, so saving still replaces the list without it.
+- `hidden()` and `disabled()` closures run on every update and search, usually twice when a closure locks a field.
 
 ### Where the build differs from the plan
 - **Patches have no `add`/`remove`.** A component hidden by a server closure is sent as a stub (`{ key, type, hidden: true, deps }`) and later patched to a full node, which keeps every key stable.

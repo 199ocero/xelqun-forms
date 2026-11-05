@@ -2,6 +2,7 @@
 
 namespace Xelqun\Forms\Live;
 
+use Illuminate\Support\Arr;
 use stdClass;
 use Xelqun\Forms\Components\Component;
 use Xelqun\Forms\Components\Field;
@@ -9,6 +10,7 @@ use Xelqun\Forms\Components\Repeater;
 use Xelqun\Forms\Form;
 use Xelqun\Forms\Schema\SchemaVersion;
 use Xelqun\Forms\Support\StatePath;
+use Xelqun\Forms\Validation\FormValidator;
 
 /**
  * Handles one live round-trip: run hooks for the changed paths, re-run only
@@ -16,6 +18,8 @@ use Xelqun\Forms\Support\StatePath;
  */
 final class UpdateProcessor
 {
+    public function __construct(private readonly FormValidator $validator) {}
+
     /**
      * @param  array<string, mixed>  $data  The browser's current form data.
      * @param  array<int, string>  $changed  Paths the user changed.
@@ -24,7 +28,7 @@ final class UpdateProcessor
      */
     public function process(Form $form, array $data, array $changed, array $dependencies, int $sequence): array
     {
-        $form->setData($data);
+        $this->validator->prepare($form, $data);
 
         foreach ($changed as $path) {
             $component = $form->findComponent($path);
@@ -37,6 +41,7 @@ final class UpdateProcessor
         $setPaths = $form->getSetPaths();
         $triggers = array_values(array_unique([...$changed, ...$setPaths]));
         $schema = [];
+        $revealed = [];
 
         foreach ($this->affectedKeys($form, $triggers, $setPaths, $dependencies) as $key) {
             $component = $form->findComponent($key);
@@ -49,14 +54,21 @@ final class UpdateProcessor
 
             if ($node !== null) {
                 $schema[$key] = $node;
+                array_push($revealed, ...$this->findRevealedPaths($component, $data));
             }
         }
 
         $set = [];
 
-        foreach ($setPaths as $path) {
+        foreach (array_unique([...$setPaths, ...$revealed]) as $path) {
+            $component = $form->findComponent($path);
+
+            if ($component instanceof Field && $component->isHiddenOnServer()) {
+                continue;
+            }
+
             $value = $form->getStateValue($path);
-            $set[$path] = $value === [] && $form->findComponent($path) instanceof Repeater ? new stdClass : $value;
+            $set[$path] = $value === [] && $component instanceof Repeater ? new stdClass : $value;
         }
 
         return [
@@ -66,6 +78,29 @@ final class UpdateProcessor
             'schema' => $schema === [] ? new stdClass : $schema,
             'errors' => new stdClass,
         ];
+    }
+
+    /**
+     * A field hidden on the server has no value in the browser, so the moment
+     * it shows, the patch has to bring its value along.
+     *
+     * @param  array<string, mixed>  $data  The browser's current form data.
+     * @return array<int, string>
+     */
+    private function findRevealedPaths(Component $component, array $data): array
+    {
+        $paths = [];
+        $posted = [StatePath::ROOT => $data];
+
+        Form::eachField([$component], function (Field $field) use ($posted, &$paths): void {
+            $path = $field->getStatePath();
+
+            if (! Arr::has($posted, $path)) {
+                $paths[] = $path;
+            }
+        });
+
+        return $paths;
     }
 
     /**

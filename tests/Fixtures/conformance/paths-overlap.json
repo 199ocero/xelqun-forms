@@ -1,0 +1,15 @@
+[
+    { "name": "same path", "first": "data.a", "second": "data.a", "expected": true },
+    { "name": "different path", "first": "data.a", "second": "data.b", "expected": false },
+    { "name": "a parent overlaps its child", "first": "data.items", "second": "data.items.r1.qty", "expected": true },
+    { "name": "a wildcard matches a row", "first": "data.items.*.qty", "second": "data.items.r1.qty", "expected": true },
+    { "name": "a wildcard does not match another field", "first": "data.items.*.qty", "second": "data.items.r1.price", "expected": false },
+    { "name": "the first level placeholder matches a row", "first": "data.items.{row}.qty", "second": "data.items.r1.qty", "expected": true },
+    { "name": "a deeper placeholder matches a row", "first": "data.a.r1.b.{row:1}.qty", "second": "data.a.r1.b.r2.qty", "expected": true },
+    { "name": "a deeper placeholder does not match another field", "first": "data.a.r1.b.{row:1}.qty", "second": "data.a.r1.b.r2.price", "expected": false },
+    { "name": "a deeper placeholder does not match another outer row", "first": "data.a.r1.b.{row:1}.qty", "second": "data.a.r9.b.r2.qty", "expected": false },
+    { "name": "placeholders of different depths match each other", "first": "data.a.{row}.b.{row:1}", "second": "data.a.{row:1}.b.{row}", "expected": true },
+    { "name": "two digit depths are placeholders", "first": "data.a.{row:12}", "second": "data.a.r1", "expected": true },
+    { "name": "a malformed depth is a plain segment", "first": "data.a.{row:}", "second": "data.a.r1", "expected": false },
+    { "name": "a named placeholder is a plain segment", "first": "data.a.{row:x}", "second": "data.a.r1", "expected": false }
+]
