@@ -1,8 +1,18 @@
-# Xelqun Forms
+<p align="center">
+    <img src="https://raw.githubusercontent.com/199ocero/xelqun-forms/main/.github/art/banner.png" alt="Xelqun Forms: PHP-defined forms for Laravel, Inertia and Vue" width="100%">
+</p>
 
-PHP-defined, schema-driven forms for **Laravel + Inertia + Vue**. You describe a form in PHP, the package turns it into a versioned JSON schema, and generic Vue components render it. No Vue to write for normal forms.
+<p align="center">
+    <a href="https://packagist.org/packages/xelqun/forms"><img src="https://img.shields.io/packagist/v/xelqun/forms?label=packagist&color=414fd2" alt="Packagist version"></a>
+    <a href="https://www.npmjs.com/package/@xelqun/forms"><img src="https://img.shields.io/npm/v/@xelqun/forms?label=npm&color=414fd2" alt="npm version"></a>
+    <a href="https://packagist.org/packages/xelqun/forms/stats"><img src="https://img.shields.io/packagist/dt/xelqun/forms?color=414fd2" alt="Total downloads"></a>
+</p>
 
-> **Status: pre-alpha.** The API will change. Built and tested against Laravel 13, Inertia 3, Vue 3.5 and Tailwind 4.
+Describe a form in PHP and generic Vue components render it. Normal forms need no Vue at all.
+
+> **Pre-alpha:** the API will change. Requires Laravel 13, Inertia 3, Vue 3.5 and Tailwind 4.
+
+## Example
 
 ```php
 class OrderForm extends Form
@@ -11,13 +21,7 @@ class OrderForm extends Form
     {
         return [
             TextInput::make('customer')->required(),
-            Select::make('country_id')->relationship('country', 'name')
-                ->afterStateUpdated(fn (Set $set) => $set('state_id', null)),
-            Select::make('state_id')
-                ->options(fn (Get $get) => State::where('country_id', $get('country_id'))->pluck('name', 'id')),
-            Section::make('Business')->visibleWhen(When::eq('type', 'business'))->schema([
-                TextInput::make('company')->requiredWhen(When::eq('type', 'business')),
-            ]),
+            Select::make('country_id')->relationship('country', 'name'),
             Repeater::make('items')->relationship()->schema([
                 TextInput::make('qty')->numeric(),
                 TextInput::make('price')->numeric(),
@@ -29,13 +33,13 @@ class OrderForm extends Form
 }
 ```
 
-## How it works
+## Features
 
-- **Three tiers of rules.** Declarative conditions (`visibleWhen`, `requiredWhen`, `disabledWhen`) and calculations (`computed('qty * price')`) run in the browser with no server call. The server re-checks every condition, drops hidden values and recomputes every total on submit. Conditional text does the same for wording: `->placeholder(When::eq('is_gift', true)->then('Add a gift message…')->else('Anything we should know?'))` also works on `label()` and `hint()`, and costs no request. Server closures (`options(fn (Get $get) => ...)`, `afterStateUpdated`) run only on the server, and any field they read through `Get` sends an update when it changes.
-- **Automatic dependency tracking.** Closures read state through `Get`, which records what they read. The browser calls the server only when one of those paths changes, and the response is a small patch that is merged in place, so focus and cursor position are kept.
-- **Secure by default.** Forms are rebuilt on the server from an encrypted token (never a class name from the client). Every endpoint re-runs `authorize()` and validation.
-- **Stable row keys.** Repeater rows are keyed by UUIDs (or `record-{id}`), so Laravel validation errors map straight onto nested fields.
-- **Uploads stay out of the form state.** Files upload as soon as they are picked, and the state only holds a short token until the form is saved.
+- **Write PHP, not Vue.** Normal forms need no frontend code.
+- **Instant browser rules.** Conditions and calculations run without a server call, and the server re-checks them on submit.
+- **Small server updates.** Dependent fields update through small patches that keep focus and cursor position.
+- **Secure by default.** Forms rebuild from an encrypted token, and every endpoint re-runs `authorize()` and validation.
+- **Repeaters and uploads included.** Nested rows map to validation errors, and files upload as soon as they're picked.
 
 ## Installation
 
@@ -43,26 +47,9 @@ class OrderForm extends Form
 composer require xelqun/forms && php artisan xelqun-forms:install
 ```
 
-The installer adds the matching version of the `@xelqun/forms` npm package with your package manager (npm, pnpm, Yarn or Bun, detected from the lockfile). It then adds the plugin to `resources/js/app.ts` and the stylesheet to `resources/css/app.css`. It's safe to run again, so run it after `composer update` to bring the npm package up to the same version.
+The installer adds the matching `@xelqun/forms` npm package and sets up `resources/js/app.ts` and `resources/css/app.css`.
 
-Use `--config` to publish the config file, or `--without-node` to skip the npm step. If the installer can't edit a file safely, it leaves the file alone and prints the step to do by hand:
-
-```ts
-// resources/js/app.ts
-import { createXelqunForms } from '@xelqun/forms';
-
-createInertiaApp({
-    withApp: (app) => app.use(createXelqunForms()),
-});
-```
-
-```css
-/* resources/css/app.css */
-@import 'tailwindcss';
-@import '@xelqun/forms/style.css';
-```
-
-Then render a form:
+## Usage
 
 ```php
 // controller
@@ -88,29 +75,10 @@ defineProps<{ form: FormSchema; orderId: number }>();
 </template>
 ```
 
-Section titles start at `h2`. If the form sits lower in your page's heading order, set it with `<XqForm :heading-level="3" />`.
+## Before going to production
 
-Components use their own `--xq-*` design tokens and `Xq*` names, so they work next to an app's own shadcn-vue components. Dark mode follows a `.dark` class or `[data-xq-theme=dark]`.
-
-## Security
-
-- **Schedule the cleanup.** Temporary uploads stay on disk until `php artisan xelqun-forms:prune-uploads` removes them, so run it from your scheduler.
-- **Authorize in `authorize()`.** `validate()`, `save()` and every internal endpoint call it, and it allows everything by default.
-- **Use `hidden()` to protect a field, not `visibleWhen()`.** `visibleWhen()` runs against state the browser controls. `hidden()` also blocks the field's search, upload and hooks.
-- **`Hidden` fields are not secret or read-only.** Their value comes back from the browser, so use `disabled()` for values users must not change.
-- **A disabled field submits what it was filled with**, even with `dehydrated()`, because the browser can't be trusted to send it back unchanged. To save a value the server derives, set it in `mutateBeforeSave()`.
-- **Limit uploads.** Without `acceptedFileTypes()` or `image()`, a field accepts any file except types a web server may run or a browser may treat as a page.
-
-## Development
-
-```bash
-composer install && vendor/bin/pest          # PHP tests
-npm install && npx vp test                   # Vitest
-vendor/bin/pint && vendor/bin/phpstan analyse
-npx vp check && npx vue-tsc --noEmit
-```
-
-The conformance fixtures in `tests/Fixtures/conformance` run in both Pest and Vitest, so the PHP and browser evaluators always agree. See [`docs/forms-plan.md`](docs/forms-plan.md) for the design.
+- **Add your rules to `authorize()`.** It allows everything by default.
+- **Schedule `php artisan xelqun-forms:prune-uploads`.** Temporary uploads stay on disk until it runs.
 
 ## License
 
