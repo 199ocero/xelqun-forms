@@ -1,6 +1,6 @@
 # Xelqun Forms: planning document
 
-> Status: approved plan (2026-10-28), implemented through Milestone 9. Parity work continues in [`parity-plan.md`](parity-plan.md), through Milestone 10. See "Implementation status" at the end.
+> Status: approved plan (2026-10-28), implemented through Milestone 9. Parity work continues in [`parity-plan.md`](parity-plan.md), through Milestone 11. See "Implementation status" at the end.
 
 ## Context
 
@@ -440,7 +440,7 @@ Milestones 0–9 are built and tested. Milestone 9 added failure and loading fee
 | File upload inside a repeater row | browser test, package `UploadTest` |
 | Server errors on the correct nested field | browser tests (`Price (Item 2)`), package `ValidationTest` |
 
-**Test counts:** package Pest 274, package Vitest 180, playground feature and browser 38.
+**Test counts:** package Pest 388, package Vitest 213, playground feature and browser 42.
 
 ### Milestone 10: foundations
 
@@ -461,6 +461,32 @@ Limits to keep in mind:
 - A value a hook writes into a disabled or hidden field lasts one request. Later requests read the server's value, because the server can't tell the browser echoing it from tampering. Revisit in M12.
 - Stale rows are only detected for rows the browser posts. A row another user added is not posted, so saving still replaces the list without it.
 - `hidden()` and `disabled()` closures run on every update and search, usually twice when a closure locks a field.
+
+### Milestone 11: plugin foundation
+
+The package can now be extended from outside. The proof is `tests/Fixtures/ExamplePlugin`, a separate package with a namespaced type, search, uploads, its own saving, a validation rule and a translation. The playground installs it with `xelqun-forms:plugin`, and a browser test uses it, with no change to package source. Authors start from [`plugins.md`](plugins.md).
+
+- **Contracts.** `HasSearchResults`, `AcceptsUploads`, `ContainsRows`, `PersistsItself` and `NeedsServer` replace every check on a concrete field. Built-in fields use them too, and two tests fail if such a check comes back, in PHP or in the client core.
+- **`Repeater` is a client of its own contracts.** Its HasMany sync moved from `ModelPersister` to `Repeater::persist()`. A plugin field inside a relationship row gets `persist()` with the row's model. A repeater nested in such a row doesn't save its rows until M16.
+- **Uploads fail closed.** `HandlesUploads` holds the rules `FileUpload` used to own, and `UploadBatch` re-checks a token's scope before storing it, so a plugin that leaves the rules out still can't copy another field's upload.
+- **The client reads `containsRows`** on a node instead of its type. It is a new optional key, so `$xq` stays 1.
+- **`createXelqunForms({ plugins })`** registers plugins. A collision throws in development and is logged in production, where the first registration stays. `replaces: [...]` is the explicit flag from decision 18, and it only works on built-in fields. `setup({ app })` gets no access to the registry, so it can't get around these rules.
+- **`xelqun-forms:plugin`** reads `extra.xelqun` and validates it, because those values reach a shell command and the app's source. It ignores comments, and refuses spread options or a comment inside the call rather than guess. It shares its patching with `xelqun-forms:install`.
+- **`make:xelqun-field`** creates a PHP class and a Vue component. The Vue stubs are real files that Vitest mounts, so a broken stub fails CI.
+- **Also added:** `configureUsing()`, `Macroable` on every component, translations under `xelqun-forms::messages`, `@api` tags, `InteractsWithForms` and `@xelqun/forms/testing`.
+
+Changes that can break existing code, for the release notes:
+
+- `Repeater::isSafeRowKey()` moved to `StatePath::isSafeRowKey()`.
+- `Repeater::discardUnsafeRows()` and `restoreRowOrder()` are private. Call `normalizePostedRows()`.
+- A hand-built node with rows needs `containsRows: true`.
+- Package messages moved to translation keys, so a JSON translation of the old English text no longer applies.
+
+Limits to keep in mind:
+
+- The plugin starter is stubs and the example plugin. A public starter repo needs your go-ahead, because it's a new public GitHub repo.
+- `make:xelqun-field` writes into `app/` and `resources/js/forms`, so a plugin author moves the files into the plugin.
+- Plugin limits are listed at the end of [`plugins.md`](plugins.md). The main ones: one file per `AcceptsUploads` field until M17, no stage before the record is saved until M13, and no saving of nested relationship rows until M16.
 
 ### Where the build differs from the plan
 - **Patches have no `add`/`remove`.** A component hidden by a server closure is sent as a stub (`{ key, type, hidden: true, deps }`) and later patched to a full node, which keeps every key stable.

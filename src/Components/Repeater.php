@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 use LogicException;
 use stdClass;
+use Xelqun\Forms\Contracts\ContainsRows;
+use Xelqun\Forms\Contracts\PersistsItself;
 use Xelqun\Forms\Form;
 use Xelqun\Forms\Support\StatePath;
 
@@ -16,16 +18,16 @@ use Xelqun\Forms\Support\StatePath;
  * keys, never by array index: "record-{id}" for related models, "stored-{hash}"
  * for rows kept on the record, "row-{n}" for starter rows, and a UUID for rows
  * added in the browser.
+ *
+ * @api Extend this to build a field with rows.
  */
-class Repeater extends Field
+class Repeater extends Field implements ContainsRows, PersistsItself
 {
     public const string RECORD_KEY_PREFIX = 'record-';
 
     private const string STORED_ROW_KEY_PREFIX = 'stored-';
 
     private const string STARTER_ROW_KEY_PREFIX = 'row-';
-
-    private const string SAFE_ROW_KEY_PATTERN = '/^[A-Za-z0-9_-]+$/';
 
     protected ?string $relationship = null;
 
@@ -137,7 +139,7 @@ class Repeater extends Field
 
     public function getItemLabel(): string
     {
-        return (string) ($this->evaluate($this->itemLabel) ?? 'Item');
+        return (string) ($this->evaluate($this->itemLabel) ?? __('xelqun-forms::messages.repeater.item'));
     }
 
     /**
@@ -149,7 +151,7 @@ class Repeater extends Field
         $depth = 0;
 
         for ($parent = $this->getParent(); $parent !== null; $parent = $parent->getParent()) {
-            if ($parent instanceof Repeater) {
+            if ($parent instanceof ContainsRows) {
                 $depth++;
             }
         }
@@ -236,18 +238,16 @@ class Repeater extends Field
         return $rows;
     }
 
-    /**
-     * Row keys become part of state paths, so "." or "*" in one would reach other rows.
-     */
-    public static function isSafeRowKey(string $rowKey): bool
+    public function normalizePostedRows(): void
     {
-        return preg_match(self::SAFE_ROW_KEY_PATTERN, $rowKey) === 1;
+        $this->discardUnsafeRows();
+        $this->restoreRowOrder();
     }
 
     /**
      * Remove rows the browser could not have created, before anything reads them.
      */
-    public function discardUnsafeRows(): void
+    private function discardUnsafeRows(): void
     {
         $state = $this->getState();
 
@@ -255,7 +255,7 @@ class Repeater extends Field
             return;
         }
 
-        $rows = array_filter($state, fn (int|string $rowKey): bool => self::isSafeRowKey((string) $rowKey), ARRAY_FILTER_USE_KEY);
+        $rows = array_filter($state, fn (int|string $rowKey): bool => StatePath::isSafeRowKey((string) $rowKey), ARRAY_FILTER_USE_KEY);
 
         if (count($rows) !== count($state)) {
             $this->getForm()->setStateValue($this->getStatePath(), $rows);
@@ -267,7 +267,7 @@ class Repeater extends Field
      * them. Reordering in the browser is only a button, so a repeater that may
      * not be reordered has to enforce that here.
      */
-    public function restoreRowOrder(): void
+    private function restoreRowOrder(): void
     {
         $state = $this->getState();
 
@@ -409,6 +409,90 @@ class Repeater extends Field
         return $relationship;
     }
 
+    public function getRowModel(Model $parent): ?Model
+    {
+        return $this->relationship === null ? null : $this->getRelationshipInstance($parent)->getRelated();
+    }
+
+    public function shouldPersistItself(): bool
+    {
+        return $this->relationship !== null;
+    }
+
+    /**
+     * Create, update and delete related rows. Rows keyed "record-{id}" update
+     * an existing related model, but only one that belongs to this record.
+     */
+    public function persist(Model $record, mixed $state): void
+    {
+        $relationship = $this->getRelationshipInstance($record);
+        $existing = $relationship->get()->keyBy(fn (Model $model): string => (string) $model->getKey());
+        $kept = [];
+        $order = 0;
+
+        foreach ((array) $state as $rowKey => $row) {
+            $row = (array) $row;
+            $attributes = array_filter($row, $this->isColumn(...), ARRAY_FILTER_USE_KEY);
+
+            if ($this->orderColumn !== null) {
+                $attributes[$this->orderColumn] = $order++;
+            }
+
+            $recordKey = str_starts_with((string) $rowKey, self::RECORD_KEY_PREFIX)
+                ? substr((string) $rowKey, strlen(self::RECORD_KEY_PREFIX))
+                : null;
+
+            if ($recordKey !== null && $existing->has($recordKey)) {
+                $model = $existing->get($recordKey);
+                $kept[] = $recordKey;
+            } else {
+                $model = $relationship->make();
+            }
+
+            $model->forceFill($attributes)->save();
+
+            $this->persistRowFields($model, (string) $rowKey, $row);
+        }
+
+        $existing->except($kept)->each(fn (Model $model) => $model->delete());
+    }
+
+    /**
+     * Fields of a row that write their own value do it now that the row is saved.
+     * Nested repeaters don't save their rows yet: that arrives with nested
+     * repeaters as a feature, along with the tests that make it safe.
+     *
+     * @param  array<string, mixed>  $row
+     */
+    private function persistRowFields(Model $model, string $rowKey, array $row): void
+    {
+        Form::eachField($this->getRowComponents($rowKey), function (Field $field) use ($model, $row): void {
+            if ($field instanceof ContainsRows || ! $field instanceof PersistsItself) {
+                return;
+            }
+
+            if ($field->shouldPersistItself() && array_key_exists($field->getName(), $row)) {
+                $field->persist($model, $row[$field->getName()]);
+            }
+        });
+    }
+
+    private function isColumn(string $name): bool
+    {
+        $isColumn = false;
+
+        Form::eachField($this->childComponents, function (Field $field) use ($name, &$isColumn): void {
+            $writesItself = $field instanceof ContainsRows
+                || ($field instanceof PersistsItself && $field->shouldPersistItself());
+
+            if ($field->getName() === $name && ! $writesItself) {
+                $isColumn = true;
+            }
+        });
+
+        return $isColumn;
+    }
+
     /**
      * Default state for a row the user adds in the browser.
      *
@@ -420,7 +504,7 @@ class Repeater extends Field
 
         Form::eachField($this->childComponents, function (Field $field) use (&$state): void {
             if (! $field->isHiddenOnServer()) {
-                $state[$field->getName()] = $field instanceof Repeater ? new stdClass : $field->getDefaultState();
+                $state[$field->getName()] = $field instanceof ContainsRows ? new stdClass : $field->getDefaultState();
             }
         });
 
@@ -441,7 +525,7 @@ class Repeater extends Field
 
         $rules[] = function (string $attribute, mixed $value, Closure $fail): void {
             if ($this->hasStaleRows()) {
-                $fail(__(':attribute changed after you opened this form. Reload the page and try again.', ['attribute' => $this->getLabel()]));
+                $fail(__('xelqun-forms::messages.repeater.stale', ['attribute' => $this->getLabel()]));
             }
         };
 
@@ -477,7 +561,7 @@ class Repeater extends Field
             'newRow' => (object) $this->getNewRowState(),
             'minItems' => $this->minItems,
             'maxItems' => $this->maxItems,
-            'addLabel' => $this->evaluate($this->addActionLabel) ?? 'Add '.Str::lower($this->getItemLabel()),
+            'addLabel' => $this->evaluate($this->addActionLabel) ?? __('xelqun-forms::messages.repeater.add', ['item' => Str::lower($this->getItemLabel())]),
             'itemLabel' => $this->getItemLabel(),
             'orderable' => $this->isOrderable,
             'columns' => $this->columns,

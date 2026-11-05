@@ -199,6 +199,7 @@ describe('repeater keyboard focus', () => {
             keys.map((key) => [key, [field(`data.items.${key}.name`)]]),
         );
         const repeater = field('data.items', 'repeater', {
+            containsRows: true,
             props: {
                 template,
                 rows,

@@ -1,0 +1,26 @@
+{
+    "name": "acme/reviews",
+    "description": "Example Xelqun Forms plugin: a rating, a reviewer search and a receipt upload.",
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": "^8.4",
+        "xelqun/forms": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Acme\\Reviews\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Acme\\Reviews\\ReviewsServiceProvider"
+            ]
+        },
+        "xelqun": {
+            "npm": "@acme/reviews",
+            "plugin": "reviewsPlugin"
+        }
+    }
+}

@@ -85,6 +85,10 @@ defineProps<{ form: FormSchema; orderId: number }>();
 </template>
 ```
 
+## Plugins
+
+Other packages can add fields, with the same search, uploads, rows and saving as built-in ones. Install one with `php artisan xelqun-forms:plugin acme/rating`, or build one with the [plugin guide](docs/plugins.md).
+
 ## Before going to production
 
 - **Add your rules to `authorize()`.** It allows everything by default.

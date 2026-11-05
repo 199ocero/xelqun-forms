@@ -4,6 +4,9 @@ namespace Xelqun\Forms\Components;
 
 use Closure;
 
+/**
+ * @api
+ */
 class TextInput extends Field
 {
     protected string $inputType = 'text';

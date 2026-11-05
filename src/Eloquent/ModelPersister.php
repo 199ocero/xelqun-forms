@@ -5,7 +5,8 @@ namespace Xelqun\Forms\Eloquent;
 use Illuminate\Database\Eloquent\Model;
 use Xelqun\Forms\Components\Component;
 use Xelqun\Forms\Components\Field;
-use Xelqun\Forms\Components\Repeater;
+use Xelqun\Forms\Contracts\ContainsRows;
+use Xelqun\Forms\Contracts\PersistsItself;
 use Xelqun\Forms\Form;
 use Xelqun\Forms\Uploads\UploadBatch;
 
@@ -32,17 +33,17 @@ final class ModelPersister
             $connection->afterRollBack(fn () => $form->setRecord($recordBeforeSave));
 
             $record = $form->getRecord() ?? $form->getModelInstance();
-            $relationships = [];
+            $selfPersisting = [];
             $attributes = [];
 
             foreach ($form->getComponents() as $component) {
-                $this->collectTopLevel($component, $data, $attributes, $relationships);
+                $this->collectTopLevel($component, $data, $attributes, $selfPersisting);
             }
 
             $record->forceFill($form->mutateBeforeSave($attributes))->save();
 
-            foreach ($relationships as $repeater) {
-                $this->syncHasMany($record, $repeater, (array) ($data[$repeater->getName()] ?? []));
+            foreach ($selfPersisting as $field) {
+                $field->persist($record, $data[$field->getName()]);
             }
 
             return $record;
@@ -52,13 +53,13 @@ final class ModelPersister
     /**
      * @param  array<string, mixed>  $data
      * @param  array<string, mixed>  $attributes
-     * @param  array<int, Repeater>  $relationships
+     * @param  array<int, PersistsItself>  $selfPersisting
      */
-    private function collectTopLevel(Component $component, array $data, array &$attributes, array &$relationships): void
+    private function collectTopLevel(Component $component, array $data, array &$attributes, array &$selfPersisting): void
     {
-        if ($component instanceof Repeater && $component->getRelationshipName() !== null) {
+        if ($component instanceof PersistsItself && $component->shouldPersistItself()) {
             if (array_key_exists($component->getName(), $data)) {
-                $relationships[] = $component;
+                $selfPersisting[] = $component;
             }
 
             return;
@@ -67,68 +68,14 @@ final class ModelPersister
         if ($component instanceof Field) {
             if (array_key_exists($component->getName(), $data)) {
                 $value = $data[$component->getName()];
-                $attributes[$component->getName()] = $component instanceof Repeater ? array_values((array) $value) : $value;
+                $attributes[$component->getName()] = $component instanceof ContainsRows ? array_values((array) $value) : $value;
             }
 
             return;
         }
 
         foreach ($component->getChildComponents() as $child) {
-            $this->collectTopLevel($child, $data, $attributes, $relationships);
+            $this->collectTopLevel($child, $data, $attributes, $selfPersisting);
         }
-    }
-
-    /**
-     * Create, update and delete related rows. Rows keyed "record-{id}" update
-     * an existing related model, but only one that belongs to this record.
-     *
-     * @param  array<string, array<string, mixed>>  $rows
-     */
-    private function syncHasMany(Model $record, Repeater $repeater, array $rows): void
-    {
-        $relationship = $repeater->getRelationshipInstance($record);
-        $existing = $relationship->get()->keyBy(fn (Model $model): string => (string) $model->getKey());
-        $kept = [];
-        $order = 0;
-
-        foreach ($rows as $rowKey => $row) {
-            $attributes = array_filter(
-                (array) $row,
-                fn (string $key): bool => $this->isPlainAttribute($repeater, $key),
-                ARRAY_FILTER_USE_KEY,
-            );
-
-            if ($repeater->getOrderColumn() !== null) {
-                $attributes[$repeater->getOrderColumn()] = $order++;
-            }
-
-            $recordKey = str_starts_with((string) $rowKey, Repeater::RECORD_KEY_PREFIX)
-                ? substr((string) $rowKey, strlen(Repeater::RECORD_KEY_PREFIX))
-                : null;
-
-            if ($recordKey !== null && $existing->has($recordKey)) {
-                $existing->get($recordKey)->forceFill($attributes)->save();
-                $kept[] = $recordKey;
-
-                continue;
-            }
-
-            $relationship->make()->forceFill($attributes)->save();
-        }
-
-        $existing->except($kept)->each(fn (Model $model) => $model->delete());
-    }
-
-    private function isPlainAttribute(Repeater $repeater, string $name): bool
-    {
-        $isPlain = false;
-
-        Form::eachField($repeater->getTemplateComponents(), function (Field $field) use ($name, &$isPlain): void {
-            if ($field->getName() === $name && ! $field instanceof Repeater) {
-                $isPlain = true;
-            }
-        });
-
-        return $isPlain;
     }
 }

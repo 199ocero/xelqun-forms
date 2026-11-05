@@ -12,7 +12,18 @@
         "resolveJsonModule": true,
         "jsx": "preserve",
         "types": ["vite/client"],
-        "noEmit": true
+        "noEmit": true,
+        "paths": {
+            "@xelqun/forms": ["./resources/js/index.ts"],
+            "@xelqun/forms/testing": ["./resources/js/testing.ts"]
+        }
     },
-    "include": ["resources/js/**/*.ts", "resources/js/**/*.vue", "tests/js/**/*.ts"]
+    "include": [
+        "resources/js/**/*.ts",
+        "resources/js/**/*.vue",
+        "stubs/*.vue",
+        "tests/js/**/*.ts",
+        "tests/Fixtures/ExamplePlugin/resources/js/**/*.ts",
+        "tests/Fixtures/ExamplePlugin/resources/js/**/*.vue"
+    ]
 }

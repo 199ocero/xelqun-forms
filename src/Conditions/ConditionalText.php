@@ -7,6 +7,8 @@ namespace Xelqun\Forms\Conditions;
  *
  * Both strings are sent to the browser, so neither should hold anything the
  * user may not see.
+ *
+ * @api
  */
 final class ConditionalText
 {

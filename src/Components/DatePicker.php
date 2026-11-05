@@ -5,6 +5,9 @@ namespace Xelqun\Forms\Components;
 use Closure;
 use DateTimeInterface;
 
+/**
+ * @api
+ */
 class DatePicker extends Field
 {
     protected string|Closure|null $minDate = null;

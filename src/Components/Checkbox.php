@@ -4,6 +4,9 @@ namespace Xelqun\Forms\Components;
 
 use Closure;
 
+/**
+ * @api
+ */
 class Checkbox extends Field
 {
     protected string|Closure|null $description = null;

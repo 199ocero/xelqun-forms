@@ -4,9 +4,10 @@ namespace Xelqun\Forms\Uploads;
 
 use Illuminate\Database\Connection;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 use Xelqun\Forms\Components\Component;
-use Xelqun\Forms\Components\FileUpload;
+use Xelqun\Forms\Contracts\AcceptsUploads;
 use Xelqun\Forms\Form;
 use Xelqun\Forms\Support\StatePath;
 
@@ -39,7 +40,7 @@ final class UploadBatch
 
         try {
             $form->walk(function (Component $component) use (&$output): void {
-                if (! $component instanceof FileUpload) {
+                if (! $component instanceof AcceptsUploads) {
                     return;
                 }
 
@@ -101,9 +102,19 @@ final class UploadBatch
 
     /**
      * One upload posted in two rows is stored once.
+     *
+     * The field's own rules already checked the token, but a plugin can leave
+     * them out, and a token made elsewhere could then copy another field's file.
+     * So this comes first: another field storing the upload proves nothing here.
      */
-    private function promoteFile(FileUpload $field, string $id): string
+    private function promoteFile(AcceptsUploads $field, string $id): string
     {
+        if (! $this->store->isUsable($id, $field->getUploadScope())) {
+            throw ValidationException::withMessages([
+                $field->getStatePath() => __('xelqun-forms::messages.uploads.expired', ['attribute' => $field->getLabel()]),
+            ]);
+        }
+
         if (isset($this->stored[$id])) {
             return $this->stored[$id]['path'];
         }

@@ -2,16 +2,20 @@
 
 namespace Xelqun\Forms\Tests;
 
+use Acme\Reviews\ReviewsServiceProvider;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Orchestra\Testbench\TestCase as Orchestra;
 use Xelqun\Forms\FormsServiceProvider;
+use Xelqun\Forms\Testing\InteractsWithForms;
 
 abstract class TestCase extends Orchestra
 {
+    use InteractsWithForms;
+
     protected function getPackageProviders($app): array
     {
-        return [FormsServiceProvider::class];
+        return [FormsServiceProvider::class, ReviewsServiceProvider::class];
     }
 
     protected function defineDatabaseMigrations(): void
@@ -47,6 +51,14 @@ abstract class TestCase extends Orchestra
             $table->decimal('price', 12, 2);
             $table->decimal('subtotal', 12, 2);
             $table->string('attachment')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('reviews', function (Blueprint $table): void {
+            $table->id();
+            $table->foreignId('order_id')->nullable();
+            $table->foreignId('order_item_id')->nullable();
+            $table->unsignedTinyInteger('stars');
             $table->timestamps();
         });
     }

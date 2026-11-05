@@ -7,13 +7,18 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use Xelqun\Forms\Conditions\Condition;
 use Xelqun\Forms\Conditions\ConditionalText;
+use Xelqun\Forms\Contracts\ContainsRows;
+use Xelqun\Forms\Contracts\NeedsServer;
 use Xelqun\Forms\Expressions\Expression;
 use Xelqun\Forms\Support\StatePath;
 
 /**
- * Base class for every component that owns a piece of state.
+ * Base class for every component that owns a piece of state. Extend this to
+ * build a field.
+ *
+ * @api Anything public or protected here, unless it says @internal.
  */
-abstract class Field extends Component
+abstract class Field extends Component implements NeedsServer
 {
     protected string|Closure|ConditionalText|null $label = null;
 
@@ -59,7 +64,7 @@ abstract class Field extends Component
         $field = new static($name);
         $field->setUp();
 
-        return $field;
+        return $field->configure();
     }
 
     protected function setUp(): void {}
@@ -298,6 +303,8 @@ abstract class Field extends Component
     /**
      * The value this field had before any browser input. A null is a real
      * value here. Only a row added in the browser has none, so it gets the default.
+     *
+     * @internal
      */
     public function getServerState(): mixed
     {
@@ -357,11 +364,19 @@ abstract class Field extends Component
         return $this->afterStateUpdated !== [];
     }
 
+    /**
+     * @internal
+     */
     public function callAfterStateUpdated(mixed $old = null): void
     {
         foreach ($this->afterStateUpdated as $callback) {
             $this->evaluate($callback, ['old' => $old]);
         }
+    }
+
+    public function needsServer(): bool
+    {
+        return $this->getLiveConfig() !== null;
     }
 
     /**
@@ -445,6 +460,7 @@ abstract class Field extends Component
             ],
             'computed' => $this->computed?->toArray($this->container),
             'live' => $this->getLiveConfig(),
+            ...($this instanceof ContainsRows ? ['containsRows' => true] : []),
         ];
     }
 }

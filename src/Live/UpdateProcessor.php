@@ -6,7 +6,7 @@ use Illuminate\Support\Arr;
 use stdClass;
 use Xelqun\Forms\Components\Component;
 use Xelqun\Forms\Components\Field;
-use Xelqun\Forms\Components\Repeater;
+use Xelqun\Forms\Contracts\ContainsRows;
 use Xelqun\Forms\Form;
 use Xelqun\Forms\Schema\SchemaVersion;
 use Xelqun\Forms\Support\StatePath;
@@ -68,7 +68,7 @@ final class UpdateProcessor
             }
 
             $value = $form->getStateValue($path);
-            $set[$path] = $value === [] && $component instanceof Repeater ? new stdClass : $value;
+            $set[$path] = $value === [] && $component instanceof ContainsRows ? new stdClass : $value;
         }
 
         return [
@@ -127,7 +127,7 @@ final class UpdateProcessor
 
         if ($setPaths !== []) {
             $form->walk(function (Component $component) use ($setPaths, &$keys): void {
-                if (! $component instanceof Repeater) {
+                if (! $component instanceof ContainsRows) {
                     return;
                 }
 

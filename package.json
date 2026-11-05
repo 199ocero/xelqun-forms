@@ -18,7 +18,8 @@
     ],
     "exports": {
         ".": "./resources/js/index.ts",
-        "./style.css": "./resources/css/xelqun.css"
+        "./style.css": "./resources/css/xelqun.css",
+        "./testing": "./resources/js/testing.ts"
     },
     "scripts": {
         "test": "vp test",

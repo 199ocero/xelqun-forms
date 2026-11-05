@@ -11,8 +11,12 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Validation\Rule;
 use LogicException;
 use Xelqun\Forms\Components\Concerns\HasOptions;
+use Xelqun\Forms\Contracts\HasSearchResults;
 
-class Select extends Field
+/**
+ * @api
+ */
+class Select extends Field implements HasSearchResults
 {
     use HasOptions {
         getOptions as getStaticOptions;

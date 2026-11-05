@@ -14,9 +14,10 @@ use stdClass;
 use Throwable;
 use Xelqun\Forms\Components\Component;
 use Xelqun\Forms\Components\Field;
-use Xelqun\Forms\Components\FileUpload;
-use Xelqun\Forms\Components\Repeater;
-use Xelqun\Forms\Components\Select;
+use Xelqun\Forms\Contracts\AcceptsUploads;
+use Xelqun\Forms\Contracts\ContainsRows;
+use Xelqun\Forms\Contracts\HasSearchResults;
+use Xelqun\Forms\Contracts\NeedsServer;
 use Xelqun\Forms\Eloquent\ModelPersister;
 use Xelqun\Forms\Exceptions\FormDefinitionException;
 use Xelqun\Forms\Schema\SchemaVersion;
@@ -30,6 +31,8 @@ use Xelqun\Forms\Validation\FormValidator;
  * A form definition. Extend it and implement schema() for forms that talk to
  * the server (live fields, closures, uploads). Use Form::make([...]) for
  * simple static forms.
+ *
+ * @api Anything public or protected here, unless it says @internal.
  *
  * @template TModel of Model = Model
  */
@@ -137,6 +140,8 @@ class Form
      * Put the record back after a rollback. The model in memory can look saved
      * while the database is not, and a retry would then write nothing.
      *
+     * @internal
+     *
      * @param  TModel|null  $record
      */
     public function setRecord(?Model $record): void
@@ -177,16 +182,16 @@ class Form
     }
 
     /**
-     * The model a component reads relationships from: the related model of
-     * the closest repeater relationship, or the form's model.
+     * The model a component reads relationships from: the row model of the
+     * closest field with rows that has one, or the form's model.
      */
     public function getModelInstanceFor(Component $component): Model
     {
         $parent = $component->getParent();
 
         while ($parent !== null) {
-            if ($parent instanceof Repeater && $parent->getRelationshipName() !== null) {
-                return $parent->getRelationshipInstance($this->getModelInstanceFor($parent))->getRelated();
+            if ($parent instanceof ContainsRows && ($model = $parent->getRowModel($this->getModelInstanceFor($parent))) !== null) {
+                return $model;
             }
 
             $parent = $parent->getParent();
@@ -234,7 +239,7 @@ class Form
 
             $paths[$path] = true;
 
-            if ($field instanceof Repeater) {
+            if ($field instanceof ContainsRows) {
                 $this->ensureUniqueStatePaths($field->getTemplateComponents());
             }
         });
@@ -269,9 +274,8 @@ class Form
         $this->setPaths = [];
 
         $this->walk(function (Component $component): void {
-            if ($component instanceof Repeater) {
-                $component->discardUnsafeRows();
-                $component->restoreRowOrder();
+            if ($component instanceof ContainsRows) {
+                $component->normalizePostedRows();
             }
         });
 
@@ -293,6 +297,9 @@ class Form
         Arr::forget($this->state, $path);
     }
 
+    /**
+     * @internal
+     */
     public function markAsSet(string $path): void
     {
         if (! in_array($path, $this->setPaths, true)) {
@@ -302,6 +309,8 @@ class Form
 
     /**
      * Paths written by server closures during this request.
+     *
+     * @internal
      *
      * @return array<int, string>
      */
@@ -314,6 +323,8 @@ class Form
      * Values the field had when the form was filled. Used to make sure a
      * submitted file path really belonged to the record.
      *
+     * @internal
+     *
      * @return array<int, mixed>
      */
     public function getInitialValues(string $pattern): array
@@ -323,6 +334,9 @@ class Form
         return str_contains($pattern, '*') ? (array) $values : [$values];
     }
 
+    /**
+     * @internal
+     */
     public function hasInitialValue(string $path): bool
     {
         return Arr::has($this->initialState, $path);
@@ -330,6 +344,8 @@ class Form
 
     /**
      * The value a path had when the form was filled, before any browser input.
+     *
+     * @internal
      */
     public function getInitialValue(string $path): mixed
     {
@@ -384,7 +400,7 @@ class Form
                 continue;
             }
 
-            if ($component instanceof Repeater) {
+            if ($component instanceof ContainsRows) {
                 foreach ($component->getRows() as $rowComponents) {
                     $this->walk($callback, $rowComponents);
                 }
@@ -409,13 +425,13 @@ class Form
                 return $component;
             }
 
-            if ($component instanceof Repeater) {
+            if ($component instanceof ContainsRows) {
                 $prefix = $component->getStatePath().'.';
 
                 if (str_starts_with($key, $prefix)) {
                     $rowKey = explode('#', explode('.', substr($key, strlen($prefix)))[0])[0];
 
-                    if ($rowKey !== '' && Repeater::isSafeRowKey($rowKey)) {
+                    if ($rowKey !== '' && StatePath::isSafeRowKey($rowKey)) {
                         return $this->findComponent($key, $component->getRowComponents($rowKey));
                     }
                 }
@@ -516,7 +532,7 @@ class Form
                 return;
             }
 
-            if ($component instanceof Repeater && $component->getState() === []) {
+            if ($component instanceof ContainsRows && $component->getState() === []) {
                 data_set($state, $component->getStatePath(), new stdClass);
             }
         });
@@ -531,9 +547,9 @@ class Form
     private function ensureStatic(): void
     {
         $this->walk(function (Component $component): void {
-            $needsServer = $component instanceof FileUpload
-                || ($component instanceof Select && $component->isAsync())
-                || ($component instanceof Field && $component->getLiveConfig() !== null);
+            $needsServer = $component instanceof AcceptsUploads
+                || ($component instanceof HasSearchResults && $component->isAsync())
+                || ($component instanceof NeedsServer && $component->needsServer());
 
             if ($needsServer) {
                 throw new FormDefinitionException(

@@ -56,6 +56,8 @@ export interface SchemaNode {
     };
     computed?: { src: string; ast: ExpressionNode } | null;
     live?: LiveConfig | null;
+    /** Set by fields with rows. They need props.template, rowPlaceholder, rows and newRow. */
+    containsRows?: boolean;
     span?: ColumnSpan;
     props?: Record<string, any>;
     children?: SchemaNode[];

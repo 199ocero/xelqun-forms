@@ -1,47 +1,7 @@
-import type { FormSchema, SchemaNode } from '../../resources/js/schema/types';
+import { fieldNode as field, formSchema as schema } from '../../resources/js/testing';
+import type { FormSchema } from '../../resources/js/schema/types';
 
-export function field(
-    path: string,
-    type = 'text-input',
-    extra: Partial<SchemaNode> = {},
-): SchemaNode {
-    return {
-        key: path,
-        type,
-        hidden: false,
-        path,
-        label: path.split('.').pop(),
-        required: false,
-        disabled: false,
-        rules: { visible: null, required: null, disabled: null },
-        computed: null,
-        live: null,
-        props: {},
-        children: [],
-        deps: [],
-        ...extra,
-    };
-}
-
-export function schema(
-    components: SchemaNode[],
-    data: Record<string, any> = {},
-    token: string | null = 'token',
-): FormSchema {
-    return {
-        $xq: 1,
-        pkg: '0.1.0',
-        id: 'test-form',
-        token,
-        endpoints: {
-            update: '/_xelqun/forms/update',
-            upload: '/_xelqun/forms/upload',
-            search: '/_xelqun/forms/search',
-        },
-        state: { data },
-        components,
-    };
-}
+export { field, schema };
 
 export function orderSchema(): FormSchema {
     const template = [
@@ -73,6 +33,7 @@ export function orderSchema(): FormSchema {
             field('data.country', 'select', { live: { mode: 'change', ms: null } }),
             field('data.state', 'select', { deps: ['data.country'], props: { options: [] } }),
             field('data.items', 'repeater', {
+                containsRows: true,
                 props: {
                     template,
                     rows: { r1: rowNodes },

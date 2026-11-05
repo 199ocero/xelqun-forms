@@ -5,7 +5,7 @@ namespace Xelqun\Forms\Http\Controllers;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
-use Xelqun\Forms\Components\FileUpload;
+use Xelqun\Forms\Contracts\AcceptsUploads;
 use Xelqun\Forms\Security\FormTokenEncrypter;
 use Xelqun\Forms\Uploads\TemporaryUploadStore;
 
@@ -21,8 +21,8 @@ class UploadController
         $form = $tokens->resolveForm($request->string('token')->value());
         $field = $form->findComponent($request->string('path')->value());
 
-        if (! $field instanceof FileUpload || ! $field->acceptsInput()) {
-            throw ValidationException::withMessages(['file' => 'This field does not accept uploads.']);
+        if (! $field instanceof AcceptsUploads || ! $field->acceptsInput()) {
+            throw ValidationException::withMessages(['file' => __('xelqun-forms::messages.uploads.not_accepted')]);
         }
 
         $request->validate(['file' => $field->getUploadRules()], [], ['file' => $field->getLabel()]);

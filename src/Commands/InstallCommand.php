@@ -4,18 +4,18 @@ namespace Xelqun\Forms\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Process;
+use Xelqun\Forms\Commands\Concerns\EditsHostApp;
 use Xelqun\Forms\Schema\SchemaVersion;
 
 class InstallCommand extends Command
 {
+    use EditsHostApp;
+
     private const string NPM_PACKAGE = '@xelqun/forms';
 
     private const string STYLESHEET = '@xelqun/forms/style.css';
 
     private const string PLUGIN_CALL = 'createXelqunForms()';
-
-    private const int NODE_TIMEOUT_SECONDS = 600;
 
     protected $signature = 'xelqun-forms:install
         {--config : Publish the config file}
@@ -25,7 +25,7 @@ class InstallCommand extends Command
 
     public function handle(): int
     {
-        if (! $this->option('without-node') && ! $this->installNodePackage()) {
+        if (! $this->option('without-node') && ! $this->installNodePackage(self::NPM_PACKAGE.'@'.SchemaVersion::PACKAGE)) {
             return self::FAILURE;
         }
 
@@ -48,54 +48,13 @@ class InstallCommand extends Command
     }
 
     /**
-     * Runs before any file is edited, so a failed install never leaves the app
-     * importing a package it does not have.
-     */
-    private function installNodePackage(): bool
-    {
-        if (! File::exists(base_path('package.json'))) {
-            $this->components->error('No package.json found. Xelqun Forms needs an app that builds its frontend with Vite.');
-
-            return false;
-        }
-
-        $command = $this->nodeInstallCommand().' '.self::NPM_PACKAGE.'@'.SchemaVersion::PACKAGE;
-
-        $this->components->info("Running: {$command}");
-
-        $result = Process::path(base_path())
-            ->timeout(self::NODE_TIMEOUT_SECONDS)
-            ->run($command, function (string $type, string $output): void {
-                $this->output->write($output);
-            });
-
-        if ($result->failed()) {
-            $this->components->error("Could not install the npm package. Run `{$command}` yourself, then run this command again with --without-node.");
-
-            return false;
-        }
-
-        return true;
-    }
-
-    private function nodeInstallCommand(): string
-    {
-        return match (true) {
-            File::exists(base_path('pnpm-lock.yaml')) => 'pnpm add',
-            File::exists(base_path('yarn.lock')) => 'yarn add',
-            File::exists(base_path('bun.lock')), File::exists(base_path('bun.lockb')) => 'bun add',
-            default => 'npm install',
-        };
-    }
-
-    /**
      * @return string|null The step left for the developer, or null when none remains.
      */
     private function registerPlugin(): ?string
     {
         $manualStep = "Call `app.use(createXelqunForms())` in `withApp` in your Inertia entry file, importing it from '".self::NPM_PACKAGE."'. Forms still render without it, but custom components won't be registered.";
 
-        $path = $this->firstExistingPath([resource_path('js/app.ts'), resource_path('js/app.js')]);
+        $path = $this->findEntryFile();
 
         if ($path === null) {
             return $manualStep;
@@ -113,21 +72,7 @@ class InstallCommand extends Command
             return $manualStep;
         }
 
-        File::put($path, $this->addPluginImport($patched));
-
-        return null;
-    }
-
-    /**
-     * @param  array<int, string>  $paths
-     */
-    private function firstExistingPath(array $paths): ?string
-    {
-        foreach ($paths as $path) {
-            if (File::exists($path)) {
-                return $path;
-            }
-        }
+        File::put($path, $this->addImport($patched, "import { createXelqunForms } from '".self::NPM_PACKAGE."';"));
 
         return null;
     }
@@ -184,26 +129,6 @@ class InstallCommand extends Command
         }
 
         return null;
-    }
-
-    private function addPluginImport(string $source): string
-    {
-        $import = "import { createXelqunForms } from '".self::NPM_PACKAGE."';";
-
-        preg_match_all(
-            '/^import\s(?:[^;\'"]*?\sfrom\s+)?[\'"][^\'"]+[\'"];?[ \t]*$/m',
-            $source,
-            $imports,
-            PREG_OFFSET_CAPTURE,
-        );
-
-        if ($imports[0] === []) {
-            return "{$import}\n{$source}";
-        }
-
-        [$lastImport, $offset] = end($imports[0]);
-
-        return substr_replace($source, "\n{$import}", $offset + strlen($lastImport), 0);
     }
 
     /**

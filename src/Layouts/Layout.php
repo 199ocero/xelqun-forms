@@ -6,6 +6,8 @@ use Xelqun\Forms\Components\Component;
 
 /**
  * Base class for components that only arrange other components.
+ *
+ * @api
  */
 abstract class Layout extends Component
 {

@@ -11,6 +11,8 @@ use Xelqun\Forms\Support\StatePath;
  *
  * The recorded paths become the component's dependencies, which tell the
  * browser when a server round-trip is needed.
+ *
+ * @api
  */
 final class Get
 {

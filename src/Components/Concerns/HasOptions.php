@@ -7,6 +7,9 @@ use Closure;
 use Illuminate\Contracts\Support\Arrayable;
 use UnitEnum;
 
+/**
+ * @api
+ */
 trait HasOptions
 {
     /** @var array<array-key, mixed>|Arrayable<array-key, mixed>|Closure|class-string|null */

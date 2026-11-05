@@ -47,14 +47,14 @@ function mergeNodeList(current: SchemaNode[], incoming: SchemaNode[]): SchemaNod
 }
 
 /**
- * Visit a node and every node below it, including repeater rows (but not templates).
+ * Visit a node and every node below it, including the rows of fields that have them (but not templates).
  */
 export function eachNode(nodes: SchemaNode[], callback: (node: SchemaNode) => void): void {
     for (const node of nodes) {
         callback(node);
         eachNode(node.children ?? [], callback);
 
-        if (node.type === 'repeater' && isPlainObject(node.props?.rows)) {
+        if (node.containsRows && isPlainObject(node.props?.rows)) {
             for (const rowNodes of Object.values(
                 node.props!.rows as Record<string, SchemaNode[]>,
             )) {

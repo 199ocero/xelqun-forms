@@ -6,6 +6,8 @@ use Closure;
 
 /**
  * Escape hatch: render a Vue component registered with createXelqunForms({ components }).
+ *
+ * @api
  */
 class CustomField extends Field
 {

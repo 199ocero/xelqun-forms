@@ -13,6 +13,8 @@ use Xelqun\Forms\Support\StatePath;
  * later requests a disabled or hidden field goes back to its server value,
  * because the server can't tell the browser echoing this write from tampering.
  * Closures should derive such values from fields the user can change.
+ *
+ * @api
  */
 final class Set
 {

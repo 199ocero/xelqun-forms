@@ -3,6 +3,7 @@
 namespace Xelqun\Forms\Components;
 
 use Closure;
+use Illuminate\Support\Traits\Macroable;
 use LogicException;
 use Xelqun\Forms\Conditions\Condition;
 use Xelqun\Forms\Conditions\When;
@@ -13,9 +14,16 @@ use Xelqun\Forms\Support\StatePath;
 
 /**
  * Base class for every node of a form: fields and layouts.
+ *
+ * @api Anything public or protected here, unless it says @internal.
  */
 abstract class Component
 {
+    use Macroable;
+
+    /** @var array<class-string<Component>, array<int, Closure>> */
+    private static array $configurations = [];
+
     protected ?Form $form = null;
 
     protected ?Component $parent = null;
@@ -38,6 +46,46 @@ abstract class Component
 
     /** @var array<int, string> */
     protected array $recordedDependencies = [];
+
+    /**
+     * Run a callback on every new instance of this class and its subclasses,
+     * after setUp() and before the caller's own settings. Call it from a service
+     * provider: it lasts as long as the process, and each call adds another.
+     *
+     * @param  Closure(static): mixed  $callback
+     */
+    public static function configureUsing(Closure $callback): void
+    {
+        self::$configurations[static::class][] = $callback;
+    }
+
+    /**
+     * Forget every configureUsing() callback, so tests don't leak into each other.
+     *
+     * @internal
+     */
+    public static function flushConfigurations(): void
+    {
+        self::$configurations = [];
+    }
+
+    /**
+     * Apply the configureUsing() callbacks. Every make() has to end with this.
+     */
+    protected function configure(): static
+    {
+        foreach (self::$configurations as $class => $callbacks) {
+            if (! $this instanceof $class) {
+                continue;
+            }
+
+            foreach ($callbacks as $callback) {
+                $callback($this);
+            }
+        }
+
+        return $this;
+    }
 
     /**
      * The renderer key of this node, e.g. "text-input" or "section".
@@ -117,6 +165,8 @@ abstract class Component
 
     /**
      * Attach the component to a form and place it in the tree.
+     *
+     * @internal
      */
     public function mount(Form $form, ?Component $parent, string $container, string $position, ?string $containerPattern = null): static
     {
@@ -186,6 +236,9 @@ abstract class Component
         return $this->childComponents;
     }
 
+    /**
+     * @internal
+     */
     public function recordDependency(string $path): void
     {
         if (! in_array($path, $this->recordedDependencies, true)) {
@@ -276,6 +329,8 @@ abstract class Component
 
     /**
      * Serialize to a schema node, or null when the server hides it entirely.
+     *
+     * @internal Add to a node through getProps() instead.
      *
      * @return array<string, mixed>|null
      */

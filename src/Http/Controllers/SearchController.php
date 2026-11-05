@@ -4,7 +4,7 @@ namespace Xelqun\Forms\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Xelqun\Forms\Components\Select;
+use Xelqun\Forms\Contracts\HasSearchResults;
 use Xelqun\Forms\Security\FormTokenEncrypter;
 use Xelqun\Forms\Validation\FormValidator;
 
@@ -28,7 +28,7 @@ class SearchController
 
         $field = $form->findComponent($validated['path']);
 
-        abort_unless($field instanceof Select && $field->isSearchable() && $field->acceptsInput(), 404);
+        abort_unless($field instanceof HasSearchResults && $field->isSearchable() && $field->acceptsInput(), 404);
 
         return response()->json(['options' => $field->getSearchResults((string) ($validated['search'] ?? ''))]);
     }

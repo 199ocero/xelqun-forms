@@ -2,6 +2,9 @@
 
 namespace Xelqun\Forms\Layouts;
 
+/**
+ * @api
+ */
 class Grid extends Layout
 {
     /**
@@ -17,7 +20,7 @@ class Grid extends Layout
      */
     public static function make(int|array $columns = 2): static
     {
-        return new static($columns);
+        return (new static($columns))->configure();
     }
 
     public function getType(): string

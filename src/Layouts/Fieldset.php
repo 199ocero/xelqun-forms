@@ -4,13 +4,16 @@ namespace Xelqun\Forms\Layouts;
 
 use Closure;
 
+/**
+ * @api
+ */
 class Fieldset extends Layout
 {
     final public function __construct(protected string|Closure|null $legend = null) {}
 
     public static function make(string|Closure|null $legend = null): static
     {
-        return new static($legend);
+        return (new static($legend))->configure();
     }
 
     public function getType(): string

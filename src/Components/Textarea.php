@@ -2,6 +2,9 @@
 
 namespace Xelqun\Forms\Components;
 
+/**
+ * @api
+ */
 class Textarea extends Field
 {
     protected int $rows = 3;

@@ -9,6 +9,8 @@ use BackedEnum;
  *
  * Paths are relative to the field's container (the form root or the current
  * repeater row). Prefix a path with "$." to reach the form root from a row.
+ *
+ * @api
  */
 final class When
 {

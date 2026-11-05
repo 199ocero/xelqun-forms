@@ -10,6 +10,7 @@ defineProps<{ node: SchemaNode }>();
     >
         No component is registered for type
         <code class="font-mono font-semibold">{{ node.type }}</code> ({{ node.key }}). Register one
-        with <code class="font-mono">createXelqunForms({ components })</code>.
+        with <code class="font-mono">createXelqunForms({ components })</code>, or install the plugin
+        that provides it.
     </div>
 </template>

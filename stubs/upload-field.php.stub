@@ -1,0 +1,21 @@
+<?php
+
+namespace {{ namespace }};
+
+use Xelqun\Forms\Components\Concerns\HandlesUploads;
+use Xelqun\Forms\Components\Field;
+use Xelqun\Forms\Contracts\AcceptsUploads;
+
+/**
+ * HandlesUploads adds disk(), directory(), maxSize(), acceptedFileTypes() and
+ * image(), and the rules that keep posted values safe.
+ */
+class {{ class }} extends Field implements AcceptsUploads
+{
+    use HandlesUploads;
+
+    public function getType(): string
+    {
+        return '{{ type }}';
+    }
+}

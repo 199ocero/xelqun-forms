@@ -6,7 +6,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Validator;
 use Xelqun\Forms\Components\Component;
 use Xelqun\Forms\Components\Field;
-use Xelqun\Forms\Components\Repeater;
+use Xelqun\Forms\Contracts\ContainsRows;
 use Xelqun\Forms\Form;
 use Xelqun\Forms\Support\StatePath;
 
@@ -105,7 +105,7 @@ final class FormValidator
         $paths = [];
 
         $form->walk(function (Component $component) use (&$paths): void {
-            if ($component instanceof Repeater) {
+            if ($component instanceof ContainsRows) {
                 $paths[] = $component->getStatePath();
             }
         });
@@ -164,7 +164,7 @@ final class FormValidator
                 continue;
             }
 
-            if ($component instanceof Repeater) {
+            if ($component instanceof ContainsRows) {
                 foreach ($component->getRows() as $rowComponents) {
                     $locks += $this->findLocks($rowComponents, $posted, true, $onlyStatic);
                 }
@@ -231,7 +231,7 @@ final class FormValidator
             $this->attributes[$path] = $rowLabel === null ? $label : "{$label} ({$rowLabel})";
             $this->kept[] = $component;
 
-            if ($component instanceof Repeater) {
+            if ($component instanceof ContainsRows) {
                 $index = 0;
 
                 foreach ($component->getRows() as $rowComponents) {
@@ -256,7 +256,7 @@ final class FormValidator
         foreach ($this->kept as $field) {
             $path = $field->getStatePath();
 
-            if ($field instanceof Repeater) {
+            if ($field instanceof ContainsRows) {
                 data_set($output, $path, array_fill_keys($field->getRowKeys(), []));
 
                 continue;

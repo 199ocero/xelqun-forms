@@ -4,13 +4,16 @@ namespace Xelqun\Forms\Layouts;
 
 use Closure;
 
+/**
+ * @api
+ */
 class Tab extends Layout
 {
     final public function __construct(protected string|Closure $label) {}
 
     public static function make(string|Closure $label): static
     {
-        return new static($label);
+        return (new static($label))->configure();
     }
 
     public function getType(): string

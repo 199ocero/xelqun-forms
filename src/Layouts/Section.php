@@ -4,6 +4,9 @@ namespace Xelqun\Forms\Layouts;
 
 use Closure;
 
+/**
+ * @api
+ */
 class Section extends Layout
 {
     protected string|Closure|null $description = null;
@@ -16,7 +19,7 @@ class Section extends Layout
 
     public static function make(string|Closure|null $heading = null): static
     {
-        return new static($heading);
+        return (new static($heading))->configure();
     }
 
     public function getType(): string

@@ -1,0 +1,18 @@
+{
+    "name": "@acme/reviews",
+    "version": "0.1.0",
+    "description": "Vue renderers for the acme/reviews Xelqun Forms plugin.",
+    "license": "MIT",
+    "type": "module",
+    "files": [
+        "resources/js"
+    ],
+    "exports": {
+        ".": "./resources/js/index.ts"
+    },
+    "peerDependencies": {
+        "@xelqun/forms": "*",
+        "reka-ui": "^2.11.0",
+        "vue": "^3.5.0"
+    }
+}

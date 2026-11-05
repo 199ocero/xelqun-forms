@@ -199,7 +199,7 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
                 });
             }
 
-            if (node.type === 'repeater' && node.path && !effects.has(`${node.key}::rows`)) {
+            if (node.containsRows && node.path && !effects.has(`${node.key}::rows`)) {
                 const path = node.path;
 
                 scope.run(() => {

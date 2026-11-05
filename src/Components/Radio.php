@@ -5,6 +5,9 @@ namespace Xelqun\Forms\Components;
 use Illuminate\Validation\Rule;
 use Xelqun\Forms\Components\Concerns\HasOptions;
 
+/**
+ * @api
+ */
 class Radio extends Field
 {
     use HasOptions;

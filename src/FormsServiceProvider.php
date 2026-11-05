@@ -4,6 +4,8 @@ namespace Xelqun\Forms;
 
 use Illuminate\Support\ServiceProvider;
 use Xelqun\Forms\Commands\InstallCommand;
+use Xelqun\Forms\Commands\InstallPluginCommand;
+use Xelqun\Forms\Commands\MakeFieldCommand;
 use Xelqun\Forms\Commands\PruneTemporaryUploadsCommand;
 use Xelqun\Forms\Uploads\TemporaryUploadStore;
 
@@ -19,13 +21,23 @@ class FormsServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->loadRoutesFrom(__DIR__.'/../routes/xelqun-forms.php');
+        $this->loadTranslationsFrom(__DIR__.'/../resources/lang', 'xelqun-forms');
 
         if ($this->app->runningInConsole()) {
             $this->publishes([
                 __DIR__.'/../config/xelqun-forms.php' => config_path('xelqun-forms.php'),
             ], 'xelqun-forms-config');
 
-            $this->commands([InstallCommand::class, PruneTemporaryUploadsCommand::class]);
+            $this->publishes([
+                __DIR__.'/../resources/lang' => lang_path('vendor/xelqun-forms'),
+            ], 'xelqun-forms-lang');
+
+            $this->commands([
+                InstallCommand::class,
+                InstallPluginCommand::class,
+                MakeFieldCommand::class,
+                PruneTemporaryUploadsCommand::class,
+            ]);
         }
     }
 }

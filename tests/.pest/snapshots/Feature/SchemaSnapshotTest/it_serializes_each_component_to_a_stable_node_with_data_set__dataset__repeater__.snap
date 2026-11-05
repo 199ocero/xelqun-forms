@@ -27,6 +27,7 @@
             },
             "computed": null,
             "live": null,
+            "containsRows": true,
             "span": null,
             "props": {
                 "template": [

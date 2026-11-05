@@ -26,6 +26,7 @@ describe('form store', () => {
             schema(
                 [
                     field('data.items', 'repeater', {
+                        containsRows: true,
                         props: {
                             rows: {
                                 a: [field('data.items.a.qty')],
@@ -51,11 +52,13 @@ describe('form store', () => {
             schema(
                 [
                     field('data.sections', 'repeater', {
+                        containsRows: true,
                         props: {
                             rowPlaceholder: '{row}',
                             newRow: { lines: {} },
                             template: [
                                 field('data.sections.{row}.lines', 'repeater', {
+                                    containsRows: true,
                                     props: {
                                         rowPlaceholder: '{row:1}',
                                         newRow: { qty: 1 },

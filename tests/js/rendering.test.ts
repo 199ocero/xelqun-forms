@@ -109,7 +109,7 @@ describe('XqForm rendering', () => {
             ];
             const store = createFormStore(
                 schema(
-                    [field('data.items', 'repeater', { props: { template } })],
+                    [field('data.items', 'repeater', { containsRows: true, props: { template } })],
                     { items: { a: { is_gift: true }, b: { is_gift: false } } },
                     null,
                 ),

@@ -4,6 +4,8 @@ namespace Xelqun\Forms\Support;
 
 /**
  * Helpers for dot-notation state paths such as "data.items.9f1c.price".
+ *
+ * @api
  */
 final class StatePath
 {
@@ -12,6 +14,8 @@ final class StatePath
     public const string ROW_PLACEHOLDER = '{row}';
 
     private const string ROW_PLACEHOLDER_PATTERN = '/^\{row(:\d+)?\}$/';
+
+    private const string SAFE_ROW_KEY_PATTERN = '/^[A-Za-z0-9_-]+$/';
 
     /**
      * Resolve a path written by the developer against a container path.
@@ -40,6 +44,14 @@ final class StatePath
     public static function rowPlaceholder(int $depth): string
     {
         return $depth === 0 ? self::ROW_PLACEHOLDER : '{row:'.$depth.'}';
+    }
+
+    /**
+     * Row keys become part of state paths, so "." or "*" in one would reach other rows.
+     */
+    public static function isSafeRowKey(string $rowKey): bool
+    {
+        return preg_match(self::SAFE_ROW_KEY_PATTERN, $rowKey) === 1;
     }
 
     public static function isRowPlaceholder(string $segment): bool

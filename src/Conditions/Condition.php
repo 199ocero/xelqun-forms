@@ -11,6 +11,8 @@ use Xelqun\Forms\Support\Values;
  *
  * Paths are stored as the developer wrote them and resolved against a
  * container path when serialized or evaluated.
+ *
+ * @api
  */
 final class Condition
 {
