@@ -21,7 +21,13 @@ export default defineConfig({
         semi: true,
         singleAttributePerLine: false,
         htmlWhitespaceSensitivity: 'css',
-        ignorePatterns: ['vendor/**', 'composer.json', 'docs/**', 'tests/Fixtures/**'],
+        ignorePatterns: [
+            'vendor/**',
+            '.claude/**',
+            'composer.json',
+            'docs/**',
+            'tests/Fixtures/**',
+        ],
         sortTailwindcss: {
             functions: ['clsx', 'cn', 'cva'],
             stylesheet: 'resources/css/xelqun.css',

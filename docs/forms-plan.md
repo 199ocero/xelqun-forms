@@ -383,7 +383,7 @@ sequenceDiagram
 | **Playground feature tests** | `tests/Feature/PlaygroundFormsTest.php` | Each example slug renders `playground/Forms` with the expected props (`assertInertia`), and submit redirects with errors or flash. |
 | **Pest browser tests** | `tests/Browser/TrickyOrderFormTest.php` (+ one per example) | Visit `/playground/forms/order`. Pick a country and states appear. Choose type business and the section appears. Add 2 rows, type qty and price, and the subtotals and grand total update. Upload a file in row 2. Submit with a bad price and the error appears under row 2's price. `assertNoJavascriptErrors()`. |
 
-Commands: package `vendor/bin/pest`, `vp test`, `vendor/bin/pint`. Playground `php artisan test --compact tests/Browser`.
+Commands: package `vendor/bin/pest`, `vp test`, `vendor/bin/pint`. Playground `php artisan test --compact tests/Browser`. Feature and browser tests rebuild `public/build` first if a front-end source file is newer than it (see `rebuildAssetsWhenStale()` in the playground's `tests/Pest.php`).
 
 ---
 
@@ -428,7 +428,7 @@ Each one ends with something visible at `/playground/forms`.
 
 ---
 
-## Implementation status (2026-10-28)
+## Implementation status (2026-11-05)
 
 Milestones 0–8 are built and tested; milestone 9 (polish) is partly done (light/dark, mobile layout, a11y basics, lazy date picker and file upload).
 
@@ -440,7 +440,7 @@ Milestones 0–8 are built and tested; milestone 9 (polish) is partly done (ligh
 | File upload inside a repeater row | browser test, package `UploadTest` |
 | Server errors on the correct nested field | browser tests (`Price (Item 2)`), package `ValidationTest` |
 
-**Test counts:** package Pest 134, package Vitest 92, playground Pest 28 (13 feature + 15 browser).
+**Test counts:** package Pest 134, package Vitest 96, playground Pest 30 (1 unit + 13 feature + 16 browser).
 
 ### Where the build differs from the plan
 - **Patches have no `add`/`remove`.** A component hidden by a server closure is sent as a stub (`{ key, type, hidden: true, deps }`) and later patched to a full node, which keeps every key stable.
