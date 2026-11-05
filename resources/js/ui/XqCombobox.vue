@@ -29,6 +29,8 @@ const props = defineProps<{
     placeholder?: string | null;
     disabled?: boolean;
     invalid?: boolean;
+    describedBy?: string;
+    searchFailed?: boolean;
     class?: HTMLAttributes['class'];
 }>();
 const emit = defineEmits<{ search: [term: string]; blur: [] }>();
@@ -85,7 +87,7 @@ function clear(): void {
             :class="
                 cn(
                     controlClass,
-                    'min-h-9 gap-1 py-1 pr-1.5 pl-2 flex flex-wrap items-center has-[input:focus-visible]:border-xq-ring has-[input:focus-visible]:ring-[3px] has-[input:focus-visible]:ring-xq-ring/25',
+                    'min-h-9 gap-1 py-0.5 pr-1.5 pl-2 flex flex-wrap items-center has-[input:focus-visible]:border-xq-ring has-[input:focus-visible]:ring-[3px] has-[input:focus-visible]:ring-xq-ring/25',
                     invalid && 'border-xq-destructive',
                     props.class,
                 )
@@ -116,11 +118,12 @@ function clear(): void {
                 :display-value="multiple ? undefined : labelFor"
                 :placeholder="selectedValues.length && multiple ? '' : (placeholder ?? 'Search…')"
                 :aria-invalid="invalid || undefined"
+                :aria-describedby="describedBy"
                 class="h-7 min-w-16 px-1 text-sm flex-1 bg-transparent outline-none placeholder:text-xq-muted-foreground disabled:cursor-not-allowed"
             />
             <LoaderCircle
                 v-if="loading"
-                class="size-4 animate-spin shrink-0 text-xq-muted-foreground"
+                class="size-4 motion-safe:animate-spin shrink-0 text-xq-muted-foreground"
             />
             <button
                 v-else-if="selectedValues.length && !disabled"
@@ -144,6 +147,13 @@ function clear(): void {
                 :class="cn(popoverClass, 'max-h-72 min-w-40 w-(--reka-combobox-trigger-width)')"
             >
                 <ComboboxViewport class="p-1">
+                    <p
+                        v-if="searchFailed"
+                        role="status"
+                        class="px-2 py-1.5 text-xs text-xq-destructive"
+                    >
+                        The search failed. Type again to retry.
+                    </p>
                     <ComboboxEmpty class="px-2 py-6 text-sm text-center text-xq-muted-foreground">
                         {{
                             loading

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { useField } from '../../composables/useField';
 import type { SchemaNode } from '../../schema/types';
 import XqLabel from '../../ui/XqLabel.vue';
@@ -6,6 +7,10 @@ import XqSwitch from '../../ui/XqSwitch.vue';
 
 const props = defineProps<{ node: SchemaNode }>();
 const { value, error, required, disabled, id } = useField<boolean>(props.node);
+const hasHint = computed(() => !!(props.node.props?.description || props.node.hint));
+const describedBy = computed(() =>
+    error.value ? `${id}-error` : hasHint.value ? `${id}-hint` : undefined,
+);
 </script>
 
 <template>
@@ -16,16 +21,15 @@ const { value, error, required, disabled, id } = useField<boolean>(props.node);
                 v-model="value"
                 :disabled="disabled"
                 :aria-invalid="error ? true : undefined"
+                :aria-describedby="describedBy"
             />
             <div class="gap-1.5 grid">
                 <XqLabel :for="id" class="gap-0.5 leading-5 cursor-pointer">
                     {{ node.label }}
                     <span v-if="required" class="text-xq-destructive" aria-hidden="true">*</span>
+                    <span v-if="required" class="sr-only">(required)</span>
                 </XqLabel>
-                <p
-                    v-if="node.props?.description || node.hint"
-                    class="text-xs text-xq-muted-foreground"
-                >
+                <p v-if="hasHint" :id="`${id}-hint`" class="text-xs text-xq-muted-foreground">
                     {{ node.props?.description ?? node.hint }}
                 </p>
             </div>

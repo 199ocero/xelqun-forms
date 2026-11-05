@@ -83,6 +83,8 @@ defineProps<{ form: FormSchema; orderId: number }>();
 </template>
 ```
 
+Section titles start at `h2`. If the form sits lower in your page's heading order, set it with `<XqForm :heading-level="3" />`.
+
 Components use their own `--xq-*` design tokens and `Xq*` names, so they work next to an app's own shadcn-vue components. Dark mode follows a `.dark` class or `[data-xq-theme=dark]`.
 
 ## Development

@@ -8,7 +8,7 @@ import { controlClass } from '../../ui/classes';
 import XqFieldWrapper from '../XqFieldWrapper.vue';
 
 const props = defineProps<{ node: SchemaNode }>();
-const { path, value, error, required, disabled, id, onBlur } = useField(props.node);
+const { path, value, error, describedBy, required, disabled, id, onBlur } = useField(props.node);
 const options = computed(() => props.node.props ?? {});
 
 function format(next: unknown): string {
@@ -79,7 +79,7 @@ const inputType = computed(() =>
                 :maxlength="options.maxLength ?? undefined"
                 :autocomplete="options.autocomplete ?? undefined"
                 :aria-invalid="error ? true : undefined"
-                :aria-describedby="error ? `${id}-error` : node.hint ? `${id}-hint` : undefined"
+                :aria-describedby="describedBy"
                 :class="
                     cn(
                         'min-w-0 px-3 h-full flex-1 bg-transparent outline-none placeholder:text-xq-muted-foreground disabled:cursor-not-allowed',

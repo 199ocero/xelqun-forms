@@ -5,7 +5,9 @@ import XqTextarea from '../../ui/XqTextarea.vue';
 import XqFieldWrapper from '../XqFieldWrapper.vue';
 
 const props = defineProps<{ node: SchemaNode }>();
-const { path, value, error, required, disabled, id, onBlur } = useField<string | null>(props.node);
+const { path, value, error, describedBy, required, disabled, id, onBlur } = useField<string | null>(
+    props.node,
+);
 </script>
 
 <template>
@@ -19,6 +21,7 @@ const { path, value, error, required, disabled, id, onBlur } = useField<string |
             :placeholder="node.placeholder ?? undefined"
             :disabled="disabled"
             :aria-invalid="error ? true : undefined"
+            :aria-describedby="describedBy"
             @blur="onBlur"
         />
     </XqFieldWrapper>

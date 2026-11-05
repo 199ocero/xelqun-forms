@@ -67,6 +67,25 @@ describe('server-searched select', () => {
         wrapper.unmount();
     });
 
+    it('tells the user when a search fails, and clears the message on the next one', async () => {
+        const { search, typeText, wrapper } = setup();
+        const failure = () => document.body.textContent?.includes('The search failed');
+
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        search.mockRejectedValueOnce(new Error('Server error'));
+        await wrapper.find('input').trigger('click');
+        await typeText('Phi');
+        await vi.advanceTimersByTimeAsync(250);
+
+        expect(failure()).toBe(true);
+
+        await typeText('Jap');
+        await vi.advanceTimersByTimeAsync(250);
+
+        expect(failure()).toBe(false);
+        wrapper.unmount();
+    });
+
     it('reuses cached results for a term it already searched', async () => {
         const { search, typeText, wrapper } = setup();
 

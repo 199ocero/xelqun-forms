@@ -8,13 +8,16 @@ import XqSelect from '../../ui/XqSelect.vue';
 import XqFieldWrapper from '../XqFieldWrapper.vue';
 
 const props = defineProps<{ node: SchemaNode }>();
-const { store, path, value, error, required, disabled, id, onBlur } = useField(props.node);
+const { store, path, value, error, describedBy, required, disabled, id, onBlur } = useField(
+    props.node,
+);
 const options = computed<SelectOption[]>(() => props.node.props?.options ?? []);
 const useCombobox = computed(() => !!(props.node.props?.searchable || props.node.props?.multiple));
 const isRemote = computed(() => !!props.node.props?.async);
 
 const remoteOptions = ref<SelectOption[]>([]);
 const loading = ref(false);
+const searchFailed = ref(false);
 const debounce = computed<number>(() => props.node.props?.searchDebounce ?? 250);
 const cache = new Map<string, SelectOption[]>();
 let lastTerm = '';
@@ -54,6 +57,7 @@ function onSearch(input: string): void {
     const term = input.trim();
 
     cancelPendingSearch();
+    searchFailed.value = false;
 
     if (term === '') {
         lastTerm = '';
@@ -88,6 +92,7 @@ function onSearch(input: string): void {
             remoteOptions.value = mergeOptions(results, options.value);
         } catch (searchError) {
             if (!controller.signal.aborted) {
+                searchFailed.value = true;
                 console.error('[xelqun] Search failed.', searchError);
             }
         } finally {
@@ -116,6 +121,8 @@ const hasValue = computed(
             :placeholder="node.placeholder"
             :disabled="disabled"
             :invalid="!!error"
+            :described-by="describedBy"
+            :search-failed="searchFailed"
             @search="onSearch"
             @blur="onBlur"
         />
@@ -127,6 +134,7 @@ const hasValue = computed(
                 :placeholder="node.placeholder"
                 :disabled="disabled"
                 :invalid="!!error"
+                :described-by="describedBy"
                 :class="!required && hasValue ? '[&>span:first-child]:pr-6' : undefined"
             />
             <button

@@ -22,6 +22,7 @@ const props = defineProps<{
     placeholder?: string | null;
     disabled?: boolean;
     invalid?: boolean;
+    describedBy?: string;
     class?: HTMLAttributes['class'];
 }>();
 const model = defineModel<string | number | null>();
@@ -33,6 +34,7 @@ const model = defineModel<string | number | null>();
             :id="id"
             data-slot="xq-select"
             :aria-invalid="invalid || undefined"
+            :aria-describedby="describedBy"
             :class="
                 cn(
                     controlClass,

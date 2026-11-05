@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-vue-next';
-import { computed, nextTick } from 'vue';
+import { computed, nextTick, ref } from 'vue';
 import { gridStyle } from '../../composables/layout';
 import { useField } from '../../composables/useField';
 import type { SchemaNode } from '../../schema/types';
@@ -13,6 +13,7 @@ const { store, error, required, disabled, id } = useField(props.node);
 const options = computed(() => props.node.props ?? {});
 const keys = computed(() => store.rowKeys(props.node));
 const rows = computed<Record<string, SchemaNode[]>>(() => options.value.rows ?? {});
+const container = ref<HTMLElement | null>(null);
 const canAdd = computed(
     () =>
         !disabled.value &&
@@ -23,6 +24,51 @@ const canAdd = computed(
 const canRemove = computed(
     () => !disabled.value && keys.value.length > (options.value.minItems ?? 0),
 );
+
+/**
+ * Keep keyboard users in place: focus the first of these that can take it.
+ */
+function focusFirstEnabled(selectors: string[]): void {
+    for (const selector of selectors) {
+        const button = container.value?.querySelector<HTMLButtonElement>(selector);
+
+        if (button && !button.disabled) {
+            button.focus();
+
+            return;
+        }
+    }
+}
+
+function rowSelector(key: string): string {
+    return `[data-xq-row="${CSS.escape(key)}"]`;
+}
+
+async function remove(key: string, index: number): Promise<void> {
+    store.removeRow(props.node, key);
+
+    await nextTick();
+
+    const next = keys.value[Math.min(index, keys.value.length - 1)];
+
+    focusFirstEnabled([
+        ...(next ? [`${rowSelector(next)} [data-xq-remove]`] : []),
+        '[data-xq-add]',
+    ]);
+}
+
+async function move(key: string, direction: -1 | 1): Promise<void> {
+    store.moveRow(props.node, key, direction);
+
+    await nextTick();
+
+    const row = rowSelector(key);
+
+    focusFirstEnabled([
+        `${row} [data-xq-move="${direction}"]`,
+        `${row} [data-xq-move="${-direction}"]`,
+    ]);
+}
 
 async function add(): Promise<void> {
     const key = store.addRow(props.node);
@@ -38,7 +84,7 @@ async function add(): Promise<void> {
 
 <template>
     <XqFieldWrapper :node="node" :id="id" :error="error" :required="required">
-        <div class="gap-3 grid">
+        <div ref="container" class="gap-3 grid">
             <div
                 v-for="(key, index) in keys"
                 :key="key"
@@ -59,7 +105,8 @@ async function add(): Promise<void> {
                                 size="icon-sm"
                                 :disabled="disabled || index === 0"
                                 :aria-label="`Move ${options.itemLabel} ${index + 1} up`"
-                                @click="store.moveRow(node, key, -1)"
+                                data-xq-move="-1"
+                                @click="move(key, -1)"
                             >
                                 <ArrowUp />
                             </XqButton>
@@ -69,7 +116,8 @@ async function add(): Promise<void> {
                                 size="icon-sm"
                                 :disabled="disabled || index === keys.length - 1"
                                 :aria-label="`Move ${options.itemLabel} ${index + 1} down`"
-                                @click="store.moveRow(node, key, 1)"
+                                data-xq-move="1"
+                                @click="move(key, 1)"
                             >
                                 <ArrowDown />
                             </XqButton>
@@ -81,7 +129,8 @@ async function add(): Promise<void> {
                             class="text-xq-muted-foreground hover:text-xq-destructive"
                             :disabled="!canRemove"
                             :aria-label="`Remove ${options.itemLabel} ${index + 1}`"
-                            @click="store.removeRow(node, key)"
+                            data-xq-remove
+                            @click="remove(key, index)"
                         >
                             <Trash2 />
                         </XqButton>
@@ -103,6 +152,7 @@ async function add(): Promise<void> {
                     variant="outline"
                     size="sm"
                     :disabled="!canAdd"
+                    data-xq-add
                     @click="add"
                 >
                     <Plus />

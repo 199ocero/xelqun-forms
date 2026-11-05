@@ -1,6 +1,6 @@
 # Xelqun Forms: planning document
 
-> Status: approved plan (2026-10-28), implemented through Milestone 8. See "Implementation status" at the end.
+> Status: approved plan (2026-10-28), implemented through Milestone 9. See "Implementation status" at the end.
 
 ## Context
 
@@ -430,7 +430,7 @@ Each one ends with something visible at `/playground/forms`.
 
 ## Implementation status (2026-11-05)
 
-Milestones 0–8 are built and tested; milestone 9 (polish) is partly done (light/dark, mobile layout, a11y basics, lazy date picker and file upload).
+Milestones 0–9 are built and tested. Milestone 9 added failure and loading feedback for live updates, screen reader and keyboard support across every field type, reduced motion, and WCAG AA text contrast. It has not been checked with a real screen reader, on real phones, or in Safari and Firefox.
 
 | Proof point | Covered by |
 |---|---|
@@ -440,7 +440,7 @@ Milestones 0–8 are built and tested; milestone 9 (polish) is partly done (ligh
 | File upload inside a repeater row | browser test, package `UploadTest` |
 | Server errors on the correct nested field | browser tests (`Price (Item 2)`), package `ValidationTest` |
 
-**Test counts:** package Pest 134, package Vitest 96, playground Pest 30 (1 unit + 13 feature + 16 browser).
+**Test counts:** package Pest 134, package Vitest 139, playground Pest 32 (1 unit + 13 feature + 18 browser).
 
 ### Where the build differs from the plan
 - **Patches have no `add`/`remove`.** A component hidden by a server closure is sent as a stub (`{ key, type, hidden: true, deps }`) and later patched to a full node, which keeps every key stable.

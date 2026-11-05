@@ -49,7 +49,7 @@ watch(store.focusRequest, (request) => {
                 {{ tab.label }}
                 <span
                     v-if="errorCount(tab)"
-                    class="size-4 font-semibold text-white inline-flex items-center justify-center rounded-full bg-xq-destructive text-[0.65rem]"
+                    class="size-4 font-semibold inline-flex items-center justify-center rounded-full bg-xq-destructive text-[0.65rem] text-xq-destructive-foreground"
                 >
                     {{ errorCount(tab) }}
                 </span>

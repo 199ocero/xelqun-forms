@@ -45,6 +45,10 @@ export function defaultLiveConfig(type: string | undefined): LiveConfig {
         : { mode: 'change', ms: null };
 }
 
+function prefersReducedMotion(): boolean {
+    return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+}
+
 export type FormStore = ReturnType<typeof createFormStore>;
 
 /**
@@ -71,6 +75,7 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
     const editVersions = new Map<string, number>();
     const processing = ref(false);
     const fatalError: Ref<string | null> = ref(versionError);
+    const liveError: Ref<string | null> = ref(null);
     const focusRequest = ref<{ path: string; at: number } | null>(null);
     const root: Ref<HTMLElement | null> = ref(null);
     const uploads = new Set<Promise<unknown>>();
@@ -339,15 +344,30 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
         }),
         snapshotVersions: () => new Map(editVersions),
         send: (request, signal) => send(schema.endpoints.update, request, signal),
-        apply: applyPatch,
+        apply: (patch, versions) => {
+            liveError.value = null;
+            applyPatch(patch, versions);
+        },
         onError: (error) => {
             if (error instanceof HttpError && error.status === 419) {
                 fatalError.value = 'This form has expired. Reload the page to continue.';
+            } else {
+                liveError.value =
+                    'Some fields could not be updated. Check your connection and try again.';
             }
 
             console.error('[xelqun] Live update failed.', error);
         },
     });
+
+    /**
+     * True while a request that can change this node is in flight.
+     */
+    function isLoading(node: SchemaNode): boolean {
+        const paths = queue.loadingPaths.value;
+
+        return !!node.deps?.some((dependency) => paths.some((path) => overlaps(dependency, path)));
+    }
 
     function setErrors(incoming: Record<string, string | string[]>): void {
         clearErrors();
@@ -395,7 +415,10 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
             );
 
             if (target) {
-                element!.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
+                element!.scrollIntoView?.({
+                    block: 'center',
+                    behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+                });
                 target.focus({ preventScroll: true });
 
                 return;
@@ -407,6 +430,8 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
         if (processing.value) {
             return;
         }
+
+        let failedValidation = false;
 
         processing.value = true;
         await Promise.allSettled(uploads);
@@ -420,7 +445,7 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
             preserveState: submitOptions.preserveState ?? 'errors',
             onError: (incoming) => {
                 setErrors(incoming as Record<string, string>);
-                focusFirstError();
+                failedValidation = true;
                 submitOptions.onError?.({ ...errors });
             },
             onSuccess: (page) => {
@@ -429,6 +454,12 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
             },
             onFinish: () => {
                 processing.value = false;
+
+                // Fields stay disabled while processing, and a disabled field can't take focus.
+                if (failedValidation) {
+                    focusFirstError();
+                }
+
                 submitOptions.onFinish?.();
             },
         });
@@ -500,6 +531,7 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
         processing,
         uploading,
         fatalError,
+        liveError,
         focusRequest,
         root,
         queue,
@@ -510,6 +542,7 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
         isVisible,
         isRequired,
         isDisabled,
+        isLoading,
         evaluateCondition: (node: ConditionNode) => evaluateCondition(node, get),
         rowKeys,
         addRow,

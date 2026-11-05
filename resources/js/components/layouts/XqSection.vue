@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ChevronDown } from 'lucide-vue-next';
-import { computed, ref } from 'vue';
+import { computed, inject, provide, ref } from 'vue';
+import { HEADING_LEVEL } from '../../composables/context';
 import { gridStyle } from '../../composables/layout';
 import { cn } from '../../lib/utils';
 import type { SchemaNode } from '../../schema/types';
@@ -10,6 +11,9 @@ const props = defineProps<{ node: SchemaNode }>();
 const options = computed(() => props.node.props ?? {});
 const collapsed = ref<boolean>(!!props.node.props?.collapsed);
 const hasHeader = computed(() => !!(props.node.label || options.value.description));
+const headingLevel = inject(HEADING_LEVEL, 2);
+
+provide(HEADING_LEVEL, Math.min(headingLevel + 1, 6));
 </script>
 
 <template>
@@ -26,7 +30,9 @@ const hasHeader = computed(() => !!(props.node.label || options.value.descriptio
             "
         >
             <div class="gap-1 grid">
-                <h3 v-if="node.label" class="text-sm font-semibold">{{ node.label }}</h3>
+                <component :is="`h${headingLevel}`" v-if="node.label" class="text-sm font-semibold">
+                    {{ node.label }}
+                </component>
                 <p v-if="options.description" class="text-sm text-xq-muted-foreground">
                     {{ options.description }}
                 </p>
@@ -40,7 +46,12 @@ const hasHeader = computed(() => !!(props.node.label || options.value.descriptio
                 @click="collapsed = !collapsed"
             >
                 <ChevronDown
-                    :class="cn('size-4 transition-transform', collapsed && '-rotate-90')"
+                    :class="
+                        cn(
+                            'size-4 transition-transform motion-reduce:transition-none',
+                            collapsed && '-rotate-90',
+                        )
+                    "
                 />
             </button>
         </header>

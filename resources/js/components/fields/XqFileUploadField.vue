@@ -9,7 +9,9 @@ import XqButton from '../../ui/XqButton.vue';
 import XqFieldWrapper from '../XqFieldWrapper.vue';
 
 const props = defineProps<{ node: SchemaNode }>();
-const { store, path, value, error, required, disabled, id } = useField<string | null>(props.node);
+const { store, path, value, error, describedBy, required, disabled, id } = useField<string | null>(
+    props.node,
+);
 const options = computed(() => props.node.props ?? {});
 
 const input = ref<HTMLInputElement | null>(null);
@@ -50,6 +52,8 @@ const isImage = computed(
         !!file.value?.url &&
         (options.value.image || /\.(png|jpe?g|gif|webp|avif|svg)$/i.test(file.value.name)),
 );
+
+const inputDescribedBy = computed(() => (uploadError.value ? `${id}-error` : describedBy.value));
 
 function revokePreview(): void {
     if (local.value?.preview) {
@@ -184,7 +188,7 @@ onBeforeUnmount(() => {
             :for="id"
             :class="
                 cn(
-                    'gap-1.5 px-4 py-5 flex cursor-pointer flex-col items-center justify-center rounded-xq-md border border-dashed border-xq-input bg-xq-background text-center transition-colors hover:bg-xq-muted/50',
+                    'gap-1.5 px-4 py-5 flex cursor-pointer flex-col items-center justify-center rounded-xq-md border border-dashed border-xq-input bg-xq-background text-center transition-[color,background-color,border-color,box-shadow] outline-none hover:bg-xq-muted/50 has-[input:focus-visible]:border-xq-ring has-[input:focus-visible]:ring-[3px] has-[input:focus-visible]:ring-xq-ring/25',
                     dragging && 'border-xq-primary bg-xq-primary/5',
                     (error || uploadError) && 'border-xq-destructive',
                     disabled && 'pointer-events-none opacity-60',
@@ -195,9 +199,16 @@ onBeforeUnmount(() => {
             @drop.prevent="onDrop"
         >
             <template v-if="progress">
-                <LoaderCircle class="size-5 animate-spin text-xq-primary" />
+                <LoaderCircle class="size-5 motion-safe:animate-spin text-xq-primary" />
                 <span class="text-sm font-medium max-w-full truncate">{{ progress.name }}</span>
-                <span class="h-1.5 w-40 overflow-hidden rounded-full bg-xq-muted">
+                <span
+                    role="progressbar"
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                    :aria-valuenow="progress.percent"
+                    :aria-label="`Uploading ${progress.name}`"
+                    class="h-1.5 w-40 overflow-hidden rounded-full bg-xq-muted"
+                >
                     <span
                         class="block h-full bg-xq-primary transition-[width]"
                         :style="{ width: `${progress.percent}%` }"
@@ -221,6 +232,8 @@ onBeforeUnmount(() => {
                 class="sr-only"
                 :accept="options.accept ?? undefined"
                 :disabled="disabled"
+                :aria-invalid="error || uploadError ? true : undefined"
+                :aria-describedby="inputDescribedBy"
                 @change="onChange"
             />
         </label>

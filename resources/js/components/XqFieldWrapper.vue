@@ -1,21 +1,45 @@
 <script setup lang="ts">
+import { LoaderCircle } from 'lucide-vue-next';
+import { computed } from 'vue';
+import { useFormStore } from '../composables/context';
 import type { SchemaNode } from '../schema/types';
 import XqLabel from '../ui/XqLabel.vue';
 
-defineProps<{
+const props = defineProps<{
     node: SchemaNode;
     id: string;
+    /** The control the label points at, when it isn't `id` (e.g. the first radio). */
+    labelFor?: string;
     error?: string | null;
     required?: boolean;
     hideLabel?: boolean;
 }>();
+
+const store = useFormStore();
+const loading = computed(() => store.isLoading(props.node));
 </script>
 
 <template>
-    <div class="gap-2 grid" :data-xq-path="node.path" :data-invalid="error ? '' : undefined">
-        <XqLabel v-if="node.label && !hideLabel" :for="id" class="gap-0.5">
+    <div
+        class="gap-2 grid"
+        :data-xq-path="node.path"
+        :data-invalid="error ? '' : undefined"
+        :aria-busy="loading || undefined"
+    >
+        <XqLabel
+            v-if="node.label && !hideLabel"
+            :id="`${id}-label`"
+            :for="labelFor ?? id"
+            class="gap-0.5"
+        >
             {{ node.label }}
             <span v-if="required" class="text-xq-destructive" aria-hidden="true">*</span>
+            <span v-if="required" class="sr-only">(required)</span>
+            <LoaderCircle
+                v-if="loading"
+                class="ml-1 size-3 motion-safe:animate-spin text-xq-muted-foreground"
+                aria-hidden="true"
+            />
         </XqLabel>
         <slot />
         <p v-if="node.hint && !error" :id="`${id}-hint`" class="text-xs text-xq-muted-foreground">

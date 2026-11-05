@@ -12,7 +12,9 @@ import XqCalendar from '../../ui/XqCalendar.vue';
 import XqFieldWrapper from '../XqFieldWrapper.vue';
 
 const props = defineProps<{ node: SchemaNode }>();
-const { value, error, required, disabled, id, onBlur } = useField<string | null>(props.node);
+const { value, error, describedBy, required, disabled, id, onBlur } = useField<string | null>(
+    props.node,
+);
 const open = ref(false);
 
 function parse(input: unknown): DateValue | undefined {
@@ -55,6 +57,7 @@ const label = computed(() =>
                         type="button"
                         :disabled="disabled"
                         :aria-invalid="error ? true : undefined"
+                        :aria-describedby="describedBy"
                         :class="
                             cn(
                                 controlClass,

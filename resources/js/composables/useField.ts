@@ -10,6 +10,8 @@ export function useField<T = any>(nodeOrPath: SchemaNode | string) {
     const store = useFormStore();
     const node = typeof nodeOrPath === 'string' ? store.nodes.get(nodeOrPath)! : nodeOrPath;
     const path = node.path ?? node.key;
+    const id = `xq-${store.id}-${path}`.replace(/[^\w-]/g, '-');
+    const error = computed(() => store.errors[path] ?? null);
 
     const value = computed<T>({
         get: () => store.get(path),
@@ -20,9 +22,17 @@ export function useField<T = any>(nodeOrPath: SchemaNode | string) {
         store,
         node,
         path,
-        id: `xq-${store.id}-${path}`.replace(/[^\w-]/g, '-'),
+        id,
         value,
-        error: computed(() => store.errors[path] ?? null),
+        error,
+        /** The id for aria-describedby: the error when there is one, otherwise the hint. */
+        describedBy: computed(() => {
+            if (error.value) {
+                return `${id}-error`;
+            }
+
+            return node.hint ? `${id}-hint` : undefined;
+        }),
         required: computed(() => store.isRequired(node)),
         disabled: computed(() => store.isDisabled(node) || store.processing.value),
         onBlur: () => store.blur(path),

@@ -28,7 +28,13 @@ export class RequestQueue {
 
     readonly busy = ref(false);
 
+    /** Paths of the request in flight, so fields that depend on them can show progress. */
+    readonly loadingPaths = ref<string[]>([]);
+
     private pending = new Set<string>();
+
+    /** Paths of the last failed request. They go out again with the next one. */
+    private failed = new Set<string>();
 
     private timer: ReturnType<typeof setTimeout> | null = null;
 
@@ -82,8 +88,19 @@ export class RequestQueue {
         return !this.isIdle();
     }
 
+    /**
+     * Send the paths of the last failed request again.
+     */
+    retry(): Promise<void> {
+        this.clearTimer();
+
+        return this.flush();
+    }
+
     async flush(): Promise<void> {
         this.timer = null;
+        this.failed.forEach((path) => this.pending.add(path));
+        this.failed.clear();
 
         if (this.pending.size === 0) {
             this.settle();
@@ -106,6 +123,7 @@ export class RequestQueue {
         this.pending.clear();
         this.inflight = { controller, paths, seq };
         this.busy.value = true;
+        this.loadingPaths.value = paths;
 
         try {
             const patch = await this.options.send(request, controller.signal);
@@ -129,6 +147,11 @@ export class RequestQueue {
             } else {
                 entry.status = 'error';
                 entry.error = error instanceof Error ? error.message : String(error);
+
+                if (seq === this.seq) {
+                    paths.forEach((path) => this.failed.add(path));
+                }
+
                 this.options.onError?.(error);
             }
         } finally {
@@ -158,6 +181,7 @@ export class RequestQueue {
 
     private settle(): void {
         this.busy.value = this.inflight !== null;
+        this.loadingPaths.value = this.inflight?.paths ?? [];
 
         if (this.isIdle()) {
             this.waiters.splice(0).forEach((resolve) => resolve());

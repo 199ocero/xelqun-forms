@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { CircleAlert } from 'lucide-vue-next';
 import { inject, onMounted, provide, ref } from 'vue';
-import { provideFormStore } from '../composables/context';
+import { HEADING_LEVEL, provideFormStore } from '../composables/context';
 import { REGISTRY } from '../composables/registry';
 import { useXqForm } from '../composables/useXqForm';
 import type { FormStore } from '../core/store';
@@ -18,9 +18,11 @@ const props = withDefaults(
         method?: 'post' | 'put' | 'patch';
         submitLabel?: string;
         preserveState?: boolean | 'errors';
+        /** Heading level of top-level section titles. Set it to fit the page around the form. */
+        headingLevel?: 2 | 3 | 4 | 5 | 6;
         class?: string;
     }>(),
-    { method: 'post', submitLabel: 'Save' },
+    { method: 'post', submitLabel: 'Save', headingLevel: 2 },
 );
 const emit = defineEmits<{
     submit: [store: FormStore];
@@ -33,9 +35,11 @@ function isStore(value: FormStore | FormSchema): value is FormStore {
 }
 
 const store = isStore(props.form) ? props.form : useXqForm(props.form);
-const { processing, uploading, fatalError } = store;
+const { processing, uploading, fatalError, liveError } = store;
+const syncing = store.queue.busy;
 
 provideFormStore(store);
+provide(HEADING_LEVEL, props.headingLevel);
 provide(REGISTRY, inject(REGISTRY, null) ?? createRegistry());
 
 const root = ref<HTMLFormElement | null>(null);
@@ -78,6 +82,25 @@ function submit(): void {
         </div>
         <div class="xq-grid">
             <XqNode v-for="node in store.components" :key="node.key" :node="node" />
+        </div>
+        <div
+            v-if="liveError"
+            role="alert"
+            class="bottom-4 gap-3 px-3 py-2 text-sm shadow-lg sticky z-10 flex items-center justify-between rounded-xq-md border border-xq-destructive/40 bg-xq-card text-xq-destructive"
+        >
+            <span class="gap-2 flex items-start">
+                <CircleAlert class="mt-0.5 size-4 shrink-0" />
+                {{ liveError }}
+            </span>
+            <XqButton
+                type="button"
+                variant="outline"
+                size="sm"
+                :disabled="syncing"
+                @click="store.queue.retry()"
+            >
+                Try again
+            </XqButton>
         </div>
         <slot
             name="actions"
