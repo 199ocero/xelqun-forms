@@ -92,14 +92,14 @@ cd packages/forms && git add . && git commit -m "Initial package scaffold" && gi
 
 ## 3. Package structure
 
-**Recommendation: one repo, two manifests.** `xelqun-forms` holds both `composer.json` (`xelqun/forms`) and `package.json` (`@xelqun/forms`), and both are released from the same tag. Ziggy does the same. Users run `composer require xelqun/forms && npm i @xelqun/forms`.
+**Recommendation: one repo, two manifests.** `xelqun-forms` holds both `composer.json` (`xelqun/forms`) and `package.json` (`@xelqun/forms`), and both are released from the same tag. Ziggy does the same. Users run `composer require xelqun/forms && php artisan xelqun-forms:install`, and the installer adds the matching npm package and wires up the app.
 
 | Option | Pros | Cons |
 |---|---|---|
-| **npm package from the same repo (chosen)** | Normal JS tooling: dependencies resolve, TypeScript types work, works with any package manager, one Vue copy | Two installs, so PHP and JS versions can drift. Handled by the schema version handshake (section 4). |
+| **npm package from the same repo (chosen)** | Normal JS tooling: dependencies resolve, TypeScript types work, works with any package manager, one Vue copy | Two installs, so PHP and JS versions can drift. The installer pins the npm version to the PHP package, and the schema version handshake (section 4) catches any later drift. |
 | Vite path into `vendor/xelqun/forms` | One install, versions always match | Host installs the package's JS dependencies by hand, awkward TypeScript paths, unusual for JS developers, a later Vite plugin would be needed anyway |
 
-**MVP ships TypeScript and Vue source** (no build step). The host's Vite compiles it, Tailwind scans it, and an "eject" is a file copy. Before 1.0, decide whether to precompile with `vp pack`.
+**MVP ships TypeScript and Vue source** (no build step). The host's Vite compiles it, Tailwind scans it, and an "eject" is a file copy. Before 1.0, decide whether to precompile with `vp pack`. A prototype showed it can drop the npm package, but `reka-ui` can't simply be bundled: a second copy breaks popovers inside a host's own Reka dialog (Escape closes the dialog, and options can't be clicked because they inherit `pointer-events: none`). It would need a second build that uses the host's `reka-ui`, and about 53 kB of calendar code moved into the main bundle.
 
 ```
 packages/forms/

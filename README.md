@@ -40,9 +40,12 @@ class OrderForm extends Form
 ## Installation
 
 ```bash
-composer require xelqun/forms
-npm install @xelqun/forms
+composer require xelqun/forms && php artisan xelqun-forms:install
 ```
+
+The installer adds the matching version of the `@xelqun/forms` npm package with your package manager (npm, pnpm, Yarn or Bun, detected from the lockfile). It then adds the plugin to `resources/js/app.ts` and the stylesheet to `resources/css/app.css`. It's safe to run again, so run it after `composer update` to bring the npm package up to the same version.
+
+Use `--config` to publish the config file, or `--without-node` to skip the npm step. If the installer can't edit a file safely, it leaves the file alone and prints the step to do by hand:
 
 ```ts
 // resources/js/app.ts
@@ -58,6 +61,8 @@ createInertiaApp({
 @import 'tailwindcss';
 @import '@xelqun/forms/style.css';
 ```
+
+Then render a form:
 
 ```php
 // controller

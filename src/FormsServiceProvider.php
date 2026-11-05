@@ -3,6 +3,7 @@
 namespace Xelqun\Forms;
 
 use Illuminate\Support\ServiceProvider;
+use Xelqun\Forms\Commands\InstallCommand;
 use Xelqun\Forms\Commands\PruneTemporaryUploadsCommand;
 use Xelqun\Forms\Uploads\TemporaryUploadStore;
 
@@ -24,7 +25,7 @@ class FormsServiceProvider extends ServiceProvider
                 __DIR__.'/../config/xelqun-forms.php' => config_path('xelqun-forms.php'),
             ], 'xelqun-forms-config');
 
-            $this->commands([PruneTemporaryUploadsCommand::class]);
+            $this->commands([InstallCommand::class, PruneTemporaryUploadsCommand::class]);
         }
     }
 }
