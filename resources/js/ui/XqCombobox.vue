@@ -16,7 +16,7 @@ import { computed, reactive, ref, watch } from 'vue';
 import type { HTMLAttributes } from 'vue';
 import { cn } from '../lib/utils';
 import type { SelectOption } from '../schema/types';
-import { controlClass, optionClass, popoverClass } from './classes';
+import { controlClass, optionClass, popoverClass, spinnerClass } from './classes';
 
 type Value = string | number;
 
@@ -26,6 +26,7 @@ const props = defineProps<{
     multiple?: boolean;
     remote?: boolean;
     loading?: boolean;
+    searching?: boolean;
     placeholder?: string | null;
     disabled?: boolean;
     invalid?: boolean;
@@ -121,10 +122,7 @@ function clear(): void {
                 :aria-describedby="describedBy"
                 class="h-7 min-w-16 px-1 text-sm flex-1 bg-transparent outline-none placeholder:text-xq-muted-foreground disabled:cursor-not-allowed"
             />
-            <LoaderCircle
-                v-if="loading"
-                class="size-4 motion-safe:animate-spin shrink-0 text-xq-muted-foreground"
-            />
+            <LoaderCircle v-if="loading || searching" :class="spinnerClass" aria-hidden="true" />
             <button
                 v-else-if="selectedValues.length && !disabled"
                 type="button"
@@ -156,11 +154,13 @@ function clear(): void {
                     </p>
                     <ComboboxEmpty class="px-2 py-6 text-sm text-center text-xq-muted-foreground">
                         {{
-                            loading
+                            searching
                                 ? 'Searching…'
-                                : searchTerm || !remote
-                                  ? 'No results'
-                                  : 'Type to search'
+                                : loading
+                                  ? 'Loading…'
+                                  : searchTerm || !remote
+                                    ? 'No results'
+                                    : 'Type to search'
                         }}
                     </ComboboxEmpty>
                     <ComboboxItem

@@ -8,15 +8,25 @@ import XqSelect from '../../ui/XqSelect.vue';
 import XqFieldWrapper from '../XqFieldWrapper.vue';
 
 const props = defineProps<{ node: SchemaNode }>();
-const { store, path, value, error, describedBy, required, disabled, id, onBlur } = useField(
-    props.node,
-);
+const {
+    store,
+    path,
+    value,
+    error,
+    placeholder,
+    describedBy,
+    showLoading,
+    required,
+    disabled,
+    id,
+    onBlur,
+} = useField(props.node);
 const options = computed<SelectOption[]>(() => props.node.props?.options ?? []);
 const useCombobox = computed(() => !!(props.node.props?.searchable || props.node.props?.multiple));
 const isRemote = computed(() => !!props.node.props?.async);
 
 const remoteOptions = ref<SelectOption[]>([]);
-const loading = ref(false);
+const searching = ref(false);
 const searchFailed = ref(false);
 const debounce = computed<number>(() => props.node.props?.searchDebounce ?? 250);
 const cache = new Map<string, SelectOption[]>();
@@ -41,7 +51,7 @@ function cancelPendingSearch(): void {
     }
 
     controller?.abort();
-    loading.value = false;
+    searching.value = false;
 }
 
 /**
@@ -82,7 +92,7 @@ function onSearch(input: string): void {
     timer = setTimeout(async () => {
         timer = null;
         controller = new AbortController();
-        loading.value = true;
+        searching.value = true;
 
         try {
             const results = await store.search(path, term, controller.signal);
@@ -96,7 +106,7 @@ function onSearch(input: string): void {
                 console.error('[xelqun] Search failed.', searchError);
             }
         } finally {
-            loading.value = false;
+            searching.value = false;
         }
     }, debounce.value);
 }
@@ -109,7 +119,7 @@ const hasValue = computed(
 </script>
 
 <template>
-    <XqFieldWrapper :node="node" :id="id" :error="error" :required="required">
+    <XqFieldWrapper :node="node" :id="id" :error="error" :required="required" control-shows-loading>
         <XqCombobox
             v-if="useCombobox"
             :id="id"
@@ -117,8 +127,9 @@ const hasValue = computed(
             :options="isRemote ? remoteOptions : options"
             :multiple="!!node.props?.multiple"
             :remote="isRemote"
-            :loading="loading"
-            :placeholder="node.placeholder"
+            :loading="showLoading"
+            :searching="searching"
+            :placeholder="placeholder"
             :disabled="disabled"
             :invalid="!!error"
             :described-by="describedBy"
@@ -131,7 +142,8 @@ const hasValue = computed(
                 :id="id"
                 v-model="value"
                 :options="options"
-                :placeholder="node.placeholder"
+                :loading="showLoading"
+                :placeholder="placeholder"
                 :disabled="disabled"
                 :invalid="!!error"
                 :described-by="describedBy"

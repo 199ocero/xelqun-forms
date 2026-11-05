@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Check, ChevronDown } from 'lucide-vue-next';
+import { Check, ChevronDown, LoaderCircle } from 'lucide-vue-next';
 import {
     SelectContent,
     SelectItem,
@@ -14,11 +14,12 @@ import {
 import type { HTMLAttributes } from 'vue';
 import { cn } from '../lib/utils';
 import type { SelectOption } from '../schema/types';
-import { controlClass, optionClass, popoverClass } from './classes';
+import { controlClass, optionClass, popoverClass, spinnerClass } from './classes';
 
 const props = defineProps<{
     id?: string;
     options: SelectOption[];
+    loading?: boolean;
     placeholder?: string | null;
     disabled?: boolean;
     invalid?: boolean;
@@ -44,7 +45,8 @@ const model = defineModel<string | number | null>();
             "
         >
             <SelectValue :placeholder="placeholder ?? 'Select an option'" class="truncate" />
-            <ChevronDown class="size-4 shrink-0 opacity-60" />
+            <LoaderCircle v-if="loading" :class="spinnerClass" aria-hidden="true" />
+            <ChevronDown v-else class="size-4 shrink-0 opacity-60" />
         </SelectTrigger>
         <SelectPortal>
             <SelectContent
@@ -70,7 +72,7 @@ const model = defineModel<string | number | null>();
                         v-if="options.length === 0"
                         class="px-2 py-6 text-sm text-center text-xq-muted-foreground"
                     >
-                        No options
+                        {{ loading ? 'Loading…' : 'No options' }}
                     </div>
                 </SelectViewport>
             </SelectContent>

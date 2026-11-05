@@ -31,7 +31,7 @@ class OrderForm extends Form
 
 ## How it works
 
-- **Three tiers of rules.** Declarative conditions (`visibleWhen`, `requiredWhen`, `disabledWhen`) and calculations (`computed('qty * price')`) run in the browser with no server call. The server re-checks every condition, drops hidden values and recomputes every total on submit. Server closures (`options(fn (Get $get) => ...)`, `afterStateUpdated`) run only on the server.
+- **Three tiers of rules.** Declarative conditions (`visibleWhen`, `requiredWhen`, `disabledWhen`) and calculations (`computed('qty * price')`) run in the browser with no server call. The server re-checks every condition, drops hidden values and recomputes every total on submit. Conditional text does the same for wording: `->placeholder(When::eq('is_gift', true)->then('Add a gift message…')->else('Anything we should know?'))` also works on `label()` and `hint()`, and costs no request. Server closures (`options(fn (Get $get) => ...)`, `afterStateUpdated`) run only on the server, and any field they read through `Get` sends an update when it changes.
 - **Automatic dependency tracking.** Closures read state through `Get`, which records what they read. The browser calls the server only when one of those paths changes, and the response is a small patch that is merged in place, so focus and cursor position are kept.
 - **Secure by default.** Forms are rebuilt on the server from an encrypted token (never a class name from the client). Every endpoint re-runs `authorize()` and validation.
 - **Stable row keys.** Repeater rows are keyed by UUIDs (or `record-{id}`), so Laravel validation errors map straight onto nested fields.

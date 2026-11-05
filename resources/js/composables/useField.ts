@@ -12,6 +12,7 @@ export function useField<T = any>(nodeOrPath: SchemaNode | string) {
     const path = node.path ?? node.key;
     const id = `xq-${store.id}-${path}`.replace(/[^\w-]/g, '-');
     const error = computed(() => store.errors[path] ?? null);
+    const hint = computed(() => store.text(node, 'hint'));
 
     const value = computed<T>({
         get: () => store.get(path),
@@ -25,15 +26,20 @@ export function useField<T = any>(nodeOrPath: SchemaNode | string) {
         id,
         value,
         error,
+        label: computed(() => store.text(node, 'label')),
+        hint,
+        placeholder: computed(() => store.text(node, 'placeholder')),
         /** The id for aria-describedby: the error when there is one, otherwise the hint. */
         describedBy: computed(() => {
             if (error.value) {
                 return `${id}-error`;
             }
 
-            return node.hint ? `${id}-hint` : undefined;
+            return hint.value ? `${id}-hint` : undefined;
         }),
         loading: computed(() => store.isLoading(node)),
+        /** Delayed version of loading, for the spinner: fast requests never show one. */
+        showLoading: computed(() => store.showsLoadingIndicator(node)),
         required: computed(() => store.isRequired(node)),
         disabled: computed(() => store.isDisabled(node) || store.processing.value),
         onBlur: () => store.blur(path),

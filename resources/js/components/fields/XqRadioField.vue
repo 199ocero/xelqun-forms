@@ -8,9 +8,9 @@ import XqRadioGroupItem from '../../ui/XqRadioGroupItem.vue';
 import XqFieldWrapper from '../XqFieldWrapper.vue';
 
 const props = defineProps<{ node: SchemaNode }>();
-const { value, error, describedBy, required, disabled, id } = useField<string | number | null>(
-    props.node,
-);
+const { value, error, label, describedBy, required, disabled, id } = useField<
+    string | number | null
+>(props.node);
 </script>
 
 <template>
@@ -22,7 +22,7 @@ const { value, error, describedBy, required, disabled, id } = useField<string | 
             :aria-invalid="error ? true : undefined"
             :aria-required="required || undefined"
             :aria-describedby="describedBy"
-            :aria-labelledby="node.label ? `${id}-label` : undefined"
+            :aria-labelledby="label ? `${id}-label` : undefined"
             :class="cn(node.props?.inline && 'gap-x-6 gap-y-2 flex flex-wrap')"
         >
             <div

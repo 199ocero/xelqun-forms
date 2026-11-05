@@ -2,7 +2,7 @@ import { flushPromises, mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
 import { nextTick } from 'vue';
 import XqForm from '../../resources/js/components/XqForm.vue';
-import { createFormStore } from '../../resources/js/core/store';
+import { createFormStore, LOADING_INDICATOR_DELAY } from '../../resources/js/core/store';
 import type { SchemaNode } from '../../resources/js/schema/types';
 import { field, schema } from './fixtures';
 
@@ -121,8 +121,10 @@ describe('form accessibility', () => {
         );
         const wrapper = mount(XqForm, { props: { form: store }, attachTo: document.body });
 
+        vi.useFakeTimers();
         store.queue.loadingPaths.value = ['data.country'];
-        await nextTick();
+        await vi.advanceTimersByTimeAsync(LOADING_INDICATOR_DELAY);
+        vi.useRealTimers();
 
         const field_ = wrapper.find('[data-xq-path="data.value"]');
 

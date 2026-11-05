@@ -15,10 +15,17 @@ const props = defineProps<{
     error?: string | null;
     required?: boolean;
     hideLabel?: boolean;
+    /** The control shows its own spinner, so the label doesn't need one. */
+    controlShowsLoading?: boolean;
 }>();
 
 const store = useFormStore();
 const loading = computed(() => store.isLoading(props.node));
+const label = computed(() => store.text(props.node, 'label'));
+const hint = computed(() => store.text(props.node, 'hint'));
+const showLabelSpinner = computed(
+    () => !props.controlShowsLoading && store.showsLoadingIndicator(props.node),
+);
 </script>
 
 <template>
@@ -29,23 +36,23 @@ const loading = computed(() => store.isLoading(props.node));
         :aria-busy="loading || undefined"
     >
         <XqLabel
-            v-if="node.label && !hideLabel"
+            v-if="label && !hideLabel"
             :id="`${id}-label`"
             :for="labelFor === null ? undefined : (labelFor ?? id)"
             class="gap-0.5"
         >
-            {{ node.label }}
+            {{ label }}
             <span v-if="required" class="text-xq-destructive" aria-hidden="true">*</span>
             <span v-if="required" class="sr-only">(required)</span>
             <LoaderCircle
-                v-if="loading"
+                v-if="showLabelSpinner"
                 class="ml-1 size-3 motion-safe:animate-spin text-xq-muted-foreground"
                 aria-hidden="true"
             />
         </XqLabel>
         <slot />
-        <p v-if="node.hint && !error" :id="`${id}-hint`" class="text-xs text-xq-muted-foreground">
-            {{ node.hint }}
+        <p v-if="hint && !error" :id="`${id}-hint`" class="text-xs text-xq-muted-foreground">
+            {{ hint }}
         </p>
         <p
             v-if="error"

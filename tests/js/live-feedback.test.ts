@@ -3,9 +3,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { nextTick } from 'vue';
 import XqForm from '../../resources/js/components/XqForm.vue';
 import { HttpError } from '../../resources/js/core/http';
-import { createFormStore } from '../../resources/js/core/store';
+import { createFormStore, LOADING_INDICATOR_DELAY } from '../../resources/js/core/store';
 import type { UpdatePatch, UpdateRequest } from '../../resources/js/schema/types';
 import { field, schema } from './fixtures';
+
+const spinner = '.motion-safe\\:animate-spin';
 
 function patch(seq: number): UpdatePatch {
     return { $xq: 1, seq, set: {}, schema: {}, errors: {} };
@@ -54,12 +56,106 @@ describe('live update feedback', () => {
 
         expect(wrapper.find('[data-xq-path="data.state"]').attributes('aria-busy')).toBe('true');
         expect(wrapper.find('[data-xq-path="data.phone"]').attributes('aria-busy')).toBeUndefined();
-        expect(wrapper.find('[data-xq-path="data.state"] svg').exists()).toBe(true);
 
         reply(patch(1));
         await flushPromises();
 
         expect(wrapper.find('[data-xq-path="data.state"]').attributes('aria-busy')).toBeUndefined();
+        wrapper.unmount();
+    });
+
+    it('never shows a spinner for a request that finishes within the delay', async () => {
+        let reply!: (value: UpdatePatch) => void;
+        const { store, wrapper } = setup(
+            () => new Promise<UpdatePatch>((resolve) => (reply = resolve)),
+        );
+
+        await changeCountry(store);
+        await vi.advanceTimersByTimeAsync(LOADING_INDICATOR_DELAY - 1);
+
+        expect(wrapper.find(spinner).exists()).toBe(false);
+
+        reply(patch(1));
+        await flushPromises();
+        await vi.advanceTimersByTimeAsync(LOADING_INDICATOR_DELAY);
+
+        expect(wrapper.find(spinner).exists()).toBe(false);
+        wrapper.unmount();
+    });
+
+    it('keeps the spinner up when a new request replaces the one in flight', async () => {
+        const replies: Array<(value: UpdatePatch) => void> = [];
+        const { store, wrapper } = setup(
+            () => new Promise<UpdatePatch>((resolve) => replies.push(resolve)),
+        );
+
+        await changeCountry(store);
+        await vi.advanceTimersByTimeAsync(LOADING_INDICATOR_DELAY);
+        await changeCountry(store);
+
+        expect(wrapper.find(spinner).exists()).toBe(true);
+
+        replies[1](patch(2));
+        await flushPromises();
+
+        expect(wrapper.find(spinner).exists()).toBe(false);
+        wrapper.unmount();
+    });
+
+    it.each([
+        ['select', { props: { options: [] } }, '[data-slot="xq-select"]'],
+        ['select', { props: { options: [], searchable: true } }, '[data-slot="xq-combobox"]'],
+        ['text-input', {}, '.h-9'],
+        ['textarea', {}, '.relative'],
+        ['date-picker', {}, 'button'],
+    ])(
+        'shows a slow request inside a %s control, not on its label',
+        async (type, extra, control) => {
+            const store = createFormStore(
+                schema(
+                    [
+                        field('data.country'),
+                        field('data.value', type, { ...extra, deps: ['data.country'] }),
+                    ],
+                    { country: null, value: null },
+                ),
+            );
+            const wrapper = mount(XqForm, { props: { form: store }, attachTo: document.body });
+
+            // Date pickers are lazy-loaded.
+            await vi.dynamicImportSettled();
+            await flushPromises();
+
+            store.queue.loadingPaths.value = ['data.country'];
+            await vi.advanceTimersByTimeAsync(LOADING_INDICATOR_DELAY);
+
+            const target = wrapper.find('[data-xq-path="data.value"]');
+
+            expect(target.find(`${control} ${spinner}`).exists()).toBe(true);
+            expect(target.find(`label ${spinner}`).exists()).toBe(false);
+            wrapper.unmount();
+        },
+    );
+
+    it('falls back to the label for fields without a control to hold the spinner', async () => {
+        const store = createFormStore(
+            schema(
+                [
+                    field('data.country'),
+                    field('data.value', 'radio', {
+                        props: { options: [] },
+                        deps: ['data.country'],
+                    }),
+                ],
+                { country: null, value: null },
+            ),
+        );
+        const wrapper = mount(XqForm, { props: { form: store }, attachTo: document.body });
+
+        store.queue.loadingPaths.value = ['data.country'];
+        await vi.advanceTimersByTimeAsync(LOADING_INDICATOR_DELAY);
+
+        expect(wrapper.find(`[data-xq-path="data.value"] label ${spinner}`).exists()).toBe(true);
         wrapper.unmount();
     });
 

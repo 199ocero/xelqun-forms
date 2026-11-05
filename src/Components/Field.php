@@ -6,6 +6,7 @@ use Closure;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use Xelqun\Forms\Conditions\Condition;
+use Xelqun\Forms\Conditions\ConditionalText;
 use Xelqun\Forms\Expressions\Expression;
 use Xelqun\Forms\Support\StatePath;
 
@@ -14,11 +15,11 @@ use Xelqun\Forms\Support\StatePath;
  */
 abstract class Field extends Component
 {
-    protected string|Closure|null $label = null;
+    protected string|Closure|ConditionalText|null $label = null;
 
-    protected string|Closure|null $hint = null;
+    protected string|Closure|ConditionalText|null $hint = null;
 
-    protected string|Closure|null $placeholder = null;
+    protected string|Closure|ConditionalText|null $placeholder = null;
 
     protected mixed $default = null;
 
@@ -63,21 +64,21 @@ abstract class Field extends Component
 
     protected function setUp(): void {}
 
-    public function label(string|Closure|null $label): static
+    public function label(string|Closure|ConditionalText|null $label): static
     {
         $this->label = $label;
 
         return $this;
     }
 
-    public function hint(string|Closure|null $hint): static
+    public function hint(string|Closure|ConditionalText|null $hint): static
     {
         $this->hint = $hint;
 
         return $this;
     }
 
-    public function placeholder(string|Closure|null $placeholder): static
+    public function placeholder(string|Closure|ConditionalText|null $placeholder): static
     {
         $this->placeholder = $placeholder;
 
@@ -219,13 +220,44 @@ abstract class Field extends Component
 
     public function getLabel(): string
     {
-        $label = $this->evaluate($this->label);
+        $label = $this->resolveText($this->label);
 
-        if (is_string($label)) {
-            return $label;
+        return is_string($label) ? $label : $this->getDefaultLabel();
+    }
+
+    protected function getDefaultLabel(): string
+    {
+        return Str::headline(Str::endsWith($this->name, '_id') ? Str::beforeLast($this->name, '_id') : $this->name);
+    }
+
+    protected function resolveText(string|Closure|ConditionalText|null $text): ?string
+    {
+        return $text instanceof ConditionalText
+            ? $text->resolve($this->getForm()->getState(), $this->container)
+            : $this->evaluate($text);
+    }
+
+    /**
+     * Conditional text for the browser. Conditions read no state through Get,
+     * so they add no dependency and cause no update request.
+     *
+     * @return array<string, array{when: array<string, mixed>, text: string, otherwise: ?string}>
+     */
+    protected function getTextRules(): array
+    {
+        $rules = [];
+
+        foreach (['label' => $this->label, 'hint' => $this->hint, 'placeholder' => $this->placeholder] as $key => $text) {
+            if ($text instanceof ConditionalText) {
+                $rules[$key] = $text->toArray($this->container);
+            }
         }
 
-        return Str::headline(Str::endsWith($this->name, '_id') ? Str::beforeLast($this->name, '_id') : $this->name);
+        if (isset($rules['label'])) {
+            $rules['label']['otherwise'] ??= $this->getDefaultLabel();
+        }
+
+        return $rules;
     }
 
     public function getState(): mixed
@@ -379,17 +411,20 @@ abstract class Field extends Component
             $this->recordDependency(StatePath::resolve($path, $this->container));
         }
 
+        $textRules = $this->getTextRules();
+
         return [
             'path' => $this->getStatePath(),
             'label' => $this->getLabel(),
-            'hint' => $this->evaluate($this->hint),
-            'placeholder' => $this->evaluate($this->placeholder),
+            'hint' => $this->resolveText($this->hint),
+            'placeholder' => $this->resolveText($this->placeholder),
             'required' => $this->isRequired(),
             'disabled' => $this->isDisabled(),
             'rules' => [
                 'visible' => null,
                 'required' => $this->requiredWhen?->toArray($this->container),
                 'disabled' => $this->disabledWhen?->toArray($this->container),
+                ...($textRules === [] ? [] : ['text' => $textRules]),
             ],
             'computed' => $this->computed?->toArray($this->container),
             'live' => $this->getLiveConfig(),

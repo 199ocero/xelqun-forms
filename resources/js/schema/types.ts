@@ -13,6 +13,14 @@ export type ConditionNode =
       }
     | { op: 'filled' | 'blank'; path: string };
 
+export interface ConditionalText {
+    when: ConditionNode;
+    text: string;
+    otherwise: string | null;
+}
+
+export type TextKey = 'label' | 'hint' | 'placeholder';
+
 export type ExpressionNode =
     | { lit: unknown }
     | { ref: string }
@@ -44,6 +52,7 @@ export interface SchemaNode {
         visible?: ConditionNode | null;
         required?: ConditionNode | null;
         disabled?: ConditionNode | null;
+        text?: Partial<Record<TextKey, ConditionalText>>;
     };
     computed?: { src: string; ast: ExpressionNode } | null;
     live?: LiveConfig | null;

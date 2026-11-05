@@ -1,14 +1,26 @@
 <script setup lang="ts">
+import { LoaderCircle } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 import { useField } from '../../composables/useField';
 import { isNumeric, toNumber } from '../../core/values';
 import { cn } from '../../lib/utils';
 import type { SchemaNode } from '../../schema/types';
-import { controlClass } from '../../ui/classes';
+import { controlClass, spinnerClass } from '../../ui/classes';
 import XqFieldWrapper from '../XqFieldWrapper.vue';
 
 const props = defineProps<{ node: SchemaNode }>();
-const { path, value, error, describedBy, required, disabled, id, onBlur } = useField(props.node);
+const {
+    path,
+    value,
+    error,
+    placeholder,
+    describedBy,
+    showLoading,
+    required,
+    disabled,
+    id,
+    onBlur,
+} = useField(props.node);
 const options = computed(() => props.node.props ?? {});
 
 function format(next: unknown): string {
@@ -50,7 +62,7 @@ const inputType = computed(() =>
 </script>
 
 <template>
-    <XqFieldWrapper :node="node" :id="id" :error="error" :required="required">
+    <XqFieldWrapper :node="node" :id="id" :error="error" :required="required" control-shows-loading>
         <div
             :class="
                 cn(
@@ -73,7 +85,7 @@ const inputType = computed(() =>
                 :value="text"
                 :type="inputType"
                 :inputmode="options.numeric ? 'decimal' : undefined"
-                :placeholder="node.placeholder ?? undefined"
+                :placeholder="placeholder ?? undefined"
                 :disabled="disabled"
                 :required="required"
                 :maxlength="options.maxLength ?? undefined"
@@ -89,6 +101,7 @@ const inputType = computed(() =>
                 @input="onInput"
                 @blur="onBlur"
             />
+            <LoaderCircle v-if="showLoading" :class="cn(spinnerClass, 'mr-3')" aria-hidden="true" />
             <span
                 v-if="options.suffix"
                 class="px-3 text-sm flex h-full items-center border-l border-xq-input bg-xq-muted text-xq-muted-foreground"

@@ -1,6 +1,9 @@
 <?php
 
+use Xelqun\Forms\Components\Repeater;
 use Xelqun\Forms\Components\TextInput;
+use Xelqun\Forms\Components\Toggle;
+use Xelqun\Forms\Conditions\When;
 use Xelqun\Forms\Exceptions\FormDefinitionException;
 use Xelqun\Forms\Form;
 use Xelqun\Forms\Tests\Fixtures\Country;
@@ -61,3 +64,65 @@ it('builds anonymous static forms without a token', function () {
 it('refuses live fields in anonymous forms', function () {
     Form::make([TextInput::make('name')->live()])->toSchema();
 })->throws(FormDefinitionException::class);
+
+it('serializes conditional text as a browser rule with no dependency or live trigger', function () {
+    $form = Form::make([
+        Toggle::make('is_gift'),
+        TextInput::make('notes')->placeholder(When::eq('is_gift', true)->then('Gift message')->else('Notes')),
+    ]);
+    $nodes = collect($form->toSchema()['components'])->keyBy('key');
+
+    expect($nodes['data.notes']['rules']['text']['placeholder'])->toBe([
+        'when' => ['op' => 'eq', 'path' => 'data.is_gift', 'value' => true],
+        'text' => 'Gift message',
+        'otherwise' => 'Notes',
+    ])
+        ->and($nodes['data.notes']['deps'])->toBe([])
+        ->and($nodes['data.is_gift']['live'])->toBeNull();
+});
+
+it('resolves conditional text on the server from the current state', function (bool $isGift, string $expected) {
+    $form = Form::make([
+        Toggle::make('is_gift')->default($isGift),
+        TextInput::make('notes')
+            ->label(When::eq('is_gift', true)->then('Gift note')->else('Note'))
+            ->hint(When::eq('is_gift', true)->then('Gift note')->else('Note'))
+            ->placeholder(When::eq('is_gift', true)->then('Gift note')->else('Note')),
+    ]);
+    $node = collect($form->toSchema()['components'])->firstWhere('key', 'data.notes');
+
+    expect([$node['label'], $node['hint'], $node['placeholder']])->toBe([$expected, $expected, $expected]);
+})->with([
+    'condition passes' => [true, 'Gift note'],
+    'condition fails' => [false, 'Note'],
+]);
+
+it('falls back to the default label when conditional text has no else branch', function () {
+    $form = Form::make([
+        Toggle::make('is_gift'),
+        TextInput::make('gift_note')->label(When::eq('is_gift', true)->then('Message')),
+    ]);
+    $node = collect($form->toSchema()['components'])->firstWhere('key', 'data.gift_note');
+
+    expect($node['label'])->toBe('Gift Note')
+        ->and($node['rules']['text']['label']['otherwise'])->toBe('Gift Note');
+});
+
+it('leaves the rules untouched for fields without conditional text', function () {
+    $node = Form::make([TextInput::make('notes')->placeholder('Notes')])->toSchema()['components'][0];
+
+    expect($node['rules'])->not->toHaveKey('text');
+});
+
+it('resolves conditional text paths against the repeater row', function () {
+    $form = Form::make([
+        Repeater::make('items')->schema([
+            Toggle::make('is_gift'),
+            TextInput::make('notes')->placeholder(When::eq('is_gift', true)->then('Gift')->else('Notes')),
+        ]),
+    ]);
+    $repeater = $form->toSchema()['components'][0];
+
+    expect($repeater['props']->template[1]['rules']['text']['placeholder']['when']['path'])
+        ->toBe('data.items.{row}.is_gift');
+});

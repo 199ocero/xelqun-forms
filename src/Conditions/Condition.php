@@ -33,6 +33,14 @@ final class Condition
     }
 
     /**
+     * Pick a label, hint or placeholder in the browser: when(...)->then('A')->else('B').
+     */
+    public function then(string $text): ConditionalText
+    {
+        return new ConditionalText($this, $text);
+    }
+
+    /**
      * Serialize to the JSON condition tree with absolute paths.
      *
      * @return array<string, mixed>

@@ -1,20 +1,19 @@
 <script setup lang="ts">
 import { getLocalTimeZone, parseDate } from '@internationalized/date';
 import type { DateValue } from '@internationalized/date';
-import { CalendarDays, X } from 'lucide-vue-next';
+import { CalendarDays, LoaderCircle, X } from 'lucide-vue-next';
 import { PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from 'reka-ui';
 import { computed, ref } from 'vue';
 import { useField } from '../../composables/useField';
 import { cn } from '../../lib/utils';
 import type { SchemaNode } from '../../schema/types';
-import { controlClass, popoverClass } from '../../ui/classes';
+import { controlClass, popoverClass, spinnerClass } from '../../ui/classes';
 import XqCalendar from '../../ui/XqCalendar.vue';
 import XqFieldWrapper from '../XqFieldWrapper.vue';
 
 const props = defineProps<{ node: SchemaNode }>();
-const { value, error, describedBy, required, disabled, id, onBlur } = useField<string | null>(
-    props.node,
-);
+const { value, error, placeholder, describedBy, showLoading, required, disabled, id, onBlur } =
+    useField<string | null>(props.node);
 const open = ref(false);
 
 function parse(input: unknown): DateValue | undefined {
@@ -48,7 +47,7 @@ const label = computed(() =>
 </script>
 
 <template>
-    <XqFieldWrapper :node="node" :id="id" :error="error" :required="required">
+    <XqFieldWrapper :node="node" :id="id" :error="error" :required="required" control-shows-loading>
         <PopoverRoot v-model:open="open">
             <div class="relative">
                 <PopoverTrigger as-child>
@@ -66,10 +65,9 @@ const label = computed(() =>
                             )
                         "
                     >
-                        <CalendarDays class="size-4 shrink-0 opacity-60" />
-                        <span class="truncate">{{
-                            label ?? node.placeholder ?? 'Pick a date'
-                        }}</span>
+                        <LoaderCircle v-if="showLoading" :class="spinnerClass" aria-hidden="true" />
+                        <CalendarDays v-else class="size-4 shrink-0 opacity-60" />
+                        <span class="truncate">{{ label ?? placeholder ?? 'Pick a date' }}</span>
                     </button>
                 </PopoverTrigger>
                 <button

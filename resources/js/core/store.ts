@@ -7,6 +7,7 @@ import type {
     LiveConfig,
     SchemaNode,
     SelectOption,
+    TextKey,
     UpdatePatch,
     UpdateRequest,
     UploadResult,
@@ -23,6 +24,12 @@ import { newRowKey } from './rows';
 import { isPlainObject } from './values';
 
 export type SetSource = 'user' | 'server' | 'computed';
+
+/**
+ * How long a request runs before its spinner appears, so fast ones never flash.
+ * The same 200ms as Livewire's wire:loading.delay.
+ */
+export const LOADING_INDICATOR_DELAY = 200;
 
 export interface SubmitOptions {
     method?: 'post' | 'put' | 'patch';
@@ -155,6 +162,19 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
 
     function isDisabled(node: SchemaNode): boolean {
         return !!node.disabled || condition(node.rules?.disabled, false);
+    }
+
+    /**
+     * The label, hint or placeholder to show, following any browser-side condition.
+     */
+    function text(node: SchemaNode, key: TextKey): string | null {
+        const rule = node.rules?.text?.[key];
+
+        if (!rule) {
+            return node[key] ?? null;
+        }
+
+        return evaluateCondition(rule.when, get) ? rule.text : rule.otherwise;
     }
 
     function index(list: SchemaNode[]): void {
@@ -360,13 +380,52 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
         },
     });
 
+    const indicatorPaths = ref<string[]>([]);
+    let indicatorTimer: ReturnType<typeof setTimeout> | null = null;
+
+    function clearIndicatorTimer(): void {
+        if (indicatorTimer !== null) {
+            clearTimeout(indicatorTimer);
+            indicatorTimer = null;
+        }
+    }
+
+    scope.run(() => {
+        watch(
+            queue.loadingPaths,
+            (paths) => {
+                if (paths.length === 0) {
+                    clearIndicatorTimer();
+                    indicatorPaths.value = [];
+                } else if (indicatorPaths.value.length > 0) {
+                    indicatorPaths.value = paths;
+                } else if (indicatorTimer === null) {
+                    indicatorTimer = setTimeout(() => {
+                        indicatorTimer = null;
+                        indicatorPaths.value = queue.loadingPaths.value;
+                    }, LOADING_INDICATOR_DELAY);
+                }
+            },
+            { flush: 'sync' },
+        );
+    });
+
+    function dependsOnAny(node: SchemaNode, paths: string[]): boolean {
+        return !!node.deps?.some((dependency) => paths.some((path) => overlaps(dependency, path)));
+    }
+
     /**
      * True while a request that can change this node is in flight.
      */
     function isLoading(node: SchemaNode): boolean {
-        const paths = queue.loadingPaths.value;
+        return dependsOnAny(node, queue.loadingPaths.value);
+    }
 
-        return !!node.deps?.some((dependency) => paths.some((path) => overlaps(dependency, path)));
+    /**
+     * True once that request has run long enough to deserve a spinner.
+     */
+    function showsLoadingIndicator(node: SchemaNode): boolean {
+        return dependsOnAny(node, indicatorPaths.value);
     }
 
     function setErrors(incoming: Record<string, string | string[]>): void {
@@ -515,6 +574,7 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
     }
 
     function dispose(): void {
+        clearIndicatorTimer();
         scope.stop();
         effects.clear();
     }
@@ -542,7 +602,9 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
         isVisible,
         isRequired,
         isDisabled,
+        text,
         isLoading,
+        showsLoadingIndicator,
         evaluateCondition: (node: ConditionNode) => evaluateCondition(node, get),
         rowKeys,
         addRow,
