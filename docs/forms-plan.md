@@ -40,7 +40,7 @@ Xelqun is an open-source admin framework in the style of Filament, built for the
 10. **One error bag per form** (Inertia `errorBag`), because the playground puts several forms on one page. This will be checked with `search-docs` in Milestone 2.
 
 ### Small defaults (tell me if you disagree)
-MIT license · PHP `^8.3` · Laravel `^13` only, for now · icons from `lucide-vue-next` · dates through Reka UI + `@internationalized/date` · code highlighting in the playground through lazy-loaded Shiki (playground only).
+MIT license · PHP `^8.4` · Laravel `^13` only, for now · icons from `lucide-vue-next` · dates through Reka UI + `@internationalized/date` · code highlighting in the playground through lazy-loaded Shiki (playground only).
 
 ---
 
@@ -148,7 +148,7 @@ packages/forms/
     └── js/                        # *.test.ts (Vitest + @vue/test-utils + happy-dom)
 ```
 
-- **composer.json:** `require` php ^8.3, `illuminate/{support,http,validation,database,filesystem}` ^13, `inertiajs/inertia-laravel` ^3. `require-dev` Testbench (Laravel 13 line), Pest 5, pest-plugin-laravel, Pint, Larastan. PSR-4 `Xelqun\\Forms\\` → `src/`. Auto-discovered provider.
+- **composer.json:** `require` php ^8.4, `illuminate/{support,http,validation,database,filesystem}` ^13, `inertiajs/inertia-laravel` ^3. `require-dev` Testbench (Laravel 13 line), Pest 5, pest-plugin-laravel, Pint, Larastan. PSR-4 `Xelqun\\Forms\\` → `src/`. Auto-discovered provider.
 - **package.json:** `"exports": { ".": "./resources/js/index.ts", "./style.css": "./resources/css/xelqun.css" }`. Peer dependencies `vue ^3.5`, `@inertiajs/vue3 ^3`. Dependencies `reka-ui`, `clsx`, `tailwind-merge`, `class-variance-authority`, `@internationalized/date`, `lucide-vue-next`. Dev dependencies `vitest`, `@vue/test-utils`, `happy-dom`, `vue-tsc`, `typescript`.
 - **Theming:** components use only token utilities (`bg-xq-surface`, `text-xq-muted`, `ring-xq-ring`…), which `@theme inline { --color-xq-surface: var(--xq-surface) … }` maps to `--xq-*` variables. Dark mode swaps variables under `.dark, [data-xq-theme=dark]`. There are no `dark:` variants in components, so the host's dark mode setup does not matter. Because these names never collide with shadcn's `--primary` and similar, they can live inside any shadcn-vue app.
 
