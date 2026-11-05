@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { LoaderCircle } from 'lucide-vue-next';
+import { computed } from 'vue';
 import { useField } from '../../composables/useField';
 import { cn } from '../../lib/utils';
 import type { SchemaNode } from '../../schema/types';
@@ -17,9 +18,11 @@ const {
     showLoading,
     required,
     disabled,
+    readOnly,
     id,
     onBlur,
 } = useField<string | null>(props.node);
+const inputDisabled = computed(() => disabled.value && !readOnly.value);
 </script>
 
 <template>
@@ -32,7 +35,8 @@ const {
                 :rows="node.props?.rows ?? 3"
                 :maxlength="node.props?.maxLength ?? undefined"
                 :placeholder="placeholder ?? undefined"
-                :disabled="disabled"
+                :disabled="inputDisabled"
+                :readonly="readOnly"
                 :aria-invalid="error ? true : undefined"
                 :aria-describedby="describedBy"
                 @blur="onBlur"

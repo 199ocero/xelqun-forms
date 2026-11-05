@@ -60,13 +60,13 @@ Confirmed by reading the code. Nothing has been run yet, so each fix starts with
 
 ## Milestones
 
-M10 and M11 are built. The plugin author guide is [`plugins.md`](plugins.md).
+M10 to M12 are built. The plugin author guide is [`plugins.md`](plugins.md).
 
 | # | Milestone | Adds | Playground proof |
 |---|---|---|---|
 | **M10** | Foundations | All fixes above, `prepare()`, upload batch, deterministic row keys | Failed save keeps uploads; tampering tests pass |
 | **M11** ✓ | Plugin foundation | Capability contracts, `PersistsItself` hook in `ModelPersister`, `plugins` option, namespaced types with collision errors, `configureUsing()`, `Macroable`, translation loading, `@api` tags, `make:xelqun-field`, `xelqun-forms:plugin` install command, plugin test helpers, plugin author guide, example plugin | An external example plugin with search and uploads works without changing package source |
-| **M12** | State and field basics | Operation, `hiddenOn()`, `visibleOn()`, `disabledOn()`, `readOnly()`, `formatStateUsing()`, `dehydrateStateUsing()`, `afterStateHydrated()`, `saved()`, `extraAttributes()`, `autofocus()`, `hiddenLabel()`, `inlineLabel()` | Same form behaves differently on create and edit |
+| **M12** ✓ | State and field basics | Operation, `hiddenOn()`, `visibleOn()`, `disabledOn()`, `readOnly()`, `formatStateUsing()`, `dehydrateStateUsing()`, `afterStateHydrated()`, `saved()`, `extraAttributes()`, `autofocus()`, `hiddenLabel()`, `inlineLabel()` | Same form behaves differently on create and edit |
 | **M13** | Relationships and hooks | Recursive persister, `beforeSave`/`afterSave`/`afterCommit`, repeater mutate and after hooks, BelongsToMany with `pivotData()`, `MorphToSelect`, relationship `Group` (HasOne), `getOptionLabelFromRecordUsing()` | Order form with tags and a morph owner round-trips |
 | **M14** | Validation API | `unique()`, `scopedUnique()`, Filament's dedicated rule helpers, `validationMessages()`, `validationAttribute()`, field-reference paths for `same`, `confirmed` | Validation example shows custom messages |
 | **M15** | Everyday fields | `DateTimePicker`, `TimePicker`, `timezone()`, `format()`, `displayFormat()`, `disabledDates()`, steps; `CheckboxList`, `TagsInput`, `ToggleButtons`, `Slider`, `KeyValue`, `ColorPicker`; Select groups, `disableOptionWhen()`, `boolean()`, `reorderable()`, messages; TextInput `revealable()`, `trim()`, `mask()`, `stripCharacters()`, `datalist()`, `copyable()`, `length()`, icons | New "All fields" example |

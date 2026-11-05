@@ -47,6 +47,14 @@ const root = ref<HTMLFormElement | null>(null);
 
 onMounted(() => {
     store.root.value = root.value;
+
+    const first = [...store.nodes.values()].find(
+        (node) => node.autofocus && node.path && store.isVisible(node),
+    );
+
+    if (first) {
+        void store.focusPath(first.path!);
+    }
 });
 
 function submit(): void {

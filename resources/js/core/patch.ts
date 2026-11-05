@@ -20,7 +20,10 @@ export function mergeNode(target: Record<string, any>, patch: Record<string, any
     for (const [key, value] of Object.entries(patch)) {
         const current = target[key];
 
-        if (isNodeList(value) && Array.isArray(current)) {
+        if (key === 'extraAttributes') {
+            // Replaced whole: an attribute the server stopped sending has to go.
+            target[key] = value;
+        } else if (isNodeList(value) && Array.isArray(current)) {
             target[key] = mergeNodeList(current, value);
         } else if (isPlainObject(value) && isPlainObject(current) && !Array.isArray(value)) {
             mergeNode(current, value);

@@ -39,6 +39,12 @@ abstract class Component
 
     protected bool|Closure $hidden = false;
 
+    /** @var array<string, Closure(string): bool> Property name => whether it is on for an operation. */
+    protected array $operationRules = [];
+
+    /** @var array<string, mixed>|Closure */
+    protected array|Closure $extraAttributes = [];
+
     protected ?Condition $visibleWhen = null;
 
     /** @var int|string|array<string, int|string>|null */
@@ -119,12 +125,40 @@ abstract class Component
     public function hidden(bool|Closure $condition = true): static
     {
         $this->hidden = $condition;
+        unset($this->operationRules['hidden']);
+
+        return $this;
+    }
+
+    /**
+     * Hide the component on these operations, such as "edit". Replaces hidden()
+     * and visible(), and locks like hidden(true): no closure has to run to know.
+     *
+     * @param  string|array<int, string>  $operations
+     */
+    public function hiddenOn(string|array $operations): static
+    {
+        $this->operationRules['hidden'] = static fn (string $operation): bool => in_array($operation, (array) $operations, true);
+
+        return $this;
+    }
+
+    /**
+     * Show the component only on these operations. See hiddenOn().
+     *
+     * @param  string|array<int, string>  $operations
+     */
+    public function visibleOn(string|array $operations): static
+    {
+        $this->operationRules['hidden'] = static fn (string $operation): bool => ! in_array($operation, (array) $operations, true);
 
         return $this;
     }
 
     public function visible(bool|Closure $condition = true): static
     {
+        unset($this->operationRules['hidden']);
+
         $this->hidden = $condition instanceof Closure
             ? static fn (Component $component): bool => ! $component->evaluate($condition)
             : ! $condition;
@@ -164,6 +198,19 @@ abstract class Component
     }
 
     /**
+     * HTML attributes for the component's outer element. They reach the page as
+     * given, so never put user input in an attribute name.
+     *
+     * @param  array<string, mixed>|Closure  $attributes
+     */
+    public function extraAttributes(array|Closure $attributes): static
+    {
+        $this->extraAttributes = $attributes;
+
+        return $this;
+    }
+
+    /**
      * Attach the component to a form and place it in the tree.
      *
      * @internal
@@ -175,6 +222,10 @@ abstract class Component
         $this->container = $container;
         $this->containerPattern = $containerPattern ?? $container;
         $this->position = $position;
+
+        foreach ($this->operationRules as $property => $appliesTo) {
+            $this->{$property} = $appliesTo($form->getOperation());
+        }
 
         foreach ($this->childComponents as $index => $child) {
             $child->mount($form, $this, $this->getChildContainer(), $this->getChildPosition($index), $this->getChildContainerPattern());
@@ -322,6 +373,7 @@ abstract class Component
             'state' => $this instanceof Field ? $this->getState() : null,
             'record' => $this->getForm()->getRecord(),
             'form' => $this->getForm(),
+            'operation' => $this->getForm()->getOperation(),
             'component' => $this,
             ...$parameters,
         ]);
@@ -360,6 +412,10 @@ abstract class Component
             'props' => (object) $this->getProps(),
             'children' => $this->getChildNodes(),
         ];
+
+        if ($this->extraAttributes !== []) {
+            $node['extraAttributes'] = $this->evaluate($this->extraAttributes);
+        }
 
         $node['rules']['visible'] = $this->visibleWhen?->toArray($this->container);
         $node['deps'] = $this->recordedDependencies;

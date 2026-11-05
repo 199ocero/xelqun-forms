@@ -48,6 +48,12 @@ export interface SchemaNode {
     placeholder?: string | null;
     required?: boolean;
     disabled?: boolean;
+    /** The server ignores this field's value. Text controls stay readable, others render disabled. */
+    readOnly?: boolean;
+    autofocus?: boolean;
+    hiddenLabel?: boolean;
+    inlineLabel?: boolean;
+    extraAttributes?: Record<string, unknown>;
     rules?: {
         visible?: ConditionNode | null;
         required?: ConditionNode | null;

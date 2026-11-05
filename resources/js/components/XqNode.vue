@@ -15,7 +15,13 @@ const component = computed(() => registry?.get(props.node.type) ?? null);
 </script>
 
 <template>
-    <div v-if="visible" class="xq-cell" :style="spanStyle(node.span)" :data-xq-key="node.key">
+    <div
+        v-if="visible"
+        v-bind="node.extraAttributes"
+        class="xq-cell"
+        :style="spanStyle(node.span)"
+        :data-xq-key="node.key"
+    >
         <component :is="component" v-if="component" :node="node" />
         <XqUnknownNode v-else :node="node" />
     </div>

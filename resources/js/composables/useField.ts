@@ -41,7 +41,11 @@ export function useField<T = any>(nodeOrPath: SchemaNode | string) {
         /** Delayed version of loading, for the spinner: fast requests never show one. */
         showLoading: computed(() => store.showsLoadingIndicator(node)),
         required: computed(() => store.isRequired(node)),
-        disabled: computed(() => store.isDisabled(node) || store.processing.value),
+        /** True when read-only too, so a control with no read-only mode can't be changed. */
+        disabled: computed(
+            () => store.isDisabled(node) || !!node.readOnly || store.processing.value,
+        ),
+        readOnly: computed(() => !!node.readOnly),
         onBlur: () => store.blur(path),
     };
 }

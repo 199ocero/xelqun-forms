@@ -29,10 +29,6 @@ final class StatePath
             return self::ROOT.'.'.substr($path, 2);
         }
 
-        if ($path === self::ROOT || str_starts_with($path, self::ROOT.'.')) {
-            return $path;
-        }
-
         return $container.'.'.$path;
     }
 

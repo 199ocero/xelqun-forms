@@ -155,10 +155,12 @@ final class FormValidator
                 continue;
             }
 
-            $disabled = $onlyStatic ? $component->isDisabledStatically() : $component->isDisabledInState();
+            $locked = $onlyStatic
+                ? $component->isDisabledStatically() || $component->isReadOnlyStatically()
+                : $component->isDisabledInState() || $component->isReadOnly();
             $withheld = $component->canBeHiddenOnServer() && ! Arr::has($posted, $path);
 
-            if (($disabled && $component->getComputed() === null) || $withheld) {
+            if (($locked && $component->getComputed() === null) || $withheld) {
                 $locks[$path] = $component;
 
                 continue;
@@ -227,7 +229,7 @@ final class FormValidator
 
             $path = $component->getStatePath();
             $label = $component->getLabel();
-            $this->rules[$path] = $component->getValidationRules();
+            $this->rules[$path] = $component->isReadOnly() && $component->getComputed() === null ? [] : $component->getValidationRules();
             $this->attributes[$path] = $rowLabel === null ? $label : "{$label} ({$rowLabel})";
             $this->kept[] = $component;
 
@@ -263,7 +265,7 @@ final class FormValidator
             }
 
             if (Arr::has($state, $path)) {
-                data_set($output, $path, $field->dehydrateState(data_get($state, $path)));
+                data_set($output, $path, $field->getDehydratedState(data_get($state, $path)));
             }
         }
 

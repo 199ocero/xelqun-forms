@@ -2,6 +2,7 @@
 import { LoaderCircle } from 'lucide-vue-next';
 import { computed } from 'vue';
 import { useField } from '../../composables/useField';
+import { cn } from '../../lib/utils';
 import type { SchemaNode } from '../../schema/types';
 import XqLabel from '../../ui/XqLabel.vue';
 import XqSwitch from '../../ui/XqSwitch.vue';
@@ -26,7 +27,10 @@ const describedBy = computed(() =>
                 :aria-describedby="describedBy"
             />
             <div class="gap-1.5 grid">
-                <XqLabel :for="id" class="gap-0.5 leading-5 cursor-pointer">
+                <XqLabel
+                    :for="id"
+                    :class="cn('gap-0.5 leading-5 cursor-pointer', node.hiddenLabel && 'sr-only')"
+                >
                     {{ label }}
                     <span v-if="required" class="text-xq-destructive" aria-hidden="true">*</span>
                     <span v-if="required" class="sr-only">(required)</span>

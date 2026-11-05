@@ -36,6 +36,14 @@ abstract class Field extends Component implements NeedsServer
 
     protected ?Condition $disabledWhen = null;
 
+    protected bool|Closure $readOnly = false;
+
+    protected bool|Closure $autofocus = false;
+
+    protected bool|Closure $hiddenLabel = false;
+
+    protected bool|Closure $inlineLabel = false;
+
     /** @var array<int, mixed> */
     protected array $rules = [];
 
@@ -45,10 +53,15 @@ abstract class Field extends Component implements NeedsServer
     /** @var array<int, Closure> */
     protected array $afterStateUpdated = [];
 
+    /** @var array<int, Closure> */
+    protected array $afterStateHydrated = [];
+
+    protected ?Closure $dehydrateStateUsing = null;
+
     /** @var array<int, string> */
     protected array $dependsOn = [];
 
-    protected ?bool $dehydrated = null;
+    protected bool|Closure|null $dehydrated = null;
 
     protected ?Expression $computed = null;
 
@@ -117,6 +130,20 @@ abstract class Field extends Component implements NeedsServer
     public function disabled(bool|Closure $condition = true): static
     {
         $this->disabled = $condition;
+        unset($this->operationRules['disabled']);
+
+        return $this;
+    }
+
+    /**
+     * Disable the field on these operations, such as "edit". Replaces disabled(),
+     * and locks like disabled(true): no closure has to run to know.
+     *
+     * @param  string|array<int, string>  $operations
+     */
+    public function disabledOn(string|array $operations): static
+    {
+        $this->operationRules['disabled'] = static fn (string $operation): bool => in_array($operation, (array) $operations, true);
 
         return $this;
     }
@@ -124,6 +151,50 @@ abstract class Field extends Component implements NeedsServer
     public function disabledWhen(Condition $condition): static
     {
         $this->disabledWhen = $condition;
+
+        return $this;
+    }
+
+    /**
+     * Show the value without letting anyone change it. The server drops what the
+     * browser posts and skips the rules. Nothing is written over a stored value:
+     * only a new record or row saves it, as its default. On a field with rows
+     * this covers every field in them. Controls with no read-only mode render
+     * as disabled.
+     */
+    public function readOnly(bool|Closure $condition = true): static
+    {
+        $this->readOnly = $condition;
+
+        return $this;
+    }
+
+    /**
+     * Focus this field when the form opens.
+     */
+    public function autofocus(bool|Closure $condition = true): static
+    {
+        $this->autofocus = $condition;
+
+        return $this;
+    }
+
+    /**
+     * Hide the label on screen. Screen readers still announce it.
+     */
+    public function hiddenLabel(bool|Closure $condition = true): static
+    {
+        $this->hiddenLabel = $condition;
+
+        return $this;
+    }
+
+    /**
+     * Put the label beside the field. Checkboxes and toggles already work this way.
+     */
+    public function inlineLabel(bool|Closure $condition = true): static
+    {
+        $this->inlineLabel = $condition;
 
         return $this;
     }
@@ -167,6 +238,54 @@ abstract class Field extends Component implements NeedsServer
     }
 
     /**
+     * Run a server closure after the form is filled, with every field's state in
+     * place. Every request rebuilds the form, so this runs each time: it must
+     * give the same result for the same record, and do nothing else.
+     *
+     * shortcut: a row added in the browser gets its plain default, with no hook, until rows are built on the server.
+     */
+    public function afterStateHydrated(Closure $callback): static
+    {
+        $this->afterStateHydrated[] = $callback;
+
+        return $this;
+    }
+
+    /**
+     * Change the value the form shows. The same rules as afterStateHydrated()
+     * apply, and dehydrateStateUsing() is the way back.
+     */
+    public function formatStateUsing(Closure $callback): static
+    {
+        return $this->afterStateHydrated(static fn (Field $component) => $component->state($component->evaluate($callback)));
+    }
+
+    /**
+     * Change the value after validation, before it is returned or saved. A
+     * field with rows ignores this, because its value is built from its rows.
+     */
+    public function dehydrateStateUsing(Closure $callback): static
+    {
+        $this->dehydrateStateUsing = $callback;
+
+        return $this;
+    }
+
+    /**
+     * Change this field's value from a server closure.
+     */
+    public function state(mixed $state): static
+    {
+        $form = $this->getForm();
+        $path = $this->getStatePath();
+
+        $form->setStateValue($path, $state);
+        $form->markAsSet($path);
+
+        return $this;
+    }
+
+    /**
      * Declare dependencies the automatic tracking cannot see, e.g. a branch
      * of a closure that has not run yet.
      *
@@ -182,11 +301,20 @@ abstract class Field extends Component implements NeedsServer
     /**
      * Whether the value is included in the submitted data.
      */
-    public function dehydrated(bool $condition = true): static
+    public function dehydrated(bool|Closure $condition = true): static
     {
         $this->dehydrated = $condition;
 
         return $this;
+    }
+
+    /**
+     * Whether the value is saved. Use saved(false) for a field with no column,
+     * or disabled()->saved() to keep a disabled field's server value.
+     */
+    public function saved(bool|Closure $condition = true): static
+    {
+        return $this->dehydrated($condition);
     }
 
     /**
@@ -340,7 +468,59 @@ abstract class Field extends Component implements NeedsServer
      */
     public function acceptsInput(): bool
     {
-        return ! $this->isHiddenOnServer() && ! $this->isDisabled();
+        return ! $this->isHiddenOnServer() && ! $this->isDisabled() && ! $this->isReadOnly();
+    }
+
+    /**
+     * Whether this field or a field containing it is read-only.
+     */
+    public function isReadOnly(): bool
+    {
+        for ($component = $this; $component !== null; $component = $component->getParent()) {
+            if ($component instanceof self && $component->evaluate($component->readOnly)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * The browser merges patches and never removes a key, so a field that could
+     * be read-only has to say so either way.
+     */
+    private function canBeReadOnly(): bool
+    {
+        for ($component = $this; $component !== null; $component = $component->getParent()) {
+            if ($component instanceof self && $component->readOnly !== false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether a read-only field's value goes out with the saved data. A new
+     * record or row needs its default. A stored value stays where it is, because
+     * the form may hold a formatted copy, except in a row with no model: that row
+     * is written whole, so leaving the key out would lose the value.
+     */
+    private function keepsReadOnlyValue(): bool
+    {
+        $form = $this->getForm();
+        $record = $form->getRecord();
+
+        if (! $record?->exists || ! $form->hasInitialValue($this->getStatePath())) {
+            return true;
+        }
+
+        return $this->container !== StatePath::ROOT && $form->getModelInstanceFor($this) === $record;
+    }
+
+    public function isReadOnlyStatically(): bool
+    {
+        return $this->readOnly === true;
     }
 
     public function isDisabledInState(): bool
@@ -351,7 +531,19 @@ abstract class Field extends Component implements NeedsServer
 
     public function isDehydrated(): bool
     {
-        return $this->dehydrated ?? ($this->computed !== null || ! $this->isDisabledInState());
+        if ($this->dehydrated !== null) {
+            return (bool) $this->evaluate($this->dehydrated);
+        }
+
+        if ($this->computed !== null) {
+            return true;
+        }
+
+        if ($this->isReadOnly()) {
+            return $this->keepsReadOnlyValue();
+        }
+
+        return ! $this->isDisabledInState();
     }
 
     public function getComputed(): ?Expression
@@ -362,6 +554,16 @@ abstract class Field extends Component implements NeedsServer
     public function hasAfterStateUpdatedHooks(): bool
     {
         return $this->afterStateUpdated !== [];
+    }
+
+    /**
+     * @internal
+     */
+    public function callAfterStateHydrated(): void
+    {
+        foreach ($this->afterStateHydrated as $callback) {
+            $this->evaluate($callback);
+        }
     }
 
     /**
@@ -435,6 +637,16 @@ abstract class Field extends Component implements NeedsServer
     }
 
     /**
+     * @internal Override dehydrateState() instead.
+     */
+    public function getDehydratedState(mixed $value): mixed
+    {
+        $value = $this->dehydrateState($value);
+
+        return $this->dehydrateStateUsing === null ? $value : $this->evaluate($this->dehydrateStateUsing, ['state' => $value]);
+    }
+
+    /**
      * @return array<string, mixed>
      */
     protected function getNodeAttributes(): array
@@ -461,6 +673,15 @@ abstract class Field extends Component implements NeedsServer
             'computed' => $this->computed?->toArray($this->container),
             'live' => $this->getLiveConfig(),
             ...($this instanceof ContainsRows ? ['containsRows' => true] : []),
+            ...($this->canBeReadOnly() ? ['readOnly' => $this->isReadOnly()] : []),
+            ...array_map(
+                fn (bool|Closure $flag): bool => (bool) $this->evaluate($flag),
+                array_filter([
+                    'autofocus' => $this->autofocus,
+                    'hiddenLabel' => $this->hiddenLabel,
+                    'inlineLabel' => $this->inlineLabel,
+                ], fn (bool|Closure $flag): bool => $flag !== false),
+            ),
         ];
     }
 }

@@ -619,6 +619,7 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
         setErrors,
         clearErrors,
         focusFirstError,
+        focusPath,
         submit,
         search,
         upload,

@@ -2,6 +2,7 @@
 import { LoaderCircle } from 'lucide-vue-next';
 import { computed } from 'vue';
 import { useFormStore } from '../composables/context';
+import { cn } from '../lib/utils';
 import type { SchemaNode } from '../schema/types';
 import XqLabel from '../ui/XqLabel.vue';
 
@@ -23,6 +24,8 @@ const store = useFormStore();
 const loading = computed(() => store.isLoading(props.node));
 const label = computed(() => store.text(props.node, 'label'));
 const hint = computed(() => store.text(props.node, 'hint'));
+// A hidden label takes no grid space, so two columns would squeeze the control.
+const inlineLabel = computed(() => props.node.inlineLabel && !props.node.hiddenLabel);
 const showLabelSpinner = computed(
     () => !props.controlShowsLoading && store.showsLoadingIndicator(props.node),
 );
@@ -30,7 +33,7 @@ const showLabelSpinner = computed(
 
 <template>
     <div
-        class="gap-2 grid"
+        :class="cn('gap-2 grid', inlineLabel && 'sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]')"
         :data-xq-path="node.path"
         :data-invalid="error ? '' : undefined"
         :aria-busy="loading || undefined"
@@ -39,7 +42,7 @@ const showLabelSpinner = computed(
             v-if="label && !hideLabel"
             :id="`${id}-label`"
             :for="labelFor === null ? undefined : (labelFor ?? id)"
-            class="gap-0.5"
+            :class="cn('gap-0.5', node.hiddenLabel && 'sr-only', inlineLabel && 'sm:mt-2')"
         >
             {{ label }}
             <span v-if="required" class="text-xq-destructive" aria-hidden="true">*</span>
@@ -50,17 +53,19 @@ const showLabelSpinner = computed(
                 aria-hidden="true"
             />
         </XqLabel>
-        <slot />
-        <p v-if="hint && !error" :id="`${id}-hint`" class="text-xs text-xq-muted-foreground">
-            {{ hint }}
-        </p>
-        <p
-            v-if="error"
-            :id="`${id}-error`"
-            :role="announceError ? 'alert' : undefined"
-            class="text-xs font-medium text-xq-destructive"
-        >
-            {{ error }}
-        </p>
+        <div :class="inlineLabel ? 'gap-2 min-w-0 grid' : 'contents'">
+            <slot />
+            <p v-if="hint && !error" :id="`${id}-hint`" class="text-xs text-xq-muted-foreground">
+                {{ hint }}
+            </p>
+            <p
+                v-if="error"
+                :id="`${id}-error`"
+                :role="announceError ? 'alert' : undefined"
+                class="text-xs font-medium text-xq-destructive"
+            >
+                {{ error }}
+            </p>
+        </div>
     </div>
 </template>

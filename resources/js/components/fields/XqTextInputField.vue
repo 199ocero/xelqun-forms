@@ -18,10 +18,12 @@ const {
     showLoading,
     required,
     disabled,
+    readOnly,
     id,
     onBlur,
 } = useField(props.node);
 const options = computed(() => props.node.props ?? {});
+const inputDisabled = computed(() => disabled.value && !readOnly.value);
 
 function format(next: unknown): string {
     return next === null || next === undefined ? '' : String(next);
@@ -69,7 +71,7 @@ const inputType = computed(() =>
                     controlClass,
                     'h-9 flex items-center overflow-hidden focus-within:border-xq-ring focus-within:ring-[3px] focus-within:ring-xq-ring/25',
                     error && 'border-xq-destructive',
-                    disabled && 'bg-xq-muted/60',
+                    inputDisabled && 'bg-xq-muted/60',
                 )
             "
         >
@@ -86,7 +88,8 @@ const inputType = computed(() =>
                 :type="inputType"
                 :inputmode="options.numeric ? 'decimal' : undefined"
                 :placeholder="placeholder ?? undefined"
-                :disabled="disabled"
+                :disabled="inputDisabled"
+                :readonly="readOnly"
                 :required="required"
                 :maxlength="options.maxLength ?? undefined"
                 :autocomplete="options.autocomplete ?? undefined"

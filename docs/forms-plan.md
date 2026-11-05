@@ -1,6 +1,6 @@
 # Xelqun Forms: planning document
 
-> Status: approved plan (2026-10-28), implemented through Milestone 9. Parity work continues in [`parity-plan.md`](parity-plan.md), through Milestone 11. See "Implementation status" at the end.
+> Status: approved plan (2026-10-28), implemented through Milestone 9. Parity work continues in [`parity-plan.md`](parity-plan.md), through Milestone 12. See "Implementation status" at the end.
 
 ## Context
 
@@ -195,7 +195,7 @@ packages/forms/
 
 **Condition AST:** `{ op, path?, value?, args? }`
 `eq, neq, in, notIn, gt, gte, lt, lte, filled, blank, and, or, not`.
-**Path resolution (same for `When`, `Get` and expressions):** a bare name resolves against the field's container, which is the form root or the current repeater row. `$.name` forces the form root. The serializer turns both into absolute paths (rows use the `{row}` placeholder in templates).
+**Path resolution (same for `When`, `Get` and expressions):** a bare name resolves against the field's container, which is the form root or the current repeater row. `$.name` forces the form root. `data` has no special meaning here, so a field can be named `data`. The serializer turns both into absolute paths (rows use the `{row}` placeholder in templates).
 
 **Expression AST:** `{ "src": "qty * price", "ast": { "op": "*", "args": [{ "ref": "qty" }, { "ref": "price" }] } }`.
 Supported: numbers, strings, refs, `+ - * / %`, comparisons, `&& || !`, parentheses, functions `sum`, `count`, `min`, `max`, `avg`, `round(x, d)`, `abs`, and wildcards `items.*.subtotal`. Null or empty counts as 0 in arithmetic, and dividing by 0 gives 0. Both evaluators follow these rules exactly, and the conformance files prove it.
@@ -258,7 +258,7 @@ OrderForm::make($order)->save($request);                // validate + fill + rel
 |---|---|
 | `Form` | Base class. `make(?Model $record, array $context = [])`, `schema()`, `authorize()`, `model()`, `toSchema()`, `validate()`, `save()`, `fill()`. Static `Form::make([...])` creates an anonymous, non-live form. |
 | `Components\Component` | Base for all nodes: key, `visible()`/`hidden()` (bool or closure, server-side), `visibleWhen()`, `columnSpan()`, `toNode()`. |
-| `Components\Field` | Adds name/path, label, hint, default, `required()`, `rules()`, `requiredWhen()`, `disabled()`, `disabledWhen()`, `live()`, `afterStateUpdated()`, `dependsOn()`, `dehydrated()`, `computed()`. |
+| `Components\Field` | Adds name/path, label, hint, default, `required()`, `rules()`, `requiredWhen()`, `disabled()`, `disabledWhen()`, `live()`, `afterStateUpdated()`, `dependsOn()`, `dehydrated()`, `computed()`. M12 adds `readOnly()`, `disabledOn()`, `saved()`, `formatStateUsing()`, `dehydrateStateUsing()`, `afterStateHydrated()`, `state()`, `autofocus()`, `hiddenLabel()` and `inlineLabel()`. |
 | Fields | `TextInput` (`email()`, `password()`, `numeric()`, `prefix/suffix`), `Textarea`, `Select` (`options()`, `searchable()`, `getSearchResultsUsing()`, `relationship()`, `multiple()`), `Checkbox`, `Toggle`, `Radio`, `DatePicker`, `FileUpload`, `Repeater`, `Hidden`, `CustomField` (`component('rating')`). |
 | Layouts | `Section`, `Grid` (`columns()`), `Fieldset`, `Tabs` + `Tab`. |
 | `Conditions\When` | `eq`, `neq`, `in`, `notIn`, `gt`, `gte`, `lt`, `lte`, `filled`, `blank`, `and`, `or`, `not` → `Condition` (`toArray()`, `evaluate(StateBag)`). |
@@ -440,7 +440,7 @@ Milestones 0–9 are built and tested. Milestone 9 added failure and loading fee
 | File upload inside a repeater row | browser test, package `UploadTest` |
 | Server errors on the correct nested field | browser tests (`Price (Item 2)`), package `ValidationTest` |
 
-**Test counts:** package Pest 388, package Vitest 213, playground feature and browser 42.
+**Test counts:** package Pest 431, package Vitest 219, playground feature and browser 43.
 
 ### Milestone 10: foundations
 
@@ -458,7 +458,7 @@ Limits to keep in mind:
 - A `computed()` expression runs in the browser too, and can't read a `hidden()` value there. The browser then shows a different total from the one the server saves. If a total depends on a hidden value, calculate it in a server closure.
 - A field locked by a closure can only be found by running closures, so on the first pass `hidden()` and `disabled()` closures may read a posted value that later gets locked. Only the final pass decides anything, but these closures must not act on what they read. Static `hidden()` and `disabled()` have no such window.
 - `validate()` makes uploads final as soon as it returns. Callers who write the data themselves should wrap it in `DB::transaction()`; `save()` does this for them.
-- A value a hook writes into a disabled or hidden field lasts one request. Later requests read the server's value, because the server can't tell the browser echoing it from tampering. Revisit in M12.
+- A value a hook writes into a disabled or hidden field lasts one request. Later requests read the server's value, because the server can't tell the browser echoing it from tampering. M12 kept this. To save a locked value that follows other fields, use `disabled()->saved()->dehydrateStateUsing()`, which derives it on the server at save time.
 - Stale rows are only detected for rows the browser posts. A row another user added is not posted, so saving still replaces the list without it.
 - `hidden()` and `disabled()` closures run on every update and search, usually twice when a closure locks a field.
 
@@ -487,6 +487,34 @@ Limits to keep in mind:
 - The plugin starter is stubs and the example plugin. A public starter repo needs your go-ahead, because it's a new public GitHub repo.
 - `make:xelqun-field` writes into `app/` and `resources/js/forms`, so a plugin author moves the files into the plugin.
 - Plugin limits are listed at the end of [`plugins.md`](plugins.md). The main ones: one file per `AcceptsUploads` field until M17, no stage before the record is saved until M13, and no saving of nested relationship rows until M16.
+
+### Milestone 12: state and field basics
+
+One form can now behave differently on create and edit. The proof is the order example in the playground: after saving, it shows a read-only order number, locks the customer type and drops the confirmation toggle. A feature test posts tampered values to that edit and they change nothing.
+
+- **Operation.** `Form::getOperation()` returns `create` or `edit` from the record, or the context's `operation` (`Form::make($order, ['operation' => 'view'])`). It is fixed in the constructor, so saving a new record leaves it on `create`, and it comes back from the encrypted token, never from the request. Closures can ask for `$operation`.
+- **`hiddenOn()`, `visibleOn()` and `disabledOn()` resolve when the form mounts.** They become plain `true` or `false`, so they get the static guarantees of `hidden()` and `disabled()`: locked before any closure runs, with no stub sent to the browser. As in Filament, each replaces `hidden()`, `visible()` or `disabled()`, whichever came last.
+- **`readOnly()` is a server guarantee.** The posted value is dropped before closures run, rules are skipped, and search, upload and hooks are refused. Text inputs and textareas use the `readonly` attribute. Every other control renders as disabled, because it has no read-only mode, and this includes plugin fields that use `useField`.
+- **State hooks.** `afterStateHydrated()` runs after the whole form is filled, so it can read any field, including inside rows. `formatStateUsing()` is a shorthand for it, and `state()` sets the value. `dehydrateStateUsing()` runs after the field's own `dehydrateState()`, so it receives the cast value.
+- **Flags can turn off live.** The browser merges patches and never removes a key, so a field that could be read-only sends `readOnly` either way, and `extraAttributes` is replaced whole.
+- **`saved()` is `dehydrated()`.** Filament 5 documents it as the same idea, so it delegates, and both now take a closure. `dehydrated()` stays. Unlike Filament, `disabled()->saved()` writes the server's value, so a browser can't change it.
+- **Display options.** `extraAttributes()` goes on the outer `.xq-cell`, so it works for layouts and plugin fields too. `autofocus()` reuses `focusPath`. `hiddenLabel()` keeps the label for screen readers, and `inlineLabel()` applies at the `sm` breakpoint and up. These node keys only appear when used, so `$xq` stays 1 and existing snapshots don't change.
+
+Changes that can break existing code, for the release notes:
+
+- A path starting with `data.` is no longer treated as absolute by `Get`, `Set`, `When`, `computed()` or `dependsOn()`. It was never documented, and it made a field named `data` replace the whole form. Write `$.name` for the form root. This fails quietly: `$get('data.name')` now returns null instead of throwing, so search for it.
+- `Field::dehydrated()` accepts a closure, so a subclass that overrides it must widen its parameter type.
+
+Limits to keep in mind:
+
+- `readOnly()` writes nothing over a stored value. A new record or row saves its default. A row with no model is the exception: it is stored whole, so its value stays in the row, and with `formatStateUsing()` that is the formatted value. Pair the two with `dehydrateStateUsing()` there.
+- `readOnly()` on a field with rows covers every field in those rows. `disabled()` on a repeater does not do this yet.
+- A `disabled()` field in a row with no model is still dropped from the stored row, because it isn't dehydrated. Add `saved()` to keep it, or use `readOnly()`.
+- A dropped field is missing from `mutateBeforeSave()`. Code that reads it there must allow for that, or the field needs `saved()`. The order example hit this: without `saved()`, a locked `type` looked like a non-business order and cleared the company.
+- `afterStateHydrated()` and `formatStateUsing()` run on every request, so they must be deterministic and free of side effects. They don't run for a row added in the browser, which gets its plain default.
+- `dehydrateStateUsing()` is ignored on a field with rows, and it runs before uploads are moved, so on a file field it sees the token.
+- `extraAttributes()` values are bound as given, so never put user input in an attribute name. Filament's `merge` option and `extraInputAttributes()` were not in scope.
+- `inlineLabel()` is per field. Filament also sets it on a layout or a whole form. Checkboxes and toggles already have the label beside them, so it does nothing there.
 
 ### Where the build differs from the plan
 - **Patches have no `add`/`remove`.** A component hidden by a server closure is sent as a stub (`{ key, type, hidden: true, deps }`) and later patched to a full node, which keeps every key stable.

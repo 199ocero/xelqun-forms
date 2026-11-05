@@ -1,0 +1,49 @@
+{
+    "state": {
+        "data": {
+            "code": null
+        }
+    },
+    "components": [
+        {
+            "key": "data.code",
+            "type": "text-input",
+            "hidden": false,
+            "path": "data.code",
+            "label": "Code",
+            "hint": null,
+            "placeholder": null,
+            "required": false,
+            "disabled": false,
+            "rules": {
+                "visible": null,
+                "required": null,
+                "disabled": null
+            },
+            "computed": null,
+            "live": null,
+            "readOnly": true,
+            "autofocus": true,
+            "hiddenLabel": true,
+            "inlineLabel": true,
+            "span": null,
+            "props": {
+                "inputType": "text",
+                "numeric": false,
+                "integer": false,
+                "min": null,
+                "max": null,
+                "step": null,
+                "maxLength": null,
+                "prefix": null,
+                "suffix": null,
+                "autocomplete": null
+            },
+            "children": [],
+            "extraAttributes": {
+                "data-kind": "code"
+            },
+            "deps": []
+        }
+    ]
+}

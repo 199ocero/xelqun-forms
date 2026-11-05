@@ -55,14 +55,21 @@ class Form
 
     private ?string $formId = null;
 
+    private readonly string $operation;
+
     /**
      * @param  TModel|null  $record
      * @param  array<string, mixed>  $context  Scalar values that are needed to rebuild the form (kept in the token).
+     *                                         Set "operation" for one beyond create and edit, such as "view".
      */
     final public function __construct(
         protected ?Model $record = null,
         protected array $context = [],
     ) {
+        $this->operation = is_string($context['operation'] ?? null)
+            ? $context['operation']
+            : ($record?->getKey() === null ? 'create' : 'edit');
+
         $this->boot();
     }
 
@@ -134,6 +141,16 @@ class Form
     public function getRecord(): ?Model
     {
         return $this->record;
+    }
+
+    /**
+     * What this form is doing: "create", "edit" or the context's "operation".
+     * Fixed when the form is built, so saving a new record leaves it on "create"
+     * and a request can never change it. Closures can ask for $operation.
+     */
+    public function getOperation(): string
+    {
+        return $this->operation;
     }
 
     /**
@@ -360,6 +377,12 @@ class Form
         $this->state = [StatePath::ROOT => []];
 
         self::eachField($this->getComponents(), fn (Field $field) => $field->fillState($this->record));
+
+        $this->walk(function (Component $component): void {
+            if ($component instanceof Field) {
+                $component->callAfterStateHydrated();
+            }
+        });
 
         $this->recomputeComputedFields();
         $this->initialState = $this->state;

@@ -273,7 +273,7 @@ mount(XqForm, {
 ## Security
 
 - **Plugin code runs with full access to the app.** The contracts control how requests reach a field. They can't make a malicious package safe.
-- **The endpoints call `acceptsInput()` and the form's `authorize()` before your code**, so hidden and disabled fields are never searched or uploaded to.
+- **The endpoints call `acceptsInput()` and the form's `authorize()` before your code**, so hidden, disabled and read-only fields are never searched or uploaded to.
 - **Everything else is yours to check.** If you add your own route, authorize it yourself. Treat every posted value as untrusted, and never rely on the browser hiding something.
 
 ## What you can rely on

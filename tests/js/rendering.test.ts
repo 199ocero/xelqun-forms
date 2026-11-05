@@ -23,6 +23,155 @@ describe('XqForm rendering', () => {
         wrapper.unmount();
     });
 
+    describe('display options', () => {
+        it('keeps a read-only text field focusable and editable by nobody', () => {
+            const store = createFormStore(
+                schema(
+                    [
+                        field('data.code', 'text-input', { readOnly: true }),
+                        field('data.notes', 'textarea', { readOnly: true }),
+                        field('data.plan', 'toggle', { readOnly: true }),
+                    ],
+                    { code: 'A1', notes: null, plan: false },
+                ),
+            );
+            const wrapper = mount(XqForm, { props: { form: store }, attachTo: document.body });
+
+            for (const control of ['input', 'textarea']) {
+                const element = wrapper.find(control).element;
+
+                expect(element.hasAttribute('readonly')).toBe(true);
+                expect(element.hasAttribute('disabled')).toBe(false);
+            }
+
+            expect(wrapper.find('[role="switch"]').attributes('disabled')).toBeDefined();
+            wrapper.unmount();
+        });
+
+        it('hides a label on screen but keeps it for screen readers', () => {
+            const store = createFormStore(
+                schema(
+                    [
+                        field('data.code', 'text-input', { label: 'Code', hiddenLabel: true }),
+                        field('data.gift', 'checkbox', { label: 'Gift', hiddenLabel: true }),
+                    ],
+                    { code: null, gift: false },
+                ),
+            );
+            const wrapper = mount(XqForm, { props: { form: store }, attachTo: document.body });
+            const labels = wrapper.findAll('label');
+
+            expect(labels.map((label) => label.text())).toEqual(['Code', 'Gift']);
+            expect(labels.every((label) => label.classes('sr-only'))).toBe(true);
+            wrapper.unmount();
+        });
+
+        it('adds extra attributes to the outer element without losing its own', () => {
+            const store = createFormStore(
+                schema(
+                    [
+                        field('data.code', 'text-input', {
+                            extraAttributes: {
+                                class: 'custom',
+                                title: 'Code',
+                                'data-xq-key': 'forged',
+                            },
+                        }),
+                    ],
+                    { code: null },
+                ),
+            );
+            const wrapper = mount(XqForm, { props: { form: store }, attachTo: document.body });
+            const cell = wrapper.find('.xq-cell');
+
+            expect(cell.classes()).toContain('custom');
+            expect(cell.attributes('title')).toBe('Code');
+            expect(cell.attributes('data-xq-key')).toBe('data.code');
+            wrapper.unmount();
+        });
+
+        it('follows a live patch that turns the options off', async () => {
+            const store = createFormStore(
+                schema(
+                    [
+                        field('data.code', 'text-input', {
+                            readOnly: true,
+                            extraAttributes: { title: 'Old', 'data-kept': 'yes' },
+                        }),
+                    ],
+                    { code: 'A1' },
+                ),
+            );
+            const wrapper = mount(XqForm, { props: { form: store }, attachTo: document.body });
+
+            store.applyPatch(
+                {
+                    $xq: 1,
+                    seq: 1,
+                    set: {},
+                    schema: {
+                        'data.code': { readOnly: false, extraAttributes: { 'data-kept': 'yes' } },
+                    },
+                    errors: {},
+                },
+                new Map(),
+            );
+            await nextTick();
+
+            const cell = wrapper.find('.xq-cell');
+
+            expect(wrapper.find('input').attributes('readonly')).toBeUndefined();
+            expect(cell.attributes('title')).toBeUndefined();
+            expect(cell.attributes('data-kept')).toBe('yes');
+            wrapper.unmount();
+        });
+
+        it('keeps one column when an inline label is hidden', () => {
+            const store = createFormStore(
+                schema(
+                    [
+                        field('data.code', 'text-input', {
+                            hiddenLabel: true,
+                            inlineLabel: true,
+                        }),
+                        field('data.name', 'text-input', { inlineLabel: true }),
+                    ],
+                    { code: null, name: null },
+                ),
+            );
+            const wrapper = mount(XqForm, { props: { form: store }, attachTo: document.body });
+            const columns = (path: string) =>
+                wrapper.find(`[data-xq-path="${path}"]`).classes().join(' ').includes('grid-cols');
+
+            expect(columns('data.code')).toBe(false);
+            expect(columns('data.name')).toBe(true);
+            wrapper.unmount();
+        });
+
+        it('focuses the first visible autofocus field when the form opens', async () => {
+            const store = createFormStore(
+                schema(
+                    [
+                        field('data.first', 'text-input'),
+                        field('data.gone', 'text-input', {
+                            autofocus: true,
+                            rules: { visible: { op: 'filled', path: 'data.first' } },
+                        }),
+                        field('data.second', 'text-input', { autofocus: true }),
+                    ],
+                    { first: null, gone: null, second: null },
+                ),
+            );
+            const wrapper = mount(XqForm, { props: { form: store }, attachTo: document.body });
+
+            await nextTick();
+            await nextTick();
+
+            expect(document.activeElement?.getAttribute('name')).toBe('data.second');
+            wrapper.unmount();
+        });
+    });
+
     describe('conditional text', () => {
         const when = { op: 'eq', path: 'data.is_gift', value: true } as const;
         const text = { when, text: 'Gift', otherwise: 'Plain' };
