@@ -19,6 +19,8 @@ class Repeater extends Field
 {
     public const string RECORD_KEY_PREFIX = 'record-';
 
+    private const string SAFE_ROW_KEY_PATTERN = '/^[A-Za-z0-9_-]+$/';
+
     protected ?string $relationship = null;
 
     protected ?string $orderColumn = null;
@@ -209,6 +211,32 @@ class Repeater extends Field
         }
 
         return $rows;
+    }
+
+    /**
+     * Row keys become part of state paths, so "." or "*" in one would reach other rows.
+     */
+    public static function isSafeRowKey(string $rowKey): bool
+    {
+        return preg_match(self::SAFE_ROW_KEY_PATTERN, $rowKey) === 1;
+    }
+
+    /**
+     * Remove rows the browser could not have created, before anything reads them.
+     */
+    public function discardUnsafeRows(): void
+    {
+        $state = $this->getState();
+
+        if (! is_array($state)) {
+            return;
+        }
+
+        $rows = array_filter($state, fn (int|string $rowKey): bool => self::isSafeRowKey((string) $rowKey), ARRAY_FILTER_USE_KEY);
+
+        if (count($rows) !== count($state)) {
+            $this->getForm()->setStateValue($this->getStatePath(), $rows);
+        }
     }
 
     public static function newRowKey(): string

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { CircleAlert } from 'lucide-vue-next';
-import { inject, onMounted, provide, ref } from 'vue';
+import { computed, inject, onMounted, provide, ref } from 'vue';
 import { HEADING_LEVEL, provideFormStore } from '../composables/context';
 import { REGISTRY } from '../composables/registry';
 import { useXqForm } from '../composables/useXqForm';
@@ -37,6 +37,7 @@ function isStore(value: FormStore | FormSchema): value is FormStore {
 const store = isStore(props.form) ? props.form : useXqForm(props.form);
 const { processing, uploading, fatalError, liveError } = store;
 const syncing = store.queue.busy;
+const errorCount = computed(() => Object.keys(store.errors).length);
 
 provideFormStore(store);
 provide(HEADING_LEVEL, props.headingLevel);
@@ -72,16 +73,21 @@ function submit(): void {
         novalidate
         @submit.prevent="submit"
     >
+        <div class="xq-grid">
+            <XqNode v-for="node in store.components" :key="node.key" :node="node" />
+        </div>
+        <p role="status" class="sr-only">
+            <template v-if="errorCount">
+                {{ errorCount }} {{ errorCount === 1 ? 'field needs' : 'fields need' }} attention.
+            </template>
+        </p>
         <div
             v-if="fatalError"
             role="alert"
-            class="gap-2 px-3 py-2 text-sm flex items-start rounded-xq-md border border-xq-destructive/40 bg-xq-destructive/10 text-xq-destructive"
+            class="bottom-4 gap-2 px-3 py-2 text-sm shadow-lg sticky z-10 flex items-start rounded-xq-md border border-xq-destructive/40 bg-xq-card text-xq-destructive"
         >
             <CircleAlert class="mt-0.5 size-4 shrink-0" />
             {{ fatalError }}
-        </div>
-        <div class="xq-grid">
-            <XqNode v-for="node in store.components" :key="node.key" :node="node" />
         </div>
         <div
             v-if="liveError"

@@ -39,6 +39,7 @@ final class FormValidator
         $this->kept = [];
 
         $form->setData($data);
+        $this->replaceLockedValues($form, $form->getComponents(), true);
         $form->recomputeComputedFields();
 
         $this->collect($form->getComponents(), true, null);
@@ -77,6 +78,45 @@ final class FormValidator
         }
 
         return $state[StatePath::ROOT];
+    }
+
+    /**
+     * Computed values must only see what the user may change: hidden fields lose
+     * their posted value, and disabled fields go back to their server value.
+     *
+     * @param  array<int, Component>  $components
+     */
+    private function replaceLockedValues(Form $form, array $components, bool $parentVisible): void
+    {
+        foreach ($components as $component) {
+            $visible = $parentVisible && $component->isVisibleInState();
+
+            if (! $component instanceof Field) {
+                $this->replaceLockedValues($form, $component->getChildComponents(), $visible);
+
+                continue;
+            }
+
+            $path = $component->getStatePath();
+
+            if (! $visible) {
+                $form->forgetStateValue($path);
+
+                continue;
+            }
+
+            if ($component->isDisabledInState() && $component->getComputed() === null) {
+                $form->setStateValue($path, $form->getInitialValue($path) ?? $component->getDefaultState());
+
+                continue;
+            }
+
+            if ($component instanceof Repeater) {
+                foreach ($component->getRows() as $rowComponents) {
+                    $this->replaceLockedValues($form, $rowComponents, true);
+                }
+            }
+        }
     }
 
     /**

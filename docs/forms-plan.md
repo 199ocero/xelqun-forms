@@ -440,7 +440,7 @@ Milestones 0–9 are built and tested. Milestone 9 added failure and loading fee
 | File upload inside a repeater row | browser test, package `UploadTest` |
 | Server errors on the correct nested field | browser tests (`Price (Item 2)`), package `ValidationTest` |
 
-**Test counts:** package Pest 134, package Vitest 139, playground Pest 32 (1 unit + 13 feature + 18 browser).
+**Test counts:** package Pest 163, package Vitest 145, playground Pest 32 (1 unit + 13 feature + 18 browser).
 
 ### Where the build differs from the plan
 - **Patches have no `add`/`remove`.** A component hidden by a server closure is sent as a stub (`{ key, type, hidden: true, deps }`) and later patched to a full node, which keeps every key stable.

@@ -4,6 +4,7 @@ namespace Xelqun\Forms\Components;
 
 use Closure;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Throwable;
 use Xelqun\Forms\Uploads\TemporaryUploadStore;
 
@@ -14,6 +15,16 @@ use Xelqun\Forms\Uploads\TemporaryUploadStore;
  */
 class FileUpload extends Field
 {
+    /**
+     * Types a web server may run, or a browser may treat as a page from this
+     * site. Refused unless the field lists its own acceptedFileTypes().
+     */
+    private const array ACTIVE_CONTENT_EXTENSIONS = [
+        'asp', 'aspx', 'cgi', 'htaccess', 'htm', 'html', 'js', 'jsp', 'mjs', 'phar',
+        'php', 'php3', 'php4', 'php5', 'php7', 'php8', 'pht', 'phtml', 'pl', 'shtml',
+        'svg', 'svgz', 'xht', 'xhtml', 'xml', 'xsl',
+    ];
+
     protected ?string $disk = null;
 
     protected string $directory = '';
@@ -80,6 +91,14 @@ class FileUpload extends Field
         return $this;
     }
 
+    /**
+     * Identifies this field across requests, for every row of a repeater.
+     */
+    public function getUploadScope(): string
+    {
+        return $this->getForm()::class.'|'.$this->getStatePathPattern();
+    }
+
     public function getDiskName(): string
     {
         return $this->disk ?? (string) config('xelqun-forms.uploads.disk', 'public');
@@ -88,11 +107,21 @@ class FileUpload extends Field
     /**
      * Rules for the uploaded file itself, checked by the upload endpoint.
      *
-     * @return array<int, string>
+     * @return array<int, mixed>
      */
     public function getUploadRules(): array
     {
         $rules = ['required', 'file'];
+
+        if ($this->acceptedFileTypes === []) {
+            $rules[] = function (string $attribute, mixed $file, Closure $fail): void {
+                $extensions = [Str::lower($file->getClientOriginalExtension()), $file->guessExtension()];
+
+                if (array_intersect($extensions, self::ACTIVE_CONTENT_EXTENSIONS) !== []) {
+                    $fail(__('This file type is not allowed.'));
+                }
+            };
+        }
 
         if ($this->isImage) {
             $rules[] = 'image';
@@ -119,7 +148,7 @@ class FileUpload extends Field
                 $store = app(TemporaryUploadStore::class);
 
                 if ($store->isToken($value)) {
-                    if (! $store->isUsable($store->idFromToken($value))) {
+                    if (! $store->isUsable($store->idFromToken($value), $this->getUploadScope())) {
                         $fail(__('The :attribute upload has expired. Please upload the file again.', ['attribute' => $this->getLabel()]));
                     }
 

@@ -7,6 +7,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use RuntimeException;
+use Symfony\Component\Mime\MimeTypes;
 
 /**
  * Holds files between "picked in the browser" and "form saved".
@@ -16,15 +17,18 @@ final class TemporaryUploadStore
     public const string TOKEN_PREFIX = 'xq-tmp:';
 
     /**
+     * @param  string  $scope  The field this upload is for. It can only be used there.
      * @return array{token: string, name: string, size: int, mime: string|null}
      */
-    public function store(UploadedFile $file): array
+    public function store(UploadedFile $file, string $scope): array
     {
         $id = Str::random(40);
         $metadata = [
             'name' => $this->sanitizeName($file->getClientOriginalName()),
             'size' => (int) $file->getSize(),
             'mime' => $file->getMimeType(),
+            'extension' => $this->safeExtension($file),
+            'scope' => $scope,
             'session' => $this->sessionHash(),
             'created_at' => time(),
         ];
@@ -46,7 +50,7 @@ final class TemporaryUploadStore
     }
 
     /**
-     * @return array{name: string, size: int, mime: string|null, session: string, created_at: int}|null
+     * @return array{name: string, size: int, mime: string|null, extension: string, scope: string, session: string, created_at: int}|null
      */
     public function metadata(string $id): ?array
     {
@@ -60,14 +64,16 @@ final class TemporaryUploadStore
     }
 
     /**
-     * The upload exists, has not expired and was made in the current session.
+     * The upload exists, has not expired, and was made in the current session
+     * for this field, so a file can't skip a stricter field's upload rules.
      */
-    public function isUsable(string $id): bool
+    public function isUsable(string $id, string $scope): bool
     {
         $metadata = $this->metadata($id);
 
         return $metadata !== null
             && hash_equals($metadata['session'], $this->sessionHash())
+            && hash_equals($metadata['scope'], $scope)
             && $metadata['created_at'] >= time() - $this->ttlMinutes() * 60;
     }
 
@@ -87,7 +93,7 @@ final class TemporaryUploadStore
     public function finalize(string $id, string $disk, string $directory, string $visibility): string
     {
         $metadata = $this->metadata($id) ?? throw new RuntimeException("Temporary upload [{$id}] does not exist.");
-        $extension = Str::lower(pathinfo($metadata['name'], PATHINFO_EXTENSION));
+        $extension = $metadata['extension'];
         $basename = Str::limit(Str::slug(pathinfo($metadata['name'], PATHINFO_FILENAME)), 60, '') ?: 'file';
         $filename = $basename.'-'.Str::lower(Str::random(12)).($extension !== '' ? '.'.$extension : '');
         $path = ltrim($directory.'/'.$filename, '/');
@@ -131,6 +137,18 @@ final class TemporaryUploadStore
         }
 
         return $removed;
+    }
+
+    /**
+     * The extension decides how a web server treats the stored file, so it comes
+     * from the detected type. The client's name is kept only if it matches that type.
+     */
+    private function safeExtension(UploadedFile $file): string
+    {
+        $clientExtension = Str::lower($file->getClientOriginalExtension());
+        $allowed = MimeTypes::getDefault()->getExtensions((string) $file->getMimeType());
+
+        return in_array($clientExtension, $allowed, true) ? $clientExtension : (string) $file->guessExtension();
     }
 
     private function disk(): Filesystem

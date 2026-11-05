@@ -89,6 +89,8 @@ async function add(): Promise<void> {
                 v-for="(key, index) in keys"
                 :key="key"
                 :data-xq-row="key"
+                role="group"
+                :aria-label="`${options.itemLabel} ${index + 1}`"
                 class="shadow-xs rounded-xq-lg border border-xq-border bg-xq-card"
             >
                 <div

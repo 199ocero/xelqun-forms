@@ -279,6 +279,14 @@ abstract class Field extends Component
         return (bool) $this->evaluate($this->disabled);
     }
 
+    /**
+     * Whether the browser may use this field's endpoints: search, upload and hooks.
+     */
+    public function acceptsInput(): bool
+    {
+        return ! $this->isHiddenOnServer() && ! $this->isDisabled();
+    }
+
     public function isDisabledInState(): bool
     {
         return $this->isDisabled()

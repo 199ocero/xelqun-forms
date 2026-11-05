@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { LoaderCircle } from 'lucide-vue-next';
 import { computed } from 'vue';
 import { useField } from '../../composables/useField';
 import type { SchemaNode } from '../../schema/types';
@@ -6,7 +7,7 @@ import XqLabel from '../../ui/XqLabel.vue';
 import XqSwitch from '../../ui/XqSwitch.vue';
 
 const props = defineProps<{ node: SchemaNode }>();
-const { value, error, required, disabled, id } = useField<boolean>(props.node);
+const { value, error, loading, required, disabled, id } = useField<boolean>(props.node);
 const hasHint = computed(() => !!(props.node.props?.description || props.node.hint));
 const describedBy = computed(() =>
     error.value ? `${id}-error` : hasHint.value ? `${id}-hint` : undefined,
@@ -14,7 +15,7 @@ const describedBy = computed(() =>
 </script>
 
 <template>
-    <div class="gap-2 grid" :data-xq-path="node.path">
+    <div class="gap-2 grid" :data-xq-path="node.path" :aria-busy="loading || undefined">
         <div class="gap-3 flex items-start">
             <XqSwitch
                 :id="id"
@@ -28,18 +29,18 @@ const describedBy = computed(() =>
                     {{ node.label }}
                     <span v-if="required" class="text-xq-destructive" aria-hidden="true">*</span>
                     <span v-if="required" class="sr-only">(required)</span>
+                    <LoaderCircle
+                        v-if="loading"
+                        class="ml-1 size-3 motion-safe:animate-spin text-xq-muted-foreground"
+                        aria-hidden="true"
+                    />
                 </XqLabel>
                 <p v-if="hasHint" :id="`${id}-hint`" class="text-xs text-xq-muted-foreground">
                     {{ node.props?.description ?? node.hint }}
                 </p>
             </div>
         </div>
-        <p
-            v-if="error"
-            :id="`${id}-error`"
-            role="alert"
-            class="text-xs font-medium text-xq-destructive"
-        >
+        <p v-if="error" :id="`${id}-error`" class="text-xs font-medium text-xq-destructive">
             {{ error }}
         </p>
     </div>

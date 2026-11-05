@@ -139,7 +139,13 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <XqFieldWrapper :node="node" :id="id" :error="error ?? uploadError" :required="required">
+    <XqFieldWrapper
+        :node="node"
+        :id="id"
+        :error="error ?? uploadError"
+        :required="required"
+        :announce-error="!!uploadError"
+    >
         <div
             v-if="file && !progress"
             class="gap-3 p-2 pr-3 flex items-center rounded-xq-md border border-xq-border bg-xq-background"

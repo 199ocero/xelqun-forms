@@ -185,7 +185,10 @@ class Select extends Field
      */
     public function getSelectedOptions(): array
     {
-        $values = array_filter((array) $this->getState(), fn (mixed $value): bool => $value !== null && $value !== '');
+        $values = array_filter(
+            (array) $this->getState(),
+            fn (mixed $value): bool => (is_string($value) || is_int($value)) && $value !== '',
+        );
 
         if ($values === []) {
             return [];
@@ -254,10 +257,17 @@ class Select extends Field
     protected function getTypeRules(): array
     {
         if ($this->relationship !== null) {
-            $relationship = $this->getRelationshipInstance();
-            $exists = Rule::exists($relationship->getRelated()->getTable(), $relationship->getOwnerKeyName());
+            $exists = function (string $attribute, mixed $value, Closure $fail): void {
+                $items = array_map(fn (mixed $item): string => is_scalar($item) ? (string) $item : '', (array) $value);
+                $keyName = $this->getRelatedKeyName();
+                $known = $this->getRelationshipQuery()->whereIn($keyName, $items)->pluck($keyName)->map(strval(...))->all();
 
-            return $this->isMultiple ? ['array', $this->eachRule($exists)] : [$exists];
+                if (array_diff($items, $known) !== []) {
+                    $fail(__('validation.exists', ['attribute' => $this->getLabel()]));
+                }
+            };
+
+            return $this->isMultiple ? ['array', $exists] : [$exists];
         }
 
         if ($this->isAsync()) {
@@ -265,7 +275,7 @@ class Select extends Field
                 $known = $this->getSelectedOptions();
 
                 foreach ((array) $value as $item) {
-                    if (! array_key_exists($item, $known)) {
+                    if ((! is_string($item) && ! is_int($item)) || ! array_key_exists($item, $known)) {
                         $fail(__('validation.in', ['attribute' => $this->getLabel()]));
                     }
                 }

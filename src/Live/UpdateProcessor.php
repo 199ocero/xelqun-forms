@@ -29,7 +29,7 @@ final class UpdateProcessor
         foreach ($changed as $path) {
             $component = $form->findComponent($path);
 
-            if ($component instanceof Field && $component->hasAfterStateUpdatedHooks()) {
+            if ($component instanceof Field && $component->hasAfterStateUpdatedHooks() && $component->acceptsInput()) {
                 $component->callAfterStateUpdated();
             }
         }

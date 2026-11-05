@@ -42,7 +42,7 @@ describe('form accessibility', () => {
         await nextTick();
 
         const control = wrapper.find('[aria-invalid="true"]');
-        const message = wrapper.find('[role="alert"]');
+        const message = wrapper.find('[id$="-error"]');
 
         expect(control.exists()).toBe(true);
         expect(control.attributes('aria-describedby')).toBe(message.attributes('id'));
@@ -64,6 +64,70 @@ describe('form accessibility', () => {
         const { wrapper } = await mountFields([{ ...node, required: true }], { value: null });
 
         expect(wrapper.find('label .sr-only').text()).toBe('(required)');
+        wrapper.unmount();
+    });
+
+    it('announces one summary instead of every error', async () => {
+        const { store, wrapper } = await mountFields([field('data.a'), field('data.b')], {
+            a: null,
+            b: null,
+        });
+
+        store.errors['data.a'] = 'Nope.';
+        store.errors['data.b'] = 'Nope.';
+        await nextTick();
+
+        expect(wrapper.find('[role="status"]').text()).toBe('2 fields need attention.');
+        expect(wrapper.find('[role="alert"]').exists()).toBe(false);
+        wrapper.unmount();
+    });
+
+    it('announces an upload error right away', async () => {
+        const { store, wrapper } = await mountFields([field('data.value', 'file-upload')], {
+            value: null,
+        });
+
+        vi.spyOn(store, 'upload').mockRejectedValue(new Error('Failed'));
+
+        const input = wrapper.find<HTMLInputElement>('input[type="file"]');
+
+        Object.defineProperty(input.element, 'files', { value: [new File(['x'], 'cv.pdf')] });
+        await input.trigger('change');
+        await flushPromises();
+
+        expect(wrapper.find('[role="alert"]').text()).toContain('upload failed');
+        wrapper.unmount();
+    });
+
+    it('keeps the main label of a radio group from picking an option', async () => {
+        const { wrapper } = await mountFields(
+            [field('data.value', 'radio', { props: { options } })],
+            { value: null },
+        );
+
+        expect(wrapper.find('label').attributes('for')).toBeUndefined();
+        wrapper.unmount();
+    });
+
+    it.each([
+        ['checkbox', 'checkbox'],
+        ['toggle', 'toggle'],
+    ])('shows when a %s is waiting on the server', async (_name, type) => {
+        const store = createFormStore(
+            schema([field('data.country'), field('data.value', type, { deps: ['data.country'] })], {
+                country: null,
+                value: false,
+            }),
+        );
+        const wrapper = mount(XqForm, { props: { form: store }, attachTo: document.body });
+
+        store.queue.loadingPaths.value = ['data.country'];
+        await nextTick();
+
+        const field_ = wrapper.find('[data-xq-path="data.value"]');
+
+        expect(field_.attributes('aria-busy')).toBe('true');
+        expect(field_.find('label svg').exists()).toBe(true);
         wrapper.unmount();
     });
 
@@ -149,6 +213,15 @@ describe('repeater keyboard focus', () => {
     }
 
     const focused = () => document.activeElement?.getAttribute('aria-label');
+
+    it('names each row for screen readers', async () => {
+        const { wrapper } = await mountRepeater(2);
+
+        expect(
+            wrapper.findAll('[role="group"]').map((row) => row.attributes('aria-label')),
+        ).toEqual(['Item 1', 'Item 2']);
+        wrapper.unmount();
+    });
 
     it('moves focus to the row that takes the place of a removed one', async () => {
         const { wrapper } = await mountRepeater(3);

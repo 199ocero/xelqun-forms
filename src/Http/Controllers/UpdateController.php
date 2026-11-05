@@ -18,7 +18,7 @@ class UpdateController
             'changed' => ['present', 'array', 'max:100'],
             'changed.*' => ['string', 'max:500'],
             'deps' => ['present', 'array', 'max:2000'],
-            'deps.*' => ['array'],
+            'deps.*' => ['array', 'max:100'],
         ]);
 
         $form = $tokens->resolveForm($validated['token']);

@@ -204,6 +204,22 @@ abstract class Component
     }
 
     /**
+     * Whether a server rule hides this component or one of its ancestors. These
+     * rules are the security boundary, unlike visibleWhen(), which the browser
+     * evaluates against state it controls.
+     */
+    public function isHiddenOnServer(): bool
+    {
+        for ($component = $this; $component !== null; $component = $component->getParent()) {
+            if ($component->isHiddenStatically() || $component->isHiddenDynamically()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Whether this component is visible for the current state, ignoring ancestors.
      */
     public function isVisibleInState(): bool

@@ -21,12 +21,12 @@ class UploadController
         $form = $tokens->resolveForm($request->string('token')->value());
         $field = $form->findComponent($request->string('path')->value());
 
-        if (! $field instanceof FileUpload) {
+        if (! $field instanceof FileUpload || ! $field->acceptsInput()) {
             throw ValidationException::withMessages(['file' => 'This field does not accept uploads.']);
         }
 
         $request->validate(['file' => $field->getUploadRules()], [], ['file' => $field->getLabel()]);
 
-        return response()->json($store->store($request->file('file')));
+        return response()->json($store->store($request->file('file'), $field->getUploadScope()));
     }
 }

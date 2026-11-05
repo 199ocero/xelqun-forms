@@ -14,13 +14,7 @@ const { value, error, describedBy, required, disabled, id } = useField<string | 
 </script>
 
 <template>
-    <XqFieldWrapper
-        :node="node"
-        :id="id"
-        :label-for="`${id}-0`"
-        :error="error"
-        :required="required"
-    >
+    <XqFieldWrapper :node="node" :id="id" :label-for="null" :error="error" :required="required">
         <XqRadioGroup
             v-model="value"
             :disabled="disabled"

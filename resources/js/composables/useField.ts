@@ -33,6 +33,7 @@ export function useField<T = any>(nodeOrPath: SchemaNode | string) {
 
             return node.hint ? `${id}-hint` : undefined;
         }),
+        loading: computed(() => store.isLoading(node)),
         required: computed(() => store.isRequired(node)),
         disabled: computed(() => store.isDisabled(node) || store.processing.value),
         onBlur: () => store.blur(path),

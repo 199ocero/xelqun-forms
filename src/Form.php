@@ -6,6 +6,7 @@ use Closure;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use stdClass;
 use Xelqun\Forms\Components\Component;
@@ -213,6 +214,12 @@ class Form
         $this->state = [StatePath::ROOT => $data];
         $this->setPaths = [];
 
+        $this->walk(function (Component $component): void {
+            if ($component instanceof Repeater) {
+                $component->discardUnsafeRows();
+            }
+        });
+
         return $this;
     }
 
@@ -224,6 +231,11 @@ class Form
     public function setStateValue(string $path, mixed $value): void
     {
         data_set($this->state, $path, $value);
+    }
+
+    public function forgetStateValue(string $path): void
+    {
+        Arr::forget($this->state, $path);
     }
 
     public function markAsSet(string $path): void
@@ -254,6 +266,14 @@ class Form
         $values = StatePath::get($this->initialState, $pattern);
 
         return str_contains($pattern, '*') ? (array) $values : [$values];
+    }
+
+    /**
+     * The value a path had when the form was filled, before any browser input.
+     */
+    public function getInitialValue(string $path): mixed
+    {
+        return data_get($this->initialState, $path);
     }
 
     /**
@@ -335,7 +355,7 @@ class Form
                 if (str_starts_with($key, $prefix)) {
                     $rowKey = explode('#', explode('.', substr($key, strlen($prefix)))[0])[0];
 
-                    if ($rowKey !== '' && $rowKey !== StatePath::ROW_PLACEHOLDER) {
+                    if ($rowKey !== '' && $rowKey !== StatePath::ROW_PLACEHOLDER && Repeater::isSafeRowKey($rowKey)) {
                         return $this->findComponent($key, $component->getRowComponents($rowKey));
                     }
                 }
@@ -483,6 +503,8 @@ class Form
      */
     public function validateKeyed(Request|array $input): array
     {
+        abort_unless($this->authorize(auth()->user(), $this->record), 403);
+
         $data = $input instanceof Request ? $input->input(StatePath::ROOT, []) : ($input[StatePath::ROOT] ?? $input);
 
         return app(FormValidator::class)->validate($this, is_array($data) ? $data : []);

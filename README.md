@@ -87,6 +87,15 @@ Section titles start at `h2`. If the form sits lower in your page's heading orde
 
 Components use their own `--xq-*` design tokens and `Xq*` names, so they work next to an app's own shadcn-vue components. Dark mode follows a `.dark` class or `[data-xq-theme=dark]`.
 
+## Security
+
+- **Schedule the cleanup.** Temporary uploads stay on disk until `php artisan xelqun-forms:prune-uploads` removes them, so run it from your scheduler.
+- **Authorize in `authorize()`.** `validate()`, `save()` and every internal endpoint call it, and it allows everything by default.
+- **Use `hidden()` to protect a field, not `visibleWhen()`.** `visibleWhen()` runs against state the browser controls. `hidden()` also blocks the field's search, upload and hooks.
+- **`Hidden` fields are not secret or read-only.** Their value comes back from the browser, so use `disabled()` for values users must not change.
+- **A disabled field submits what it was filled with**, even with `dehydrated()`, because the browser can't be trusted to send it back unchanged. To save a value the server derives, set it in `mutateBeforeSave()`.
+- **Limit uploads.** Without `acceptedFileTypes()` or `image()`, a field accepts any file except types a web server may run or a browser may treat as a page.
+
 ## Development
 
 ```bash

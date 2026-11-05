@@ -8,8 +8,10 @@ import XqLabel from '../ui/XqLabel.vue';
 const props = defineProps<{
     node: SchemaNode;
     id: string;
-    /** The control the label points at, when it isn't `id` (e.g. the first radio). */
-    labelFor?: string;
+    /** The control the label points at, or null when it only names a group. */
+    labelFor?: string | null;
+    /** Announce the error as soon as it appears, for errors outside a submit. */
+    announceError?: boolean;
     error?: string | null;
     required?: boolean;
     hideLabel?: boolean;
@@ -29,7 +31,7 @@ const loading = computed(() => store.isLoading(props.node));
         <XqLabel
             v-if="node.label && !hideLabel"
             :id="`${id}-label`"
-            :for="labelFor ?? id"
+            :for="labelFor === null ? undefined : (labelFor ?? id)"
             class="gap-0.5"
         >
             {{ node.label }}
@@ -48,7 +50,7 @@ const loading = computed(() => store.isLoading(props.node));
         <p
             v-if="error"
             :id="`${id}-error`"
-            role="alert"
+            :role="announceError ? 'alert' : undefined"
             class="text-xs font-medium text-xq-destructive"
         >
             {{ error }}

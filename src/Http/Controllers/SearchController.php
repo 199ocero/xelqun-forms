@@ -27,7 +27,7 @@ class SearchController
 
         $field = $form->findComponent($validated['path']);
 
-        abort_unless($field instanceof Select && $field->isSearchable(), 404);
+        abort_unless($field instanceof Select && $field->isSearchable() && $field->acceptsInput(), 404);
 
         return response()->json(['options' => $field->getSearchResults((string) ($validated['search'] ?? ''))]);
     }
