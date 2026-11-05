@@ -22,7 +22,7 @@ const props = withDefaults(
         headingLevel?: 2 | 3 | 4 | 5 | 6;
         class?: string;
     }>(),
-    { method: 'post', submitLabel: 'Save', headingLevel: 2 },
+    { method: 'post', submitLabel: 'Save', headingLevel: 2, preserveState: 'errors' },
 );
 const emit = defineEmits<{
     submit: [store: FormStore];

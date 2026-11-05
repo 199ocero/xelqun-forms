@@ -58,3 +58,29 @@ describe('failed submit', () => {
         wrapper.unmount();
     });
 });
+
+describe('submitting through the form', () => {
+    afterEach(() => visit.mockReset());
+
+    function submitForm(props: Record<string, unknown> = {}) {
+        const form = schema([field('data.name')], { name: null }, null);
+
+        return mount(XqForm, { props: { form, action: '/orders', ...props } })
+            .find('form')
+            .trigger('submit');
+    }
+
+    it('keeps the page state when the server returns errors by default', async () => {
+        await submitForm();
+        await flushPromises();
+
+        expect(visit.mock.calls[0]?.[1].preserveState).toBe('errors');
+    });
+
+    it('passes on an explicit preserveState', async () => {
+        await submitForm({ preserveState: false });
+        await flushPromises();
+
+        expect(visit.mock.calls[0]?.[1].preserveState).toBe(false);
+    });
+});
