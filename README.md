@@ -52,14 +52,24 @@ The installer adds the matching `@xelqun/forms` npm package and sets up `resourc
 ## Usage
 
 ```php
-// controller
-return Inertia::render('Orders/Edit', ['form' => OrderForm::make($order)->toSchema()]);
-
-public function update(Request $request, Order $order)
+class OrderController
 {
-    OrderForm::make($order)->save($request);
+    // Show the form: GET /orders/{order}/edit
+    public function edit(Order $order)
+    {
+        return Inertia::render('Orders/Edit', [
+            'form' => OrderForm::make($order)->toSchema(),
+            'orderId' => $order->id,
+        ]);
+    }
 
-    return back();
+    // Save the form: PUT /orders/{order}
+    public function update(Request $request, Order $order)
+    {
+        OrderForm::make($order)->save($request);
+
+        return back();
+    }
 }
 ```
 
