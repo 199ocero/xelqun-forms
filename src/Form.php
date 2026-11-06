@@ -297,13 +297,21 @@ class Form
             $this->mountedComponents = array_values($this->schema());
 
             foreach ($this->mountedComponents as $index => $component) {
-                $component->mount($this, null, StatePath::ROOT, (string) $index);
+                $component->mount($this, null, StatePath::ROOT, $this->getRootPosition($component, $index));
             }
 
             $this->ensureUniqueStatePaths($this->mountedComponents);
         }
 
         return $this->mountedComponents;
+    }
+
+    /**
+     * What identifies a top-level component in its key.
+     */
+    protected function getRootPosition(Component $component, int $index): string
+    {
+        return (string) $index;
     }
 
     /**

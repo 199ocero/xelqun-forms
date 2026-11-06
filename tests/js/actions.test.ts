@@ -322,6 +322,163 @@ describe('actions', () => {
         wrapper.unmount();
     });
 
+    describe('how a modal looks', () => {
+        const icon = () => inModal()!.querySelector('[data-xq-dialog-icon]');
+        const footer = () => inModal()!.querySelector('[data-xq-dialog-footer]');
+        const closeButton = () => inModal()!.querySelector('[aria-label="Close"]');
+
+        async function openForm(props = {}) {
+            fetchMock.mockImplementationOnce(() => respond({ form: modalSchema }));
+
+            const mounted = await mountAction(action({ hasForm: true, ...props }));
+
+            await mounted.button.trigger('click');
+            await flushPromises();
+
+            return mounted;
+        }
+
+        async function openConfirmation(props = {}) {
+            const mounted = await mountAction(action({ confirmation: true, ...props }));
+
+            await mounted.button.trigger('click');
+            await flushPromises();
+
+            return mounted;
+        }
+
+        it('starts plain, with a close button and the buttons at the end', async () => {
+            const { wrapper } = await openForm();
+
+            expect(icon()).toBeNull();
+            expect(closeButton()).not.toBeNull();
+            expect(footer()!.className).toContain('justify-end');
+            expect(inModal()!.hasAttribute('aria-describedby')).toBe(false);
+            wrapper.unmount();
+        });
+
+        it('takes an icon, its color and the alignments from the server', async () => {
+            const { wrapper } = await openForm({
+                description: 'Why',
+                modalIcon: 'heart',
+                modalIconColor: 'success',
+                alignment: 'center',
+                footerAlignment: 'full',
+            });
+
+            expect(icon()!.className).toContain('text-xq-success');
+            expect(icon()!.parentElement!.className).toContain('text-center');
+            expect(footer()!.className).toContain('*:flex-1');
+            expect(inModal()!.hasAttribute('aria-describedby')).toBe(true);
+            wrapper.unmount();
+        });
+
+        it('leaves the close button out when asked', async () => {
+            const { wrapper } = await openForm({ closeButton: false });
+
+            expect(closeButton()).toBeNull();
+            wrapper.unmount();
+        });
+
+        it('falls back to the primary tint for a color it does not know', async () => {
+            const { wrapper } = await openForm({ modalIcon: 'heart', modalIconColor: 'teal' });
+
+            expect(icon()!.className).toContain('text-xq-primary');
+            wrapper.unmount();
+        });
+
+        it('warns with a centered icon in the color of a confirmation', async () => {
+            const { wrapper } = await openConfirmation({ color: 'danger' });
+
+            expect(icon()!.className).toContain('text-xq-destructive');
+            expect(icon()!.parentElement!.className).toContain('text-center');
+            expect(footer()!.className).toContain('*:flex-1');
+            wrapper.unmount();
+        });
+
+        it('lets a confirmation choose its own look', async () => {
+            const { wrapper } = await openConfirmation({
+                modalIcon: 'heart',
+                modalIconColor: 'info',
+                alignment: 'start',
+                footerAlignment: 'end',
+            });
+
+            expect(icon()!.className).toContain('text-xq-info');
+            expect(icon()!.parentElement!.className).not.toContain('text-center');
+            expect(footer()!.className).toContain('justify-end');
+            wrapper.unmount();
+        });
+    });
+
+    describe('while it runs', () => {
+        const spinner = '.motion-safe\\:animate-spin';
+
+        beforeEach(() => vi.useFakeTimers());
+        afterEach(() => vi.useRealTimers());
+
+        it('changes nothing on screen for a quick action', async () => {
+            fetchMock.mockImplementation(() => new Promise(() => {}));
+
+            const { button, wrapper } = await mountAction();
+
+            await button.trigger('click');
+            await vi.advanceTimersByTimeAsync(199);
+
+            expect(button.attributes('disabled')).toBeUndefined();
+            expect(button.attributes('aria-busy')).toBe('true');
+            expect(button.find(spinner).exists()).toBe(false);
+            wrapper.unmount();
+        });
+
+        it('shows a spinner over the label after a noticeable wait, keeping the width', async () => {
+            fetchMock.mockImplementation(() => new Promise(() => {}));
+
+            const { button, wrapper } = await mountAction();
+
+            await button.trigger('click');
+            await vi.advanceTimersByTimeAsync(200);
+
+            expect(button.attributes('disabled')).toBeUndefined();
+            expect(button.find(spinner).classes()).toContain('absolute');
+            expect(button.find('span').classes()).toContain('invisible');
+            wrapper.unmount();
+        });
+
+        it('sends a modal once, however often it is submitted', async () => {
+            fetchMock.mockImplementationOnce(() => respond({ form: modalSchema }));
+
+            const { button, wrapper } = await mountAction(action({ hasForm: true }));
+
+            await button.trigger('click');
+            await vi.advanceTimersByTimeAsync(10);
+            fetchMock.mockClear();
+            fetchMock.mockImplementation(() => new Promise(() => {}));
+
+            submitModal();
+            submitModal();
+            await vi.advanceTimersByTimeAsync(10);
+
+            expect(fetchMock).toHaveBeenCalledOnce();
+            expect(modalButton('Save').disabled).toBe(false);
+            expect(modalButton('Save').getAttribute('aria-busy')).toBe('true');
+            wrapper.unmount();
+        });
+
+        it('ignores a second click', async () => {
+            fetchMock.mockImplementation(() => new Promise(() => {}));
+
+            const { button, wrapper } = await mountAction();
+
+            await button.trigger('click');
+            await button.trigger('click');
+            await vi.advanceTimersByTimeAsync(10);
+
+            expect(fetchMock).toHaveBeenCalledOnce();
+            wrapper.unmount();
+        });
+    });
+
     it('says so when the request fails, and frees the button', async () => {
         fetchMock.mockImplementation(() => Promise.reject(new TypeError('offline')));
 

@@ -1,6 +1,6 @@
 <?php
 
-namespace Xelqun\Forms\Actions;
+namespace Xelqun\Actions;
 
 use Closure;
 use Illuminate\Database\Eloquent\Model;
@@ -53,6 +53,18 @@ class Action extends Component implements NeedsServer
 
     protected string|Closure|null $modalWidth = null;
 
+    protected string|Closure|null $modalIcon = null;
+
+    protected string|Closure|null $modalIconColor = null;
+
+    protected string|Closure|null $modalAlignment = null;
+
+    protected string|Closure|null $modalFooterActionsAlignment = null;
+
+    protected bool|Closure $hasModalCloseButton = true;
+
+    protected bool|Closure $closesModalByClickingAway = true;
+
     /** @var array<int, Component>|Closure */
     protected array|Closure $modalComponents = [];
 
@@ -60,6 +72,8 @@ class Action extends Component implements NeedsServer
     protected array|Closure|null $fillUsing = null;
 
     protected ?Closure $action = null;
+
+    protected string|Closure|null $successRedirectUrl = null;
 
     /** @var class-string<Model>|Closure|null */
     protected string|Closure|null $model = null;
@@ -209,11 +223,77 @@ class Action extends Component implements NeedsServer
     }
 
     /**
-     * sm, md, lg, xl or 2xl.
+     * sm, md, lg, xl, 2xl, 3xl, 4xl or 5xl.
      */
     public function modalWidth(string|Closure|null $width): static
     {
         $this->modalWidth = $width;
+
+        return $this;
+    }
+
+    /**
+     * An icon in a tinted circle beside the heading. A confirmation has a
+     * warning triangle unless you choose another.
+     */
+    public function modalIcon(string|Closure|null $icon): static
+    {
+        $this->modalIcon = $icon;
+
+        return $this;
+    }
+
+    /**
+     * primary, danger, info, success, warning or gray. A confirmation takes the
+     * action's own color unless you choose another.
+     */
+    public function modalIconColor(string|Closure|null $color): static
+    {
+        $this->modalIconColor = $color;
+
+        return $this;
+    }
+
+    /**
+     * How the heading sits: start or center. A confirmation is centered, and a
+     * modal with fields starts on the left.
+     */
+    public function modalAlignment(string|Closure|null $alignment): static
+    {
+        $this->modalAlignment = $alignment;
+
+        return $this;
+    }
+
+    /**
+     * Where the buttons sit: start, center, end or full. A confirmation is full,
+     * and a modal with fields ends on the right.
+     */
+    public function modalFooterActionsAlignment(string|Closure|null $alignment): static
+    {
+        $this->modalFooterActionsAlignment = $alignment;
+
+        return $this;
+    }
+
+    /**
+     * The X in the corner of a modal with fields. A confirmation has none,
+     * because it wants an answer.
+     */
+    public function modalCloseButton(bool|Closure $condition = true): static
+    {
+        $this->hasModalCloseButton = $condition;
+
+        return $this;
+    }
+
+    /**
+     * Whether a click outside closes a modal with fields, losing what was typed.
+     * A confirmation never closes this way.
+     */
+    public function closeModalByClickingAway(bool|Closure $condition = true): static
+    {
+        $this->closesModalByClickingAway = $condition;
 
         return $this;
     }
@@ -288,6 +368,22 @@ class Action extends Component implements NeedsServer
     public function getUrl(): ?string
     {
         return SafeUrl::filter($this->evaluate($this->url));
+    }
+
+    /**
+     * Where to go after the action runs, for a page that won't exist any more,
+     * as after deleting its record. An unsafe URL is ignored.
+     */
+    public function successRedirectUrl(string|Closure|null $url): static
+    {
+        $this->successRedirectUrl = $url;
+
+        return $this;
+    }
+
+    public function getSuccessRedirectUrl(): ?string
+    {
+        return SafeUrl::filter($this->evaluate($this->successRedirectUrl));
     }
 
     /**
@@ -447,7 +543,13 @@ class Action extends Component implements NeedsServer
                 'color' => $this->color,
                 'tooltip' => $this->tooltip,
                 'width' => $this->modalWidth,
+                'modalIcon' => $this->modalIcon,
+                'modalIconColor' => $this->modalIconColor,
+                'alignment' => $this->modalAlignment,
+                'footerAlignment' => $this->modalFooterActionsAlignment,
             ]),
+            ...($this->evaluate($this->hasModalCloseButton) ? [] : ['closeButton' => false]),
+            ...($this->evaluate($this->closesModalByClickingAway) ? [] : ['closeOnClickAway' => false]),
         ];
     }
 }

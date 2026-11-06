@@ -4,7 +4,7 @@ use Illuminate\Foundation\Auth\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Testing\TestResponse;
-use Xelqun\Forms\Actions\Action;
+use Xelqun\Actions\Action;
 use Xelqun\Forms\Components\Repeater;
 use Xelqun\Forms\Components\Select;
 use Xelqun\Forms\Components\TextInput;

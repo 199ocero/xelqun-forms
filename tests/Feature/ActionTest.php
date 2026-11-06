@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Testing\TestResponse;
 use Illuminate\Validation\ValidationException;
-use Xelqun\Forms\Actions\Action;
+use Xelqun\Actions\Action;
 use Xelqun\Forms\Components\FileUpload;
 use Xelqun\Forms\Components\Repeater;
 use Xelqun\Forms\Components\Select;

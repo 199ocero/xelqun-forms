@@ -173,6 +173,8 @@ export interface UpdatePatch {
 
 export interface ActionResult extends UpdatePatch {
     result?: unknown;
+    /** Where the action sends the user, in place of staying on the page. */
+    redirect?: string | null;
 }
 
 export interface SelectOption {

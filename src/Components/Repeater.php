@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 use LogicException;
 use stdClass;
-use Xelqun\Forms\Actions\Action;
+use Xelqun\Actions\Action;
 use Xelqun\Forms\Components\Concerns\HasColumns;
 use Xelqun\Forms\Components\Repeater\TableColumn;
 use Xelqun\Forms\Contracts\ContainsRows;

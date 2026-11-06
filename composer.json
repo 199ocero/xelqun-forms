@@ -37,6 +37,7 @@
     },
     "autoload": {
         "psr-4": {
+            "Xelqun\\Actions\\": "actions/",
             "Xelqun\\Forms\\": "src/"
         }
     },
@@ -53,7 +54,7 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-main": "0.3.x-dev"
+            "dev-main": "0.4.x-dev"
         },
         "laravel": {
             "providers": [

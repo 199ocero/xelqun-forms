@@ -4,7 +4,7 @@ namespace Xelqun\Forms\Security;
 
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Contracts\Encryption\StringEncrypter;
-use Xelqun\Forms\Actions\Action;
+use Xelqun\Actions\Action;
 use Xelqun\Forms\Exceptions\InvalidFormToken;
 use Xelqun\Forms\Form;
 use Xelqun\Forms\Validation\FormValidator;

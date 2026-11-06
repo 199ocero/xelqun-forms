@@ -3,7 +3,7 @@
 namespace Xelqun\Forms\Layouts;
 
 use Closure;
-use Xelqun\Forms\Actions\Action;
+use Xelqun\Actions\Action;
 
 /**
  * A row of action buttons.

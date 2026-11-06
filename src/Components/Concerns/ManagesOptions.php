@@ -5,7 +5,7 @@ namespace Xelqun\Forms\Components\Concerns;
 use Closure;
 use Illuminate\Database\Eloquent\Model;
 use LogicException;
-use Xelqun\Forms\Actions\Action;
+use Xelqun\Actions\Action;
 use Xelqun\Forms\Components\Component;
 use Xelqun\Forms\State\Get;
 

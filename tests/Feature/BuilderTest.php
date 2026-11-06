@@ -4,7 +4,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Testing\TestResponse;
 use Illuminate\Validation\ValidationException;
-use Xelqun\Forms\Actions\Action;
+use Xelqun\Actions\Action;
 use Xelqun\Forms\Components\Builder;
 use Xelqun\Forms\Components\Builder\Block;
 use Xelqun\Forms\Components\FileUpload;

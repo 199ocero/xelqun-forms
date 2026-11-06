@@ -3,6 +3,7 @@ includes:
 
 parameters:
     paths:
+        - actions/
         - src/
         - config/
         - routes/

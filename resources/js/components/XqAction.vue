@@ -8,15 +8,17 @@ export type ActionRunner = Pick<FormStore, 'mountAction' | 'runAction' | 'proces
 </script>
 
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
+import { Link, router } from '@inertiajs/vue3';
 import { LoaderCircle } from 'lucide-vue-next';
 import { computed, onScopeDispose, ref, shallowRef, watch } from 'vue';
 import { useFormStore } from '../composables/context';
-import { createFormStore } from '../core/store';
+import { createFormStore, LOADING_INDICATOR_DELAY } from '../core/store';
+import { cn } from '../lib/utils';
 import type { SchemaNode } from '../schema/types';
 import XqButton from '../ui/XqButton.vue';
 import XqConfirmDialog from '../ui/XqConfirmDialog.vue';
 import XqDialog from '../ui/XqDialog.vue';
+import XqDialogFooter from '../ui/XqDialogFooter.vue';
 import XqIcon from '../ui/XqIcon.vue';
 import XqForm from './XqForm.vue';
 
@@ -24,6 +26,7 @@ const props = defineProps<{ node: SchemaNode; runner?: ActionRunner }>();
 const store = props.runner ?? useFormStore();
 const options = computed(() => props.node.props ?? {});
 const running = ref(false);
+const showsSpinner = ref(false);
 const confirming = ref(false);
 const modalOpen = ref(false);
 const modal = shallowRef<FormStore | null>(null);
@@ -41,17 +44,26 @@ const variant = computed(() =>
           : (variants[options.value.color] ?? 'outline'),
 );
 
-// Inertia can only visit its own app, and a new tab isn't a visit.
-const isVisit = computed(() => {
-    if (options.value.openInNewTab) {
-        return false;
-    }
-
-    const url: string = options.value.url;
-
+// Inertia can only visit its own app.
+function isOwnUrl(url: string): boolean {
     return typeof window === 'undefined'
         ? url.startsWith('/')
         : new URL(url, window.location.href).origin === window.location.origin;
+}
+
+// A new tab isn't a visit.
+const isVisit = computed(() => !options.value.openInNewTab && isOwnUrl(options.value.url));
+
+let spinnerTimer: ReturnType<typeof setTimeout> | undefined;
+
+// A quick action changes nothing on screen until it's done, so it can't flicker.
+watch(running, (isRunning) => {
+    clearTimeout(spinnerTimer);
+    showsSpinner.value = false;
+
+    if (isRunning) {
+        spinnerTimer = setTimeout(() => (showsSpinner.value = true), LOADING_INDICATOR_DELAY);
+    }
 });
 
 async function run(): Promise<void> {
@@ -62,14 +74,29 @@ async function run(): Promise<void> {
 
     running.value = true;
 
-    if (await store.runAction(props.node, modal.value ?? undefined)) {
+    const result = await store.runAction(props.node, modal.value ?? undefined);
+
+    if (result) {
         modalOpen.value = false;
+    }
+
+    if (result?.redirect) {
+        if (isOwnUrl(result.redirect)) {
+            router.visit(result.redirect);
+        } else {
+            window.location.assign(result.redirect);
+        }
     }
 
     running.value = false;
 }
 
 async function open(): Promise<void> {
+    // Disabling the button would dim it and drop keyboard focus, so a second click lands here.
+    if (running.value) {
+        return;
+    }
+
     if (!options.value.hasForm) {
         if (options.value.confirmation) {
             confirming.value = true;
@@ -103,7 +130,10 @@ watch(modalOpen, (isOpen) => {
     }
 });
 
-onScopeDispose(closeModal);
+onScopeDispose(() => {
+    clearTimeout(spinnerTimer);
+    closeModal();
+});
 </script>
 
 <template>
@@ -131,20 +161,32 @@ onScopeDispose(closeModal);
             type="button"
             :variant="variant"
             :size="options.style === 'icon' ? 'icon-sm' : 'sm'"
-            :disabled="!!options.disabled || running || store.processing.value"
+            :class="showsSpinner && 'pointer-events-none'"
+            :disabled="!!options.disabled || store.processing.value"
             :title="options.tooltip"
             :aria-label="options.style === 'icon' ? options.label : undefined"
+            :aria-busy="running || undefined"
             @click="open"
         >
-            <LoaderCircle v-if="running" class="motion-safe:animate-spin" aria-hidden="true" />
-            <XqIcon v-else-if="options.icon" :name="options.icon" />
-            <template v-if="options.style !== 'icon'">{{ options.label }}</template>
+            <span :class="cn('gap-1.5 inline-flex items-center', showsSpinner && 'invisible')">
+                <XqIcon v-if="options.icon" :name="options.icon" />
+                <template v-if="options.style !== 'icon'">{{ options.label }}</template>
+            </span>
+            <LoaderCircle
+                v-if="showsSpinner"
+                class="motion-safe:animate-spin absolute"
+                aria-hidden="true"
+            />
         </XqButton>
         <XqConfirmDialog
             v-if="options.confirmation && !options.hasForm"
             v-model:open="confirming"
             :title="options.heading"
             :message="options.description ?? store.t('Are you sure?')"
+            :icon="options.modalIcon"
+            :icon-color="options.modalIconColor ?? options.color"
+            :alignment="options.alignment"
+            :footer-alignment="options.footerAlignment"
             :confirm-label="options.submitLabel ?? store.t('Confirm')"
             :cancel-label="options.cancelLabel"
             :confirm-variant="variants[options.color] === 'destructive' ? 'destructive' : 'default'"
@@ -156,10 +198,15 @@ onScopeDispose(closeModal);
             :title="options.heading"
             :description="options.description"
             :width="options.width"
+            :icon="options.modalIcon"
+            :icon-color="options.modalIconColor"
+            :alignment="options.alignment"
+            :close-button="options.closeButton !== false"
+            :close-on-click-away="options.closeOnClickAway !== false"
         >
             <XqForm :form="modal" @submit="run">
                 <template #actions>
-                    <div class="gap-2 flex justify-end">
+                    <XqDialogFooter sticky :alignment="options.footerAlignment">
                         <XqButton
                             type="button"
                             variant="outline"
@@ -168,15 +215,22 @@ onScopeDispose(closeModal);
                         >
                             {{ options.cancelLabel ?? store.t('Cancel') }}
                         </XqButton>
-                        <XqButton type="submit" size="sm" :disabled="running">
+                        <XqButton
+                            type="submit"
+                            size="sm"
+                            :class="showsSpinner && 'pointer-events-none'"
+                            :aria-busy="running || undefined"
+                        >
+                            <span :class="showsSpinner && 'invisible'">
+                                {{ options.submitLabel ?? store.t('Save') }}
+                            </span>
                             <LoaderCircle
-                                v-if="running"
-                                class="motion-safe:animate-spin"
+                                v-if="showsSpinner"
+                                class="motion-safe:animate-spin absolute"
                                 aria-hidden="true"
                             />
-                            {{ options.submitLabel ?? store.t('Save') }}
                         </XqButton>
-                    </div>
+                    </XqDialogFooter>
                 </template>
             </XqForm>
         </XqDialog>

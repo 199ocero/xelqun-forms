@@ -4,7 +4,7 @@ namespace Xelqun\Forms\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Xelqun\Forms\Actions\Action;
+use Xelqun\Actions\Action;
 use Xelqun\Forms\Live\UpdateProcessor;
 use Xelqun\Forms\Security\FormTokenEncrypter;
 use Xelqun\Forms\Validation\FormValidator;
@@ -55,6 +55,7 @@ class ActionController
                 0,
             ),
             'result' => $action->hasResult() ? $result : null,
+            'redirect' => $action->getSuccessRedirectUrl(),
         ]);
     }
 }

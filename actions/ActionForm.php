@@ -1,6 +1,6 @@
 <?php
 
-namespace Xelqun\Forms\Actions;
+namespace Xelqun\Actions;
 
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;

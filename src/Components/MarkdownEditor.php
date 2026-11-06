@@ -4,7 +4,7 @@ namespace Xelqun\Forms\Components;
 
 use Closure;
 use Illuminate\Support\Str;
-use Xelqun\Forms\Actions\Action;
+use Xelqun\Actions\Action;
 use Xelqun\Forms\Components\Concerns\HasFileAttachments;
 use Xelqun\Forms\Contracts\EmbedsUploads;
 use Xelqun\Forms\Form;

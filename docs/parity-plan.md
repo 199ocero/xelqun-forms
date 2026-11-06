@@ -43,7 +43,7 @@ Confirmed by reading the code. Nothing has been run yet, so each fix starts with
 8. **Builder extends Repeater.** Row state is `{key: {type, data}}`. The server rejects undeclared or hidden block types. Upload scope includes the block name, and uploads post state so the server can resolve the block.
 9. **Action modals use a nested `ActionForm`** with its own client store. The token gains an action chain, so update, upload and search keep working unchanged.
 10. **Action authorisation runs on every call:** `resolveForm`, `prepare`, find a declared action, `acceptsInput()`, then `Action::authorize()`. It denies when there is no policy or closure, because `Form::authorize()` does not imply permission to create a related record. Posted ids are re-resolved through the relationship query.
-11. **Actions live in `src/Actions`**, and tables uses them from here.
+11. **Actions live in `actions/`**, under the `Xelqun\Actions` namespace, and tables uses them from there.
 12. **Frontend validation is a strict subset.** Only typed helpers serialize, never `rules()` strings, closures, `unique`, `exists` or regex. The client must never reject what the server accepts, and `conformance/validation.json` runs against both Laravel's validator and the JS validator.
 13. **The wizard validates the whole form's state but only a step's rules**, through `POST validate`. The server tracks no progress, and final submit revalidates everything.
 14. **Server-enforced flags.** `addable()`, `deletable()` and `orderable()` are checked in `prepare()`, and `unique()` inside rows ignores only ids owned by the record.

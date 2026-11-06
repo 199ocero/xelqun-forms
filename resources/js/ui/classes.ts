@@ -15,6 +15,22 @@ export const groupLabelClass = 'px-2 py-1.5 text-xs font-medium text-xq-muted-fo
 export const optionClass =
     'relative flex w-full cursor-default items-center gap-2 rounded-xq-sm py-1.5 pr-8 pl-2 text-sm outline-none select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[highlighted]:bg-xq-accent data-[highlighted]:text-xq-accent-foreground';
 
+export const dialogOverlayClass =
+    'inset-0 bg-black/50 fixed z-50 backdrop-blur-[2px] motion-safe:data-[state=open]:animate-xq-fade-in motion-safe:data-[state=closed]:animate-xq-fade-out';
+
+export const dialogContentClass =
+    'shadow-xl fixed top-1/2 left-1/2 z-50 flex max-h-[85vh] w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xq-xl border border-xq-border bg-xq-popover text-xq-popover-foreground outline-none motion-safe:data-[state=open]:animate-xq-dialog-in motion-safe:data-[state=closed]:animate-xq-dialog-out';
+
+/** The tinted circle behind a dialog's icon. */
+export const dialogIconClasses: Record<string, string> = {
+    primary: 'bg-xq-primary/10 text-xq-primary',
+    danger: 'bg-xq-destructive/10 text-xq-destructive',
+    info: 'bg-xq-info/10 text-xq-info',
+    success: 'bg-xq-success/10 text-xq-success',
+    warning: 'bg-xq-warning/10 text-xq-warning',
+    gray: 'bg-xq-muted text-xq-muted-foreground',
+};
+
 /** Text colors the PHP side can name. */
 export const toneClasses: Record<string, string> = {
     neutral: 'text-xq-foreground',

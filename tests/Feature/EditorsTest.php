@@ -4,7 +4,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Testing\TestResponse;
 use Illuminate\Validation\ValidationException;
-use Xelqun\Forms\Actions\Action;
+use Xelqun\Actions\Action;
 use Xelqun\Forms\Components\CodeEditor;
 use Xelqun\Forms\Components\CodeEditor\Language;
 use Xelqun\Forms\Components\MarkdownEditor;

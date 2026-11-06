@@ -6,6 +6,10 @@
 @source "../js";
 
 @theme inline {
+    --animate-xq-fade-in: xq-fade-in 150ms ease-out;
+    --animate-xq-fade-out: xq-fade-out 100ms ease-in forwards;
+    --animate-xq-dialog-in: xq-dialog-in 180ms cubic-bezier(0.16, 1, 0.3, 1);
+    --animate-xq-dialog-out: xq-dialog-out 100ms ease-in forwards;
     --color-xq-background: var(--xq-background);
     --color-xq-foreground: var(--xq-foreground);
     --color-xq-card: var(--xq-card);
@@ -280,4 +284,30 @@
 .xq-rich-content img {
     max-width: 100%;
     height: auto;
+}
+
+@keyframes xq-fade-in {
+    from {
+        opacity: 0;
+    }
+}
+
+@keyframes xq-fade-out {
+    to {
+        opacity: 0;
+    }
+}
+
+@keyframes xq-dialog-in {
+    from {
+        opacity: 0;
+        scale: 0.96;
+    }
+}
+
+@keyframes xq-dialog-out {
+    to {
+        opacity: 0;
+        scale: 0.98;
+    }
 }

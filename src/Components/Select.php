@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use LogicException;
-use Xelqun\Forms\Actions\Action;
+use Xelqun\Actions\Action;
 use Xelqun\Forms\Components\Concerns\HasOptions;
 use Xelqun\Forms\Components\Concerns\ManagesOptions;
 use Xelqun\Forms\Contracts\HasSearchResults;

@@ -9,17 +9,38 @@ import {
     AlertDialogRoot,
     AlertDialogTitle,
 } from 'reka-ui';
-import XqButton from './XqButton.vue';
 import { useTranslator } from '../composables/context';
+import { cn } from '../lib/utils';
+import { dialogContentClass, dialogOverlayClass } from './classes';
+import XqButton from './XqButton.vue';
+import XqDialogFooter from './XqDialogFooter.vue';
+import XqDialogHeader from './XqDialogHeader.vue';
 
 const t = useTranslator();
-defineProps<{
-    title: string;
-    message?: string | null;
-    confirmLabel?: string | null;
-    cancelLabel?: string | null;
-    confirmVariant?: 'default' | 'destructive';
-}>();
+
+withDefaults(
+    defineProps<{
+        title: string;
+        message?: string | null;
+        confirmLabel?: string | null;
+        cancelLabel?: string | null;
+        confirmVariant?: 'default' | 'destructive';
+        icon?: string | null;
+        iconColor?: string | null;
+        alignment?: 'start' | 'center' | null;
+        footerAlignment?: 'start' | 'center' | 'end' | 'full' | null;
+    }>(),
+    {
+        message: undefined,
+        confirmLabel: undefined,
+        cancelLabel: undefined,
+        confirmVariant: 'destructive',
+        icon: 'triangle-alert',
+        iconColor: undefined,
+        alignment: 'center',
+        footerAlignment: 'full',
+    },
+);
 defineEmits<{ confirm: [] }>();
 const open = defineModel<boolean>('open', { default: false });
 </script>
@@ -27,15 +48,29 @@ const open = defineModel<boolean>('open', { default: false });
 <template>
     <AlertDialogRoot v-model:open="open">
         <AlertDialogPortal>
-            <AlertDialogOverlay class="inset-0 bg-black/50 fixed z-50" />
+            <AlertDialogOverlay :class="dialogOverlayClass" />
             <AlertDialogContent
-                class="max-w-sm p-5 shadow-lg gap-3 fixed top-1/2 left-1/2 z-50 grid w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-xq-lg border border-xq-border bg-xq-popover text-xq-popover-foreground"
+                v-bind="message ? {} : { 'aria-describedby': undefined }"
+                :class="cn(dialogContentClass, 'max-w-sm p-6 gap-5 overflow-y-auto')"
             >
-                <AlertDialogTitle class="text-sm font-semibold">{{ title }}</AlertDialogTitle>
-                <AlertDialogDescription class="text-sm text-xq-muted-foreground">
-                    {{ message ?? '' }}
-                </AlertDialogDescription>
-                <div class="gap-2 flex justify-end">
+                <XqDialogHeader
+                    :icon="icon"
+                    :icon-color="
+                        iconColor ?? (confirmVariant === 'destructive' ? 'danger' : 'primary')
+                    "
+                    :alignment="alignment"
+                >
+                    <AlertDialogTitle class="text-base font-semibold text-balance">
+                        {{ title }}
+                    </AlertDialogTitle>
+                    <AlertDialogDescription
+                        v-if="message"
+                        class="text-sm text-pretty text-xq-muted-foreground"
+                    >
+                        {{ message }}
+                    </AlertDialogDescription>
+                </XqDialogHeader>
+                <XqDialogFooter :alignment="footerAlignment">
                     <AlertDialogCancel as-child>
                         <XqButton type="button" variant="outline" size="sm">
                             {{ cancelLabel ?? t('Cancel') }}
@@ -44,14 +79,14 @@ const open = defineModel<boolean>('open', { default: false });
                     <AlertDialogAction as-child>
                         <XqButton
                             type="button"
-                            :variant="confirmVariant ?? 'destructive'"
+                            :variant="confirmVariant"
                             size="sm"
                             @click="$emit('confirm')"
                         >
                             {{ confirmLabel ?? t('Delete') }}
                         </XqButton>
                     </AlertDialogAction>
-                </div>
+                </XqDialogFooter>
             </AlertDialogContent>
         </AlertDialogPortal>
     </AlertDialogRoot>
