@@ -267,11 +267,17 @@ describe('an error in an editor', () => {
         const { store, wrapper } = await mountField(component, field('data.body', type, { props }));
 
         await vi.waitFor(() => expect(wrapper.find(content).exists()).toBe(true));
+
+        // A spy, because happy-dom fires selectionchange at once, in the middle of an editor's update.
+        const focus = vi
+            .spyOn(wrapper.find<HTMLElement>(content).element, 'focus')
+            .mockImplementation(() => {});
+
         store.root.value = wrapper.element.parentElement;
         await store.focusPath('data.body');
         await flushPromises();
 
-        expect(document.activeElement).toBe(wrapper.find(content).element);
+        expect(focus).toHaveBeenCalledOnce();
         wrapper.unmount();
     });
 });
