@@ -2,6 +2,7 @@ import { router } from '@inertiajs/vue3';
 import { effectScope, nextTick, reactive, ref, shallowReactive, watch } from 'vue';
 import type { Ref } from 'vue';
 import type {
+    ActionRequest,
     ConditionNode,
     FormSchema,
     LiveConfig,
@@ -48,6 +49,17 @@ export interface SubmitOptions {
 export interface Stepper {
     hasNext: () => boolean;
     next: () => Promise<void>;
+}
+
+/** The part of a modal's form store its action needs. */
+export interface ActionModal {
+    state: { data: Record<string, any> };
+    settled: () => Promise<void>;
+    validate: () => boolean;
+    addErrors: (incoming: Record<string, string | string[]>) => void;
+    focusFirstError: () => void;
+    fatalError: Ref<string | null>;
+    liveError: Ref<string | null>;
 }
 
 export interface FormStoreOptions {
@@ -539,7 +551,10 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
 
     function setErrors(incoming: Record<string, string | string[]>): void {
         clearErrors();
+        addErrors(incoming);
+    }
 
+    function addErrors(incoming: Record<string, string | string[]>): void {
         for (const [path, messages] of Object.entries(incoming ?? {})) {
             errors[path] = Array.isArray(messages) ? messages[0] : messages;
         }
@@ -547,6 +562,31 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
 
     function clearErrors(): void {
         Object.keys(errors).forEach((path) => delete errors[path]);
+    }
+
+    /**
+     * Wait until the state is what the user meant to send: nothing uploading,
+     * and no live update on its way.
+     */
+    async function settled(): Promise<void> {
+        await Promise.allSettled(uploads);
+        await queue.idle();
+    }
+
+    /**
+     * Run the rules the browser knows, and show what they find.
+     */
+    function validate(): boolean {
+        const found = findClientErrors(components);
+
+        if (Object.keys(found).length === 0) {
+            return true;
+        }
+
+        setErrors(found);
+        focusFirstError();
+
+        return false;
     }
 
     /**
@@ -608,6 +648,114 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
     }
 
     /**
+     * Show why a request failed: on the fields a validation error names, in
+     * the target form, or as a message on this one.
+     */
+    function reportFailure(
+        error: unknown,
+        target: Omit<ActionModal, 'state' | 'settled' | 'validate'> = {
+            addErrors,
+            focusFirstError,
+            fatalError,
+            liveError,
+        },
+    ): void {
+        if (error instanceof HttpError && error.status === 422) {
+            target.addErrors(error.validationErrors);
+            target.focusFirstError();
+        } else if (error instanceof HttpError && error.status === 419) {
+            target.fatalError.value = t('This form has expired. Reload the page to continue.');
+        } else {
+            target.liveError.value = t(
+                'Some fields could not be updated. Check your connection and try again.',
+            );
+        }
+    }
+
+    function actionBody(
+        node: SchemaNode,
+        phase: ActionRequest['phase'],
+        data?: Record<string, any>,
+    ) {
+        return {
+            token: schema.token ?? '',
+            action: node.key,
+            phase,
+            state: { data: clone(state.data) },
+            data,
+            deps: dependencyMap(),
+        } satisfies ActionRequest;
+    }
+
+    /**
+     * Ask the server for the form of an action's modal. Null means it failed,
+     * and the failure is already on screen.
+     */
+    async function mountAction(node: SchemaNode): Promise<FormSchema | null> {
+        await settled();
+
+        try {
+            const response = await requests.track(
+                'action',
+                [],
+                `${node.props?.label} (open)`,
+                postJson<{ form: FormSchema | null }>(
+                    schema.endpoints.action,
+                    actionBody(node, 'mount'),
+                ),
+            );
+
+            return response.form;
+        } catch (error) {
+            reportFailure(error);
+
+            return null;
+        }
+    }
+
+    /**
+     * Run an action and apply what it changed. Say whether it went through, so
+     * a modal knows to stay open and show its errors.
+     */
+    async function runAction(node: SchemaNode, modal?: ActionModal): Promise<boolean> {
+        await settled();
+        await modal?.settled();
+
+        if (modal && !modal.validate()) {
+            return false;
+        }
+
+        const versions = new Map(editVersions);
+
+        liveError.value = null;
+
+        if (modal) {
+            modal.liveError.value = null;
+        }
+
+        try {
+            applyPatch(
+                await requests.track(
+                    'action',
+                    [],
+                    node.props?.label ?? null,
+                    postJson<UpdatePatch>(
+                        schema.endpoints.action,
+                        actionBody(node, 'run', modal ? clone(modal.state.data) : undefined),
+                    ),
+                ),
+                versions,
+            );
+
+            return true;
+        } catch (error) {
+            reportFailure(error, modal);
+
+            return false;
+        }
+    }
+
+    /**
      * Check one step, in the browser and then on the server, and say whether it
      * passed. Its errors are replaced, and the rest of the form's stay.
      */
@@ -616,10 +764,10 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
 
         eachNode([step], (node) => node.path && paths.push(node.path));
         validating.value = true;
+        liveError.value = null;
 
         try {
-            await Promise.allSettled(uploads);
-            await queue.idle();
+            await settled();
 
             const found = findClientErrors([step]);
 
@@ -656,19 +804,7 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
 
             return !failed;
         } catch (error) {
-            if (error instanceof HttpError && error.status === 422) {
-                applyPatch(
-                    { errors: error.validationErrors } as unknown as UpdatePatch,
-                    editVersions,
-                );
-                focusFirstError();
-            } else if (error instanceof HttpError && error.status === 419) {
-                fatalError.value = t('This form has expired. Reload the page to continue.');
-            } else {
-                liveError.value = t(
-                    'Some fields could not be updated. Check your connection and try again.',
-                );
-            }
+            reportFailure(error);
 
             return false;
         } finally {
@@ -730,15 +866,10 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
         let failedValidation = false;
 
         processing.value = true;
-        await Promise.allSettled(uploads);
-        await queue.idle();
+        await settled();
 
-        const found = findClientErrors(components);
-
-        if (Object.keys(found).length > 0) {
-            setErrors(found);
+        if (!validate()) {
             processing.value = false;
-            focusFirstError();
             submitOptions.onError?.({ ...errors });
             submitOptions.onFinish?.();
 
@@ -880,6 +1011,7 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
         moveRow,
         applyPatch,
         setErrors,
+        addErrors,
         clearErrors,
         validateStep,
         focusFirstError,
@@ -889,5 +1021,9 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
         upload,
         trackUpload,
         dispose,
+        settled,
+        validate,
+        mountAction,
+        runAction,
     };
 }

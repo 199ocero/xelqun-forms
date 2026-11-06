@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { CircleAlert } from 'lucide-vue-next';
 import { computed, inject, onMounted, provide, ref } from 'vue';
-import { HEADING_LEVEL, provideFormStore } from '../composables/context';
+import { FUSED_GROUP, HEADING_LEVEL, provideFormStore } from '../composables/context';
 import { REGISTRY } from '../composables/registry';
 import { useUnsavedChangesAlert } from '../composables/useUnsavedChangesAlert';
 import { useXqForm } from '../composables/useXqForm';
@@ -42,6 +42,8 @@ const errorCount = computed(() => Object.keys(store.errors).length);
 
 provideFormStore(store);
 provide(HEADING_LEVEL, props.headingLevel);
+// A modal opened from inside a fused group shows its fields' errors as usual.
+provide(FUSED_GROUP, false);
 provide(REGISTRY, inject(REGISTRY, null) ?? createRegistry());
 
 useUnsavedChangesAlert(store);

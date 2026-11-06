@@ -7,8 +7,8 @@ return [
     | Routes
     |--------------------------------------------------------------------------
     |
-    | The internal endpoints used by live fields, uploads, async selects and
-    | wizard steps.
+    | The internal endpoints used by live fields, uploads, async selects,
+    | wizard steps and actions.
     |
     */
 
@@ -20,6 +20,7 @@ return [
             'upload' => '30,1',
             'search' => '120,1',
             'validate' => '120,1',
+            'action' => '60,1',
         ],
     ],
 

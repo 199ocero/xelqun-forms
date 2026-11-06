@@ -440,7 +440,7 @@ Milestones 0–9 are built and tested. Milestone 9 added failure and loading fee
 | File upload inside a repeater row | browser test, package `UploadTest` |
 | Server errors on the correct nested field | browser tests (`Price (Item 2)`), package `ValidationTest` |
 
-**Test counts:** package Pest 875, package Vitest 475, playground feature and browser 69.
+**Test counts:** package Pest 913, package Vitest 495, playground feature and browser 73.
 
 ### Milestone 10: foundations
 
@@ -752,6 +752,39 @@ Limits to keep in mind:
 - A `:input` in a custom message isn't filled in the browser.
 - A wizard in a closed tab still holds back the default submit button until its steps are done.
 - Opening a later step from the URL skips the earlier checks. The final submit makes up for it.
+
+### Milestone 20: action core
+
+The proof is the "Actions" example. A row action opens a modal, the server checks its fields, and the new price lands in the row that was clicked.
+
+- **`Action`** is a component, so it goes in `Actions`, a field slot or a callout footer with no new code, and `$get` and `$set` work relative to where it sits. `$record` is the record of its row.
+- **`POST action`** has two phases: `mount` returns the modal's schema, and `run` does the work. Both rebuild the form, restore trusted state with `prepare()`, find a declared action, and check it. `run` is one transaction, and a `ValidationException` rolls it back and shows on the fields it names.
+- **Modals are forms.** `ActionForm` extends `Form` and has its own client store, so live updates, search and uploads work unchanged. Its token holds the chain of actions to reach it and the state posted to each parent, so every request from the modal repeats the action's checks. Losing a permission closes the modal.
+- **`authorize()` denies by default.** It takes a closure, a boolean or a policy ability. `Form::authorize()` doesn't count. An action the user can't use isn't sent to the browser, and running it is refused anyway.
+- **`requiresConfirmation()`** reuses `XqConfirmDialog`. It only helps the user: nothing stops a request that skips the dialog.
+- **`XqDialog`** wraps Reka's dialog, and is teleported to the body, so the modal's `<form>` never nests in the parent's.
+
+**Security review.** Each of these has a test: a key that isn't an action, a forged row key, a row the state doesn't hold, tampered state, no `authorize()`, no policy, a disabled or hidden action, an action in a hidden section, in a disabled field or in a read-only row, a bad token, another user's token, a token for a class that isn't a form, permission lost while a modal is open, an upload from one modal used in another, hidden parent values in the modal, and rollback. The review found no way past the server checks. It did find that a second Enter in a modal ran the action twice, which is fixed.
+
+Where this differs from the plan and from Filament:
+
+- The endpoint is `action`, with a `phase`, not `run`, because opening a modal needs the same checks as running it.
+- Filament allows an action by default. This one denies, as the plan decided.
+- Notifications, `url()`, `successRedirectUrl()` and action groups aren't built, and `Callout::actions()` is `footer()` with an `Action` in it.
+
+Changes that can break existing code, for the release notes:
+
+- `endpoints` gains `action`, and there is a new `action` throttle. A config file published earlier still works, using the default.
+- `FormToken` gains `actions`. Tokens issued before this still decrypt.
+- Upload scopes now go through `Form::getUploadScope()`, which for a normal form is the same value as before.
+- `Form::walk()` now visits a repeater's slots, so a callback sees them after the rows.
+
+Limits to keep in mind:
+
+- The parent's state travels in the modal's token, so a very large form makes every request in its modal large.
+- An action's result can only change the form. To show a message or redirect, set a field or throw a `ValidationException`.
+- `$set` lasts for one request, as everywhere else: a disabled field goes back to its server value on the next one.
+- `Try again` in a modal retries live updates, not the action. Submit the modal again for that.
 
 ### Where the build differs from the plan
 - **Patches have no `add`/`remove`.** A component hidden by a server closure is sent as a stub (`{ key, type, hidden: true, deps }`) and later patched to a full node, which keeps every key stable.

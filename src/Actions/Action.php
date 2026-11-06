@@ -1,0 +1,383 @@
+<?php
+
+namespace Xelqun\Forms\Actions;
+
+use Closure;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
+use Xelqun\Forms\Components\Component;
+use Xelqun\Forms\Components\Field;
+use Xelqun\Forms\Contracts\NeedsServer;
+use Xelqun\Forms\Support\StatePath;
+
+/**
+ * A button that runs a closure on the server, optionally through a modal with
+ * its own fields. Put it in Actions, a field slot or a callout footer.
+ *
+ * An action does nothing until authorize() allows it. Form::authorize() doesn't
+ * count, because being allowed to edit a form isn't being allowed to do this.
+ *
+ * Every call rebuilds the form from trusted state, finds the action and checks
+ * it again, so a tampered request can only reach what the user could reach.
+ *
+ * @api
+ */
+class Action extends Component implements NeedsServer
+{
+    protected string|Closure|null $label = null;
+
+    protected string|Closure|null $icon = null;
+
+    protected string|Closure|null $color = null;
+
+    protected string|Closure|null $tooltip = null;
+
+    protected string $style = 'button';
+
+    protected bool|Closure $isDisabled = false;
+
+    protected bool|string|Closure|null $authorization = null;
+
+    protected bool|Closure $requiresConfirmation = false;
+
+    protected string|Closure|null $modalHeading = null;
+
+    protected string|Closure|null $modalDescription = null;
+
+    protected string|Closure|null $modalSubmitActionLabel = null;
+
+    protected string|Closure|null $modalCancelActionLabel = null;
+
+    protected string|Closure|null $modalWidth = null;
+
+    /** @var array<int, Component>|Closure */
+    protected array|Closure $modalComponents = [];
+
+    /** @var array<string, mixed>|Closure|null */
+    protected array|Closure|null $fillUsing = null;
+
+    protected ?Closure $action = null;
+
+    /** @var class-string<Model>|null */
+    protected ?string $model = null;
+
+    final public function __construct(protected string $name) {}
+
+    public static function make(string $name): static
+    {
+        return (new static($name))->configure();
+    }
+
+    public function getType(): string
+    {
+        return 'action';
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function needsServer(): bool
+    {
+        return true;
+    }
+
+    public function label(string|Closure|null $label): static
+    {
+        $this->label = $label;
+
+        return $this;
+    }
+
+    public function icon(string|Closure|null $icon): static
+    {
+        $this->icon = $icon;
+
+        return $this;
+    }
+
+    /**
+     * primary, danger or gray.
+     */
+    public function color(string|Closure|null $color): static
+    {
+        $this->color = $color;
+
+        return $this;
+    }
+
+    public function tooltip(string|Closure|null $tooltip): static
+    {
+        $this->tooltip = $tooltip;
+
+        return $this;
+    }
+
+    public function button(): static
+    {
+        $this->style = 'button';
+
+        return $this;
+    }
+
+    public function link(): static
+    {
+        $this->style = 'link';
+
+        return $this;
+    }
+
+    /**
+     * Show only the icon. The label stays for screen readers.
+     */
+    public function iconButton(): static
+    {
+        $this->style = 'icon';
+
+        return $this;
+    }
+
+    public function disabled(bool|Closure $condition = true): static
+    {
+        $this->isDisabled = $condition;
+
+        return $this;
+    }
+
+    /**
+     * Who may use this action: a closure, a boolean, or a policy ability checked
+     * against the row or form record, or against model() when there is none. Only
+     * a yes lets it run. It shows only to those it would run for, and the check
+     * repeats on every call.
+     */
+    public function authorize(bool|string|Closure $authorization): static
+    {
+        $this->authorization = $authorization;
+
+        return $this;
+    }
+
+    /**
+     * Ask before running. It only helps the user: nothing stops a request that
+     * skips the dialog, so authorize() is what protects anything.
+     */
+    public function requiresConfirmation(bool|Closure $condition = true): static
+    {
+        $this->requiresConfirmation = $condition;
+
+        return $this;
+    }
+
+    public function modalHeading(string|Closure|null $heading): static
+    {
+        $this->modalHeading = $heading;
+
+        return $this;
+    }
+
+    public function modalDescription(string|Closure|null $description): static
+    {
+        $this->modalDescription = $description;
+
+        return $this;
+    }
+
+    public function modalSubmitActionLabel(string|Closure|null $label): static
+    {
+        $this->modalSubmitActionLabel = $label;
+
+        return $this;
+    }
+
+    public function modalCancelActionLabel(string|Closure|null $label): static
+    {
+        $this->modalCancelActionLabel = $label;
+
+        return $this;
+    }
+
+    /**
+     * sm, md, lg, xl or 2xl.
+     */
+    public function modalWidth(string|Closure|null $width): static
+    {
+        $this->modalWidth = $width;
+
+        return $this;
+    }
+
+    /**
+     * Fields for a modal. Their validated values reach action() as $data.
+     *
+     * @param  array<int, Component>|Closure  $components
+     */
+    public function schema(array|Closure $components): static
+    {
+        $this->modalComponents = $components;
+
+        return $this;
+    }
+
+    /**
+     * What the modal's fields start with. Runs on every request the modal makes,
+     * so it must give the same result each time.
+     *
+     * @param  array<string, mixed>|Closure  $data
+     */
+    public function fillForm(array|Closure $data): static
+    {
+        $this->fillUsing = $data;
+
+        return $this;
+    }
+
+    /**
+     * The work to do, inside a transaction. It gets $data, $get, $set and
+     * $record, which here is the record of the row it sits in. Throw a
+     * ValidationException to stop and show errors, which rolls everything back.
+     */
+    public function action(?Closure $action): static
+    {
+        $this->action = $action;
+
+        return $this;
+    }
+
+    /**
+     * The model modal fields read relationships from, and the policy's subject
+     * when there is no record.
+     *
+     * @param  class-string<Model>|null  $model
+     */
+    public function model(?string $model): static
+    {
+        $this->model = $model;
+
+        return $this;
+    }
+
+    /**
+     * @return class-string<Model>|null
+     */
+    public function getModel(): ?string
+    {
+        return $this->model;
+    }
+
+    public function isAuthorized(): bool
+    {
+        if (is_string($this->authorization)) {
+            $subject = $this->getForm()->getRecordFor($this) ?? $this->model;
+
+            return $subject !== null && Gate::allows($this->authorization, $subject);
+        }
+
+        return (bool) $this->evaluate($this->authorization);
+    }
+
+    public function isDisabled(): bool
+    {
+        return (bool) $this->evaluate($this->isDisabled);
+    }
+
+    public function isHiddenDynamically(): bool
+    {
+        return ! $this->isAuthorized() || parent::isHiddenDynamically();
+    }
+
+    /**
+     * Whether this action may run right now. Read prepared state before asking.
+     */
+    public function canRun(): bool
+    {
+        $form = $this->getForm();
+
+        // A row key the browser made up builds a row with no state, and no record.
+        if ($this->isDisabled() || ! $this->isShown() || ! Arr::has($form->getState(), $this->container)) {
+            return false;
+        }
+
+        for ($parent = $this->getParent(); $parent !== null; $parent = $parent->getParent()) {
+            if ($parent instanceof Field && ! $parent->acceptsInput()) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * @return array<int, Component>
+     */
+    public function getModalComponents(): array
+    {
+        return array_map(fn (Component $component): Component => clone $component, $this->evaluate($this->modalComponents));
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function getFillData(): ?array
+    {
+        return $this->evaluate($this->fillUsing);
+    }
+
+    public function hasModalForm(): bool
+    {
+        return $this->modalComponents !== [];
+    }
+
+    /**
+     * @param  array<string, mixed>  $parentData  The state the browser posted to the form this action is in.
+     */
+    public function makeForm(array $parentData): ActionForm
+    {
+        return ActionForm::for($this, $parentData);
+    }
+
+    /**
+     * Check the modal's values and do the work. Call it inside a transaction.
+     *
+     * @internal
+     *
+     * @param  array<string, mixed>  $parentData
+     * @param  array<string, mixed>  $input  What the browser posted for the modal.
+     */
+    public function run(array $parentData, array $input): void
+    {
+        $data = $this->hasModalForm() ? $this->makeForm($parentData)->validate([StatePath::ROOT => $input]) : [];
+
+        $this->evaluate($this->action, ['data' => $data]);
+    }
+
+    public function evaluate(mixed $value, array $parameters = []): mixed
+    {
+        return parent::evaluate($value, ['record' => $this->getForm()->getRecordFor($this), ...$parameters]);
+    }
+
+    protected function getProps(): array
+    {
+        $label = $this->evaluate($this->label) ?? Str::headline($this->name);
+
+        return [
+            'label' => $label,
+            'style' => $this->style,
+            'disabled' => $this->isDisabled(),
+            'confirmation' => (bool) $this->evaluate($this->requiresConfirmation),
+            'hasForm' => $this->hasModalForm(),
+            'heading' => $this->evaluate($this->modalHeading) ?? $label,
+            'description' => $this->evaluate($this->modalDescription),
+            'submitLabel' => $this->evaluate($this->modalSubmitActionLabel),
+            'cancelLabel' => $this->evaluate($this->modalCancelActionLabel),
+            ...$this->evaluateConfigured([
+                'icon' => $this->icon,
+                'color' => $this->color,
+                'tooltip' => $this->tooltip,
+                'width' => $this->modalWidth,
+            ]),
+        ];
+    }
+}

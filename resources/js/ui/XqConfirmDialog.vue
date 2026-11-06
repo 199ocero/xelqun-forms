@@ -13,7 +13,13 @@ import XqButton from './XqButton.vue';
 import { useTranslator } from '../composables/context';
 
 const t = useTranslator();
-defineProps<{ title: string; message: string; confirmLabel?: string; cancelLabel?: string }>();
+defineProps<{
+    title: string;
+    message?: string | null;
+    confirmLabel?: string | null;
+    cancelLabel?: string | null;
+    confirmVariant?: 'default' | 'destructive';
+}>();
 defineEmits<{ confirm: [] }>();
 const open = defineModel<boolean>('open', { default: false });
 </script>
@@ -27,7 +33,7 @@ const open = defineModel<boolean>('open', { default: false });
             >
                 <AlertDialogTitle class="text-sm font-semibold">{{ title }}</AlertDialogTitle>
                 <AlertDialogDescription class="text-sm text-xq-muted-foreground">
-                    {{ message }}
+                    {{ message ?? '' }}
                 </AlertDialogDescription>
                 <div class="gap-2 flex justify-end">
                     <AlertDialogCancel as-child>
@@ -38,7 +44,7 @@ const open = defineModel<boolean>('open', { default: false });
                     <AlertDialogAction as-child>
                         <XqButton
                             type="button"
-                            variant="destructive"
+                            :variant="confirmVariant ?? 'destructive'"
                             size="sm"
                             @click="$emit('confirm')"
                         >

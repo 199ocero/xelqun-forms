@@ -107,6 +107,7 @@ export interface FormEndpoints {
     upload: string;
     search: string;
     validate: string;
+    action: string;
 }
 
 export interface FormSchema {
@@ -135,6 +136,15 @@ export interface ValidateRequest {
     token: string;
     step: string;
     state: { data: Record<string, any> };
+    deps: Record<string, string[]>;
+}
+
+export interface ActionRequest {
+    token: string;
+    action: string;
+    phase: 'mount' | 'run';
+    state: { data: Record<string, any> };
+    data?: Record<string, any>;
     deps: Record<string, string[]>;
 }
 

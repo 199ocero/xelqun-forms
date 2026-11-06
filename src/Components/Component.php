@@ -320,6 +320,14 @@ abstract class Component
         return $this->container.'#'.$this->position;
     }
 
+    /**
+     * The key with every repeater row key replaced by "*".
+     */
+    public function getKeyPattern(): string
+    {
+        return $this->containerPattern.'#'.$this->position;
+    }
+
     public function getContainer(): string
     {
         return $this->container;

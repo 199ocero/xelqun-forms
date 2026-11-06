@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\HtmlString;
+use Xelqun\Forms\Actions\Action;
 use Xelqun\Forms\Components\Checkbox;
 use Xelqun\Forms\Components\CheckboxList;
 use Xelqun\Forms\Components\ColorPicker;
@@ -22,6 +23,7 @@ use Xelqun\Forms\Components\Toggle;
 use Xelqun\Forms\Components\ToggleButtons;
 use Xelqun\Forms\Conditions\When;
 use Xelqun\Forms\Form;
+use Xelqun\Forms\Layouts\Actions;
 use Xelqun\Forms\Layouts\Callout;
 use Xelqun\Forms\Layouts\EmptyState;
 use Xelqun\Forms\Layouts\Fieldset;
@@ -98,6 +100,11 @@ it('serializes each component to a stable node', function (object $component) {
     'grid' => fn () => Grid::make(['default' => 2, 'lg' => 4])->schema([TextInput::make('a'), TextInput::make('b')->columnSpanFull()]),
     'fieldset' => fn () => Fieldset::make('Address')->schema([TextInput::make('city')]),
     'tabs' => fn () => Tabs::make()->tabs([Tab::make('One')->schema([TextInput::make('a')]), Tab::make('Two')->schema([TextInput::make('b')])]),
+    'actions' => fn () => Actions::make([
+        Action::make('archive')->authorize(true)->icon('trash')->color('danger')->requiresConfirmation()->modalDescription('Sure?'),
+        Action::make('edit')->authorize(true)->label('Change it')->iconButton()->icon('pencil')->schema([TextInput::make('name')]),
+        Action::make('secret'),
+    ])->alignment('end'),
     'wizard' => fn () => Wizard::make([
         Step::make('Account')->description('Who you are')->icon('user')->completedIcon('star')->columns(2)->schema([TextInput::make('name')]),
         Step::make('Plan')->schema([TextInput::make('plan')]),

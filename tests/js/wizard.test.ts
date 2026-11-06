@@ -147,6 +147,21 @@ describe('wizard', () => {
         wrapper.unmount();
     });
 
+    it('takes the failure message away when a retry works', async () => {
+        fetchMock.mockImplementationOnce(() => Promise.reject(new TypeError('offline')));
+
+        const { store, wrapper } = await mountWizard();
+
+        await next(wrapper).trigger('click');
+        await flushPromises();
+        await next(wrapper).trigger('click');
+        await flushPromises();
+
+        expect(store.liveError.value).toBeNull();
+        expect(panel(wrapper)).toBe('Step b');
+        wrapper.unmount();
+    });
+
     it('applies what the step hooks set', async () => {
         fetchMock.mockImplementation(() => respond(patch({ set: { 'data.plan': 'pro' } })));
 

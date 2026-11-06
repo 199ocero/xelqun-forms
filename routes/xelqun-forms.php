@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Xelqun\Forms\Http\Controllers\ActionController;
 use Xelqun\Forms\Http\Controllers\SearchController;
 use Xelqun\Forms\Http\Controllers\UpdateController;
 use Xelqun\Forms\Http\Controllers\UploadController;
@@ -26,4 +27,8 @@ Route::prefix(config('xelqun-forms.routes.prefix'))
         Route::post('validate', ValidateController::class)
             ->middleware('throttle:'.config('xelqun-forms.routes.throttle.validate', '120,1'))
             ->name('validate');
+
+        Route::post('action', ActionController::class)
+            ->middleware('throttle:'.config('xelqun-forms.routes.throttle.action', '60,1'))
+            ->name('action');
     });

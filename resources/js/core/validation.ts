@@ -25,7 +25,7 @@ function phpTrim(text: string): string {
     return text.slice(start, end);
 }
 
-const length = (text: string) => [...text].length;
+const length = (text: string) => Array.from(text).length;
 
 function isBlank(value: unknown): boolean {
     if (value === null || value === undefined) {

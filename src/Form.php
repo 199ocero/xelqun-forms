@@ -429,7 +429,7 @@ class Form
         $this->state = [StatePath::ROOT => []];
         $this->filledRecords = [];
 
-        self::fillFields($this->getComponents(), $this->record);
+        self::fillFields($this->getComponents(), $this->getFillSource());
 
         $this->walk(function (Component $component): void {
             if ($component instanceof Field) {
@@ -442,6 +442,14 @@ class Form
         $this->setPaths = [];
 
         return $this;
+    }
+
+    /**
+     * @return Model|array<string, mixed>|null
+     */
+    protected function getFillSource(): Model|array|null
+    {
+        return $this->record;
     }
 
     /**
@@ -502,8 +510,6 @@ class Form
                 foreach ($component->getRows() as $rowComponents) {
                     $this->walk($callback, $rowComponents);
                 }
-
-                continue;
             }
 
             $this->walk($callback, $component->getChildComponents());
@@ -602,6 +608,7 @@ class Form
                 'upload' => route('xelqun.forms.upload', absolute: false),
                 'search' => route('xelqun.forms.search', absolute: false),
                 'validate' => route('xelqun.forms.validate', absolute: false),
+                'action' => route('xelqun.forms.action', absolute: false),
             ],
             // Laravel writes pt_BR, and browsers throw on anything but pt-BR.
             'locale' => str_replace('_', '-', app()->getLocale()),
@@ -683,12 +690,30 @@ class Form
 
     public function makeToken(): string
     {
-        return app(FormTokenEncrypter::class)->encrypt(new FormToken(
+        return app(FormTokenEncrypter::class)->encrypt($this->toToken());
+    }
+
+    /**
+     * @internal
+     */
+    public function toToken(): FormToken
+    {
+        return new FormToken(
             formClass: static::class,
             recordKey: $this->record?->getKey(),
             userId: auth()->id(),
             context: $this->context,
-        ));
+        );
+    }
+
+    /**
+     * What an upload is tied to, along with the field. See AcceptsUploads.
+     *
+     * @internal
+     */
+    public function getUploadScope(): string
+    {
+        return static::class;
     }
 
     /**

@@ -1,5 +1,6 @@
 import { toComponent } from '../composables/registry';
 import type { ComponentRegistry, ComponentResolver } from '../composables/registry';
+import XqAction from './XqAction.vue';
 import XqCheckboxField from './fields/XqCheckboxField.vue';
 import XqRadioField from './fields/XqRadioField.vue';
 import XqRepeaterField from './fields/XqRepeaterField.vue';
@@ -7,6 +8,7 @@ import XqSelectField from './fields/XqSelectField.vue';
 import XqTextareaField from './fields/XqTextareaField.vue';
 import XqTextInputField from './fields/XqTextInputField.vue';
 import XqToggleField from './fields/XqToggleField.vue';
+import XqActions from './layouts/XqActions.vue';
 import XqCallout from './layouts/XqCallout.vue';
 import XqEmptyState from './layouts/XqEmptyState.vue';
 import XqFieldset from './layouts/XqFieldset.vue';
@@ -47,6 +49,8 @@ export function defaultComponents(): Record<string, ComponentResolver> {
         grid: XqGrid,
         fieldset: XqFieldset,
         tabs: XqTabsLayout,
+        action: XqAction,
+        actions: XqActions,
         wizard: XqWizard,
         flex: XqFlex,
         'fused-group': XqFusedGroup,

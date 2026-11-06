@@ -303,7 +303,7 @@ trait HandlesUploads
      */
     public function getUploadScope(): string
     {
-        return $this->getForm()::class.'|'.$this->getStatePathPattern();
+        return $this->getForm()->getUploadScope().'|'.$this->getStatePathPattern();
     }
 
     public function getDiskName(): string

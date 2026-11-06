@@ -1,0 +1,81 @@
+{
+    "state": {
+        "data": {}
+    },
+    "components": [
+        {
+            "key": "data#0",
+            "type": "actions",
+            "hidden": false,
+            "path": null,
+            "label": null,
+            "rules": {
+                "visible": null
+            },
+            "span": null,
+            "props": {
+                "alignment": "end"
+            },
+            "children": [
+                {
+                    "key": "data#0.0",
+                    "type": "action",
+                    "hidden": false,
+                    "path": null,
+                    "label": null,
+                    "rules": {
+                        "visible": null
+                    },
+                    "span": null,
+                    "props": {
+                        "label": "Archive",
+                        "style": "button",
+                        "disabled": false,
+                        "confirmation": true,
+                        "hasForm": false,
+                        "heading": "Archive",
+                        "description": "Sure?",
+                        "submitLabel": null,
+                        "cancelLabel": null,
+                        "icon": "trash",
+                        "color": "danger"
+                    },
+                    "children": [],
+                    "deps": []
+                },
+                {
+                    "key": "data#0.1",
+                    "type": "action",
+                    "hidden": false,
+                    "path": null,
+                    "label": null,
+                    "rules": {
+                        "visible": null
+                    },
+                    "span": null,
+                    "props": {
+                        "label": "Change it",
+                        "style": "icon",
+                        "disabled": false,
+                        "confirmation": false,
+                        "hasForm": true,
+                        "heading": "Change it",
+                        "description": null,
+                        "submitLabel": null,
+                        "cancelLabel": null,
+                        "icon": "pencil"
+                    },
+                    "children": [],
+                    "deps": []
+                },
+                {
+                    "key": "data#0.2",
+                    "type": "action",
+                    "hidden": true,
+                    "deps": []
+                }
+            ],
+            "deps": []
+        }
+    ]
+}

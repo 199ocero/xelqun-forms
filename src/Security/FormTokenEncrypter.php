@@ -5,8 +5,10 @@ namespace Xelqun\Forms\Security;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Contracts\Encryption\StringEncrypter;
 use Illuminate\Database\Eloquent\Model;
+use Xelqun\Forms\Actions\Action;
 use Xelqun\Forms\Exceptions\InvalidFormToken;
 use Xelqun\Forms\Form;
+use Xelqun\Forms\Validation\FormValidator;
 
 final class FormTokenEncrypter
 {
@@ -67,6 +69,31 @@ final class FormTokenEncrypter
             throw InvalidFormToken::make('this action is unauthorized');
         }
 
-        return $form->fill();
+        $form->fill();
+
+        foreach ($token->actions as ['k' => $key, 's' => $state]) {
+            $form = $this->enterAction($form, $key, $state);
+        }
+
+        return $form;
+    }
+
+    /**
+     * Rebuild an action's modal the way opening it did, checks included, so
+     * losing a permission closes every modal that depended on it.
+     *
+     * @param  array<string, mixed>  $state
+     */
+    private function enterAction(Form $form, string $key, array $state): Form
+    {
+        app(FormValidator::class)->prepare($form, $state);
+
+        $action = $form->findComponent($key);
+
+        if (! $action instanceof Action || ! $action->canRun()) {
+            throw InvalidFormToken::make('this action is unavailable');
+        }
+
+        return $action->makeForm($state);
     }
 }

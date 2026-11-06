@@ -1,0 +1,374 @@
+import { flushPromises, mount } from '@vue/test-utils';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import XqForm from '../../resources/js/components/XqForm.vue';
+import { createFormStore } from '../../resources/js/core/store';
+import type { SchemaNode } from '../../resources/js/schema/types';
+import { field, schema } from './fixtures';
+
+vi.mock('@inertiajs/vue3', () => ({ router: { visit: vi.fn() } }));
+
+function action(props: Record<string, unknown> = {}): SchemaNode {
+    return {
+        key: 'data#1',
+        type: 'action',
+        hidden: false,
+        path: null,
+        props: { label: 'Apply', heading: 'Apply it', style: 'button', ...props },
+        children: [],
+        deps: [],
+    };
+}
+
+function respond(body: unknown, status = 200) {
+    return Promise.resolve(new Response(JSON.stringify(body), { status }));
+}
+
+function patch(extra = {}) {
+    return { $xq: 1, seq: 0, set: {}, schema: {}, errors: {}, ...extra };
+}
+
+const modalSchema = schema([field('data.amount')], { amount: 5 }, 'modal-token');
+
+async function mountAction(node = action()) {
+    const store = createFormStore(schema([field('data.note'), node], { note: 'old' }));
+    const wrapper = mount(XqForm, { props: { form: store }, attachTo: document.body });
+
+    await flushPromises();
+
+    return { store, wrapper, button: wrapper.find('[data-xq-action] button') };
+}
+
+const inModal = () =>
+    document.body.querySelector<HTMLElement>('[role="dialog"], [role="alertdialog"]');
+
+function modalButton(label: string): HTMLButtonElement {
+    return [...inModal()!.querySelectorAll('button')].find((item) =>
+        item.textContent?.includes(label),
+    ) as HTMLButtonElement;
+}
+
+function submitModal(): void {
+    inModal()!
+        .querySelector('form')!
+        .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+}
+
+describe('actions', () => {
+    let fetchMock: ReturnType<typeof vi.fn>;
+
+    const sent = (call = 0) => JSON.parse(fetchMock.mock.calls[call][1].body);
+
+    beforeEach(() => {
+        fetchMock = vi.fn(() => respond(patch()));
+        vi.stubGlobal('fetch', fetchMock);
+    });
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
+        document.body.innerHTML = '';
+    });
+
+    it('runs straight away without a modal, and applies the patch', async () => {
+        fetchMock.mockImplementation(() => respond(patch({ set: { 'data.note': 'new' } })));
+
+        const { store, button, wrapper } = await mountAction();
+
+        await button.trigger('click');
+        await flushPromises();
+
+        expect(fetchMock.mock.calls[0][0]).toBe('/_xelqun/forms/action');
+        expect(sent()).toMatchObject({
+            token: 'token',
+            action: 'data#1',
+            phase: 'run',
+            state: { data: { note: 'old' } },
+        });
+        expect(store.get('data.note')).toBe('new');
+        wrapper.unmount();
+    });
+
+    it('asks first when it needs a confirmation, and does nothing if cancelled', async () => {
+        const { button, wrapper } = await mountAction(action({ confirmation: true }));
+
+        await button.trigger('click');
+        await flushPromises();
+
+        expect(fetchMock).not.toHaveBeenCalled();
+        expect(inModal()?.textContent).toContain('Apply it');
+
+        modalButton('Cancel').click();
+        await flushPromises();
+
+        expect(fetchMock).not.toHaveBeenCalled();
+        wrapper.unmount();
+    });
+
+    it('runs once the user confirms', async () => {
+        const { button, wrapper } = await mountAction(action({ confirmation: true }));
+
+        await button.trigger('click');
+        await flushPromises();
+        modalButton('Confirm').click();
+        await flushPromises();
+
+        expect(sent().phase).toBe('run');
+        wrapper.unmount();
+    });
+
+    it('opens a modal from the schema the server sends, with its own store', async () => {
+        fetchMock.mockImplementation(() => respond({ form: modalSchema }));
+
+        const { store, button, wrapper } = await mountAction(action({ hasForm: true }));
+
+        await button.trigger('click');
+        await flushPromises();
+
+        expect(sent().phase).toBe('mount');
+        expect(inModal()!.querySelector('input')!.value).toBe('5');
+        expect(store.nodes.has('data.amount')).toBe(false);
+        wrapper.unmount();
+    });
+
+    it('posts the modal values with the parent state, then closes', async () => {
+        fetchMock
+            .mockImplementationOnce(() => respond({ form: modalSchema }))
+            .mockImplementationOnce(() => respond(patch({ set: { 'data.note': 'done' } })));
+
+        const { store, button, wrapper } = await mountAction(action({ hasForm: true }));
+
+        await button.trigger('click');
+        await flushPromises();
+        submitModal();
+        await flushPromises();
+
+        expect(sent(1)).toMatchObject({
+            token: 'token',
+            phase: 'run',
+            data: { amount: 5 },
+            state: { data: { note: 'old' } },
+        });
+        expect(store.get('data.note')).toBe('done');
+        expect(inModal()).toBeNull();
+        wrapper.unmount();
+    });
+
+    it('stays open and shows the errors the server finds', async () => {
+        fetchMock
+            .mockImplementationOnce(() => respond({ form: modalSchema }))
+            .mockImplementationOnce(() =>
+                respond({ errors: { 'data.amount': ['Too much.'] } }, 422),
+            );
+
+        const { store, button, wrapper } = await mountAction(action({ hasForm: true }));
+
+        await button.trigger('click');
+        await flushPromises();
+        submitModal();
+        await flushPromises();
+
+        expect(inModal()!.textContent).toContain('Too much.');
+        expect(store.errors).toEqual({});
+        wrapper.unmount();
+    });
+
+    it('shows a server error on an edited field of the modal', async () => {
+        fetchMock
+            .mockImplementationOnce(() => respond({ form: modalSchema }))
+            .mockImplementationOnce(() =>
+                respond({ errors: { 'data.amount': ['Too much.'] } }, 422),
+            );
+
+        const { button, wrapper } = await mountAction(action({ hasForm: true }));
+
+        await button.trigger('click');
+        await flushPromises();
+
+        const input = inModal()!.querySelector('input')!;
+
+        input.value = '9';
+        input.dispatchEvent(new Event('input'));
+        submitModal();
+        await flushPromises();
+
+        expect(inModal()!.textContent).toContain('Too much.');
+        wrapper.unmount();
+    });
+
+    it('stops in the browser when the modal has rules it can check', async () => {
+        const form = schema(
+            [
+                field('data.amount', 'text-input', {
+                    required: true,
+                    validation: {
+                        attribute: 'Amount',
+                        rules: [{ rule: 'required', message: 'The :attribute field is required.' }],
+                    },
+                }),
+            ],
+            { amount: null },
+        );
+
+        fetchMock.mockImplementationOnce(() => respond({ form }));
+
+        const { button, wrapper } = await mountAction(action({ hasForm: true }));
+
+        await button.trigger('click');
+        await flushPromises();
+        submitModal();
+        await flushPromises();
+
+        expect(fetchMock).toHaveBeenCalledOnce();
+        expect(inModal()!.textContent).toContain('The Amount field is required.');
+        wrapper.unmount();
+    });
+
+    it('puts an error about the parent on the parent', async () => {
+        fetchMock.mockImplementation(() =>
+            respond({ errors: { 'data.note': ['Not today.'] } }, 422),
+        );
+
+        const { store, button, wrapper } = await mountAction();
+
+        store.set('data.note', 'edited');
+        await button.trigger('click');
+        await flushPromises();
+
+        expect(store.errors).toEqual({ 'data.note': 'Not today.' });
+        wrapper.unmount();
+    });
+
+    it('says so when the request fails, and frees the button', async () => {
+        fetchMock.mockImplementation(() => Promise.reject(new TypeError('offline')));
+
+        const { store, button, wrapper } = await mountAction();
+
+        await button.trigger('click');
+        await flushPromises();
+
+        expect(store.liveError.value).toContain('Check your connection');
+        expect(button.attributes('disabled')).toBeUndefined();
+        wrapper.unmount();
+    });
+
+    it('shows a failed run inside the modal the user is looking at', async () => {
+        fetchMock
+            .mockImplementationOnce(() => respond({ form: modalSchema }))
+            .mockImplementationOnce(() => Promise.reject(new TypeError('offline')));
+
+        const { store, button, wrapper } = await mountAction(action({ hasForm: true }));
+
+        await button.trigger('click');
+        await flushPromises();
+        submitModal();
+        await flushPromises();
+
+        expect(inModal()!.textContent).toContain('Check your connection');
+        expect(store.liveError.value).toBeNull();
+        wrapper.unmount();
+    });
+
+    it('takes the failure message away when a retry works', async () => {
+        fetchMock
+            .mockImplementationOnce(() => Promise.reject(new TypeError('offline')))
+            .mockImplementationOnce(() => respond(patch()));
+
+        const { store, button, wrapper } = await mountAction();
+
+        await button.trigger('click');
+        await flushPromises();
+        await button.trigger('click');
+        await flushPromises();
+
+        expect(store.liveError.value).toBeNull();
+        wrapper.unmount();
+    });
+
+    it('runs once when the modal is submitted twice', async () => {
+        fetchMock
+            .mockImplementationOnce(() => respond({ form: modalSchema }))
+            .mockImplementation(() => respond(patch()));
+
+        const { button, wrapper } = await mountAction(action({ hasForm: true }));
+
+        await button.trigger('click');
+        await flushPromises();
+        submitModal();
+        submitModal();
+        await flushPromises();
+
+        expect(fetchMock).toHaveBeenCalledTimes(2);
+        wrapper.unmount();
+    });
+
+    it('shows modal errors even when it opened from a fused group', async () => {
+        fetchMock
+            .mockImplementationOnce(() => respond({ form: modalSchema }))
+            .mockImplementationOnce(() =>
+                respond({ errors: { 'data.amount': ['Too much.'] } }, 422),
+            );
+
+        const fused = {
+            key: 'g',
+            type: 'fused-group',
+            hidden: false,
+            path: null,
+            props: {},
+            children: [action({ hasForm: true })],
+        } as SchemaNode;
+        const { button, wrapper } = await mountAction(fused);
+
+        await button.trigger('click');
+        await flushPromises();
+        submitModal();
+        await flushPromises();
+
+        expect(inModal()!.textContent).toContain('Too much.');
+        wrapper.unmount();
+    });
+
+    it('opens nothing when the server refuses', async () => {
+        fetchMock.mockImplementation(() => respond({ message: 'No' }, 403));
+
+        const { store, button, wrapper } = await mountAction(action({ hasForm: true }));
+
+        await button.trigger('click');
+        await flushPromises();
+
+        expect(inModal()).toBeNull();
+        expect(store.liveError.value).not.toBeNull();
+        wrapper.unmount();
+    });
+
+    it('waits for live updates, so the action sees what the user typed', async () => {
+        const { store, button, wrapper } = await mountAction();
+        const idle = vi.spyOn(store.queue, 'idle');
+
+        await button.trigger('click');
+        await flushPromises();
+
+        expect(idle).toHaveBeenCalled();
+        wrapper.unmount();
+    });
+
+    it('disables the button when the server says so', async () => {
+        const { button, wrapper } = await mountAction(action({ disabled: true }));
+
+        expect(button.attributes('disabled')).toBeDefined();
+        wrapper.unmount();
+    });
+
+    it('keeps the name of an icon button for screen readers', async () => {
+        const { button, wrapper } = await mountAction(action({ style: 'icon', icon: 'star' }));
+
+        expect(button.attributes('aria-label')).toBe('Apply');
+        expect(button.text()).toBe('');
+        wrapper.unmount();
+    });
+
+    it('shows nothing for an action the server hides', async () => {
+        const { wrapper } = await mountAction({ ...action(), hidden: true });
+
+        expect(wrapper.find('[data-xq-action]').exists()).toBe(false);
+        wrapper.unmount();
+    });
+});
