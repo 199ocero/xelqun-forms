@@ -31,6 +31,9 @@ final class FormValidator
     /** @var array<string, string> */
     private array $attributes = [];
 
+    /** @var array<string, string> */
+    private array $messages = [];
+
     /** @var array<int, Field> */
     private array $kept = [];
 
@@ -42,13 +45,14 @@ final class FormValidator
     {
         $this->rules = [];
         $this->attributes = [];
+        $this->messages = [];
         $this->kept = [];
 
         $this->prepare($form, $data);
 
         $this->collect($form->getComponents(), true, null);
 
-        Validator::make($form->getState(), $this->rules, [], $this->attributes)->validate();
+        Validator::make($form->getState(), $this->rules, $this->messages, $this->attributes)->validate();
 
         return $this->dehydrate($form);
     }
@@ -210,42 +214,54 @@ final class FormValidator
     }
 
     /**
+     * Every visible field that isn't locked gets its rules. Only a field that is
+     * saved, under a parent that is saved, reaches the output.
+     *
      * @param  array<int, Component>  $components
      */
-    private function collect(array $components, bool $parentVisible, ?string $rowLabel): void
+    private function collect(array $components, bool $parentVisible, ?string $rowLabel, bool $parentIsSaved = true): void
     {
         foreach ($components as $component) {
             $visible = $parentVisible && $component->isVisibleInState();
 
             if (! $component instanceof Field) {
-                $this->collect($component->getChildComponents(), $visible, $rowLabel);
+                $this->collect($component->getChildComponents(), $visible, $rowLabel, $parentIsSaved);
 
                 continue;
             }
 
-            if (! $visible || ! $component->isDehydrated()) {
+            $isSaved = $component->isDehydrated();
+
+            if (! $visible || (! $isSaved && $component->isDisabledInState())) {
                 continue;
             }
 
             $path = $component->getStatePath();
-            $label = $component->getLabel();
+            $label = $component->getValidationAttribute();
             $this->rules[$path] = $component->isReadOnly() && $component->getComputed() === null ? [] : $component->getValidationRules();
             $this->attributes[$path] = $rowLabel === null ? $label : "{$label} ({$rowLabel})";
-            $this->kept[] = $component;
+
+            if ($parentIsSaved && $isSaved) {
+                $this->kept[] = $component;
+            }
+
+            foreach ($component->getValidationMessages() as $rule => $message) {
+                $this->messages["{$path}.{$rule}"] = $message;
+            }
 
             if ($component instanceof ContainsRows) {
                 $index = 0;
 
                 foreach ($component->getRows() as $rowComponents) {
                     $index++;
-                    $this->collect($rowComponents, true, $component->getItemLabel().' '.$index);
+                    $this->collect($rowComponents, true, $component->getItemLabel().' '.$index, $parentIsSaved && $isSaved);
                 }
             }
         }
     }
 
     /**
-     * Build the output from known, visible, dehydrated fields only, so keys
+     * Build the output from known, visible, saved fields only, so keys
      * that are not in the schema can never reach the model.
      *
      * @return array<string, mixed>

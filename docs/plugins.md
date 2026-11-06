@@ -159,7 +159,7 @@ class Reviewer extends Field implements HasSearchResults
 }
 ```
 
-**Validate the submitted value too.** Search only suggests values. The browser can post anything, so `getTypeRules()` has to check it. See `Reviewer.php` in the example.
+**Validate the submitted value too.** Search only suggests values. The browser can post anything, so `getTypeRules()` has to check it. See `Reviewer.php` in the example. In a closure rule, fail with `$this->getFailureMessage('in')`, so `validationMessages()` still works on your field.
 
 ### Uploads
 

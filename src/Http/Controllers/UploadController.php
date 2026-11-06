@@ -25,7 +25,7 @@ class UploadController
             throw ValidationException::withMessages(['file' => __('xelqun-forms::messages.uploads.not_accepted')]);
         }
 
-        $request->validate(['file' => $field->getUploadRules()], [], ['file' => $field->getLabel()]);
+        $request->validate(['file' => $field->getUploadRules()], [], ['file' => $field->getValidationAttribute()]);
 
         return response()->json($store->store($request->file('file'), $field->getUploadScope()));
     }

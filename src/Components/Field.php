@@ -5,6 +5,7 @@ namespace Xelqun\Forms\Components;
 use Closure;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use Xelqun\Forms\Components\Concerns\HasValidationRules;
 use Xelqun\Forms\Conditions\Condition;
 use Xelqun\Forms\Conditions\ConditionalText;
 use Xelqun\Forms\Contracts\ContainsRows;
@@ -20,6 +21,8 @@ use Xelqun\Forms\Support\StatePath;
  */
 abstract class Field extends Component implements NeedsServer
 {
+    use HasValidationRules;
+
     protected string|Closure|ConditionalText|null $label = null;
 
     protected string|Closure|ConditionalText|null $hint = null;
@@ -46,6 +49,11 @@ abstract class Field extends Component implements NeedsServer
 
     /** @var array<int, mixed> */
     protected array $rules = [];
+
+    /** @var array<string, string|Closure> */
+    protected array $validationMessages = [];
+
+    protected string|Closure|null $validationAttribute = null;
 
     /** @var array{mode: string, ms: int|null}|null */
     protected ?array $live = null;
@@ -213,6 +221,29 @@ abstract class Field extends Component implements NeedsServer
     }
 
     /**
+     * Error messages for this field, by rule name, such as ['required' => 'Who is
+     * this for?']. Laravel's placeholders work here, including :attribute.
+     *
+     * @param  array<string, string|Closure>  $messages
+     */
+    public function validationMessages(array $messages): static
+    {
+        $this->validationMessages = $messages;
+
+        return $this;
+    }
+
+    /**
+     * What error messages call this field. Defaults to its label.
+     */
+    public function validationAttribute(string|Closure|null $attribute): static
+    {
+        $this->validationAttribute = $attribute;
+
+        return $this;
+    }
+
+    /**
      * Send changes of this field to the server. By default the server is only
      * called when a server closure depends on this field.
      */
@@ -310,7 +341,8 @@ abstract class Field extends Component implements NeedsServer
 
     /**
      * Whether the value is saved. Use saved(false) for a field with no column,
-     * or disabled()->saved() to keep a disabled field's server value.
+     * or disabled()->saved() to keep a disabled field's server value. Rules still
+     * run on a field that isn't saved, unless it is disabled.
      */
     public function saved(bool|Closure $condition = true): static
     {
@@ -616,8 +648,30 @@ abstract class Field extends Component implements NeedsServer
         return [
             $this->isRequiredInState() ? $this->getRequiredRule() : 'nullable',
             ...$this->getTypeRules(),
-            ...$this->rules,
+            ...$this->getCustomRules(),
         ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function getValidationMessages(): array
+    {
+        return array_map(fn (string|Closure $message): string => $this->evaluate($message), $this->validationMessages);
+    }
+
+    public function getValidationAttribute(): string
+    {
+        return $this->evaluate($this->validationAttribute) ?? $this->getLabel();
+    }
+
+    /**
+     * The message for a rule that checks with a closure, which Laravel can't
+     * match to validationMessages() by itself. Laravel fills in :attribute.
+     */
+    public function getFailureMessage(string $rule): string
+    {
+        return $this->getValidationMessages()[$rule] ?? __("validation.{$rule}");
     }
 
     protected function getRequiredRule(): string

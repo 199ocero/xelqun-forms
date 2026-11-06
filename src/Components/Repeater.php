@@ -597,11 +597,11 @@ class Repeater extends Field implements ContainsRows, PersistsItself
 
         $rules[] = function (string $attribute, mixed $value, Closure $fail): void {
             if ($this->hasStaleRows()) {
-                $fail(__('xelqun-forms::messages.repeater.stale', ['attribute' => $this->getLabel()]));
+                $fail(__('xelqun-forms::messages.repeater.stale', ['attribute' => $this->getValidationAttribute()]));
             }
         };
 
-        return [...$rules, ...$this->rules];
+        return [...$rules, ...$this->getCustomRules()];
     }
 
     protected function getProps(): array

@@ -381,7 +381,7 @@ class Select extends Field implements HasSearchResults, PersistsItself
                 $known = $this->getRelationshipQuery()->whereIn($keyName, $items)->pluck($keyName)->map(strval(...))->all();
 
                 if (array_diff($items, $known) !== []) {
-                    $fail(__('validation.exists', ['attribute' => $this->getLabel()]));
+                    $fail($this->getFailureMessage('exists'));
                 }
             };
 
@@ -394,7 +394,7 @@ class Select extends Field implements HasSearchResults, PersistsItself
 
                 foreach ((array) $value as $item) {
                     if ((! is_string($item) && ! is_int($item)) || ! array_key_exists($item, $known)) {
-                        $fail(__('validation.in', ['attribute' => $this->getLabel()]));
+                        $fail($this->getFailureMessage('in'));
                     }
                 }
             };
@@ -417,7 +417,7 @@ class Select extends Field implements HasSearchResults, PersistsItself
             $validator = validator(['items' => (array) $value], ['items.*' => [$rule]]);
 
             if ($validator->fails()) {
-                $fail(__('validation.in', ['attribute' => $this->getLabel()]));
+                $fail($this->getFailureMessage('in'));
             }
         };
     }

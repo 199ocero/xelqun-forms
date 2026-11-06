@@ -165,14 +165,14 @@ trait HandlesUploads
 
                 if ($store->isToken($value)) {
                     if (! $store->isUsable($store->idFromToken($value), $this->getUploadScope())) {
-                        $fail(__('xelqun-forms::messages.uploads.expired', ['attribute' => $this->getLabel()]));
+                        $fail(__('xelqun-forms::messages.uploads.expired', ['attribute' => $this->getValidationAttribute()]));
                     }
 
                     return;
                 }
 
                 if (! in_array($value, $this->getForm()->getInitialValues($this->getStatePathPattern()), true)) {
-                    $fail(__('validation.in', ['attribute' => $this->getLabel()]));
+                    $fail($this->getFailureMessage('in'));
                 }
             },
         ];

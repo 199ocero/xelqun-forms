@@ -1,6 +1,6 @@
 # Xelqun Forms: planning document
 
-> Status: approved plan (2026-10-28), implemented through Milestone 9. Parity work continues in [`parity-plan.md`](parity-plan.md), through Milestone 13. See "Implementation status" at the end.
+> Status: approved plan (2026-10-28), implemented through Milestone 9. Parity work continues in [`parity-plan.md`](parity-plan.md), through Milestone 14. See "Implementation status" at the end.
 
 ## Context
 
@@ -440,7 +440,7 @@ Milestones 0–9 are built and tested. Milestone 9 added failure and loading fee
 | File upload inside a repeater row | browser test, package `UploadTest` |
 | Server errors on the correct nested field | browser tests (`Price (Item 2)`), package `ValidationTest` |
 
-**Test counts:** package Pest 477, package Vitest 219, playground feature and browser 44.
+**Test counts:** package Pest 578, package Vitest 219, playground feature and browser 44.
 
 ### Milestone 10: foundations
 
@@ -548,6 +548,34 @@ Limits to keep in mind:
 - A `readOnly()` field in a group doesn't write its default when the form edits a record whose related record doesn't exist yet.
 - A field and a relationship group with the same name both use the same state path, and this isn't detected.
 - Not built: `MorphOne` groups, `modifyKeySelectUsing()`, `modifyTypeSelectUsing()`, `saveRelationshipsWhenHidden()`, `saveRelationshipsUsing()`, and `condition:` on a group.
+
+### Milestone 14: validation API
+
+Fields can now name their rules and word their own errors. The proof is the validation example in the playground, which shows custom messages, a custom attribute and rules that compare fields, inside tabs and rows.
+
+- **Rule helpers.** `HasValidationRules` adds Filament's named helpers to every field, such as `alphaDash()`, `in()`, `regex()`, `enum()`, `requiredIf()`, `after()` and `prohibits()`. They sit alongside `rules()`. `rule()` adds one rule, with an optional condition. Values are passed as arguments rather than joined into a string, so a comma in a value is safe.
+- **Rules that name a field resolve like `$get()`.** A bare name is relative to the field's row or group, and `$.name` is the form root. State lives under `data`, so a plain `rules(['same:password'])` compares against nothing. `same()`, `gt()`, `after()`, `requiredWith()` and the others send a full path, and the error message uses the other field's label.
+- **`confirmed()`** needs a `{name}_confirmation` field next to the field, also inside a row. Give it `saved(false)` when saving to a model.
+- **`unique()` and `exists()`** default to the field's model and name. In a row or related group, the record to ignore is the one the form filled that row from. `Form::getRecordFor()` keeps that record from filling, so a forged row key finds nothing and can't exclude another record's row. The record is only ignored in its own table, because its id means nothing in another one. Use `ignorable` there.
+- **`scopedUnique()` and `scopedExists()`** query through the model, so global scopes apply.
+- **`validationMessages()` and `validationAttribute()`.** Messages are keyed by rule name and can be closures. Built-in rules that check with a closure, such as a relationship `exists` or an upload path, use them through `Field::getFailureMessage()`.
+- **Values are safe to pass as they are.** `requiredIf('gift', true)`, an enum case and `null` all match, even though Laravel casts rule arguments to strings. A numeric argument to `gt()`, `gte()`, `lt()` or `lte()` is a number, not a field. A date closure that gives no date turns its rule off.
+
+Changes that can break existing code, for the release notes:
+
+- `Field` has about 55 new public methods, with common names such as `in()`, `after()`, `before()`, `string()`, `enum()` and `json()`. A field subclass with a method of the same name and a different signature no longer loads: PHP stops with "must be compatible". Rename the method or match the signature.
+- Errors from built-in checks that use a closure, such as an invalid select value or a relationship that doesn't exist, now name the row: `Plan (Item 1)`. They used to give the label alone.
+- A field with `saved(false)` or `dehydrated(false)` now runs its rules, unless it is disabled. They used to be skipped, so `->same('password')->saved(false)` compared nothing and `->required()->saved(false)` required nothing. A form that relied on that shows errors now.
+
+Limits to keep in mind:
+
+- `rules()` strings still go to Laravel as written, so `same:password` there doesn't work. Use the helper.
+- `unique()` checks the posted value, before `dehydrateStateUsing()`. A field that lowercases on save compares the value as typed.
+- Two rows of one form aren't compared with each other, so both can post the same "unique" value. `distinct()` arrives in M16.
+- `unique()` checks and then saves, so two requests at once can both pass. A unique index on the column is what guarantees it.
+- A rule closure can't ask for `Get`. Filament's wrapped form, a closure that returns the rule, wasn't in scope. A condition on `rule()` can.
+- `after()` and `before()` read a value PHP can parse as a date as a date, like Laravel does. Write `$.today` for a field named like a date.
+- `requiredIf()` and similar rules don't show the asterisk. `requiredWhen()` does, and it runs in the browser.
 
 ### Where the build differs from the plan
 - **Patches have no `add`/`remove`.** A component hidden by a server closure is sent as a stub (`{ key, type, hidden: true, deps }`) and later patched to a full node, which keeps every key stable.

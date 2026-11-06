@@ -57,6 +57,9 @@ class Form
 
     private readonly string $operation;
 
+    /** @var array<string, Model> The record each row or related group was filled from, by container. */
+    private array $filledRecords = [];
+
     /**
      * @param  TModel|null  $record
      * @param  array<string, mixed>  $context  Scalar values that are needed to rebuild the form (kept in the token).
@@ -220,6 +223,19 @@ class Form
     }
 
     /**
+     * The record a component's value came from: the form's, or the one its row or
+     * related group was filled from. It is null for a row added in the browser
+     * and for a posted row key the form never filled, so the record a browser
+     * names can't be trusted here.
+     */
+    public function getRecordFor(Component $component): ?Model
+    {
+        return $component->getContainer() === StatePath::ROOT
+            ? $this->record
+            : ($this->filledRecords[$component->getContainer()] ?? null);
+    }
+
+    /**
      * @return array<int, Component>
      */
     public function getComponents(): array
@@ -377,6 +393,7 @@ class Form
     public function fill(): static
     {
         $this->state = [StatePath::ROOT => []];
+        $this->filledRecords = [];
 
         self::fillFields($this->getComponents(), $this->record);
 
@@ -403,6 +420,10 @@ class Form
     public static function fillFields(array $components, Model|array|null $source): void
     {
         foreach ($components as $component) {
+            if ($source instanceof Model) {
+                $component->getForm()->filledRecords[$component->getContainer()] = $source;
+            }
+
             if ($component instanceof Field) {
                 $component->fillState($source);
             }

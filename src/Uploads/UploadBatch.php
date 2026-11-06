@@ -111,7 +111,7 @@ final class UploadBatch
     {
         if (! $this->store->isUsable($id, $field->getUploadScope())) {
             throw ValidationException::withMessages([
-                $field->getStatePath() => __('xelqun-forms::messages.uploads.expired', ['attribute' => $field->getLabel()]),
+                $field->getStatePath() => __('xelqun-forms::messages.uploads.expired', ['attribute' => $field->getValidationAttribute()]),
             ]);
         }
 
