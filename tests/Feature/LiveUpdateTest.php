@@ -69,6 +69,7 @@ it('rejects tokens that do not describe a form', function () {
 it('rejects tokens issued to another user', function () {
     $payload = updatePayload($this->schema, [], []);
     $payload['token'] = Crypt::encryptString(json_encode(['f' => OrderForm::class, 'r' => null, 'u' => 42, 'c' => [], 't' => time()]));
+    $this->actingAs((new User)->forceFill(['id' => 5]));
 
     $this->postJson('/_xelqun/forms/update', $payload)->assertForbidden();
 });

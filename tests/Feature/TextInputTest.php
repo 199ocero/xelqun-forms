@@ -4,6 +4,9 @@ use Illuminate\Validation\ValidationException;
 use Xelqun\Forms\Components\TextInput;
 use Xelqun\Forms\Form;
 use Xelqun\Forms\State\Get;
+use Xelqun\Forms\Tests\Fixtures\Order;
+use Xelqun\Forms\Tests\Fixtures\PasswordForm;
+use Xelqun\Forms\Tests\Fixtures\PasswordRowsForm;
 
 /**
  * @return array<string, mixed>
@@ -98,4 +101,51 @@ it('tells the browser when a closure turns an option off', function () {
     expect($props)->toHaveKey('revealable', false)
         ->toHaveKey('mask', null)
         ->toHaveKey('copyable', null);
+});
+
+describe('password()', function () {
+    it('never sends the stored value to the browser', function () {
+        $order = Order::create(['customer' => 'stored-hash']);
+
+        $schema = json_encode(PasswordForm::make($order)->toSchema());
+
+        expect($schema)->not->toContain('stored-hash');
+    });
+
+    it('keeps the stored value when left empty', function (?string $value) {
+        $order = Order::create(['customer' => 'stored-hash']);
+
+        PasswordForm::make($order)->save(['data' => ['customer' => $value]]);
+
+        expect($order->fresh()->customer)->toBe('stored-hash');
+    })->with(['null' => null, 'empty' => '']);
+
+    it('keeps a stored value in a row that is written back whole', function () {
+        $order = Order::create(['customer' => 'Ada', 'meta' => [['host' => 'smtp', 'secret' => 'stored']]]);
+        $form = PasswordRowsForm::make($order);
+
+        $form->save(['data' => $form->getData()]);
+
+        expect($order->fresh()->meta[0]['secret'])->toBe('stored');
+    });
+
+    it('saves a new value', function () {
+        $order = Order::create(['customer' => 'stored-hash']);
+
+        PasswordForm::make($order)->save(['data' => ['customer' => 'new-hash']]);
+
+        expect($order->fresh()->customer)->toBe('new-hash');
+    });
+
+    it('lets saved() insist on the empty value', function () {
+        $form = Form::make([TextInput::make('code')->password()->saved()]);
+
+        expect($form->validate(['code' => null]))->toBe(['code' => null]);
+    });
+
+    it('still checks the rules of an empty value', function () {
+        $form = Form::make([TextInput::make('code')->password()->required()]);
+
+        expect(fn () => $form->validate(['code' => '']))->toThrow(ValidationException::class);
+    });
 });

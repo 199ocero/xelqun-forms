@@ -4,6 +4,7 @@ namespace Xelqun\Forms\Components;
 
 use Closure;
 use Illuminate\Contracts\Support\Arrayable;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * @api
@@ -73,6 +74,36 @@ class TextInput extends Field
         $this->inputType = 'password';
 
         return $this;
+    }
+
+    /**
+     * A password starts empty, whatever the record holds, because its value is
+     * a hash the browser has no use for.
+     *
+     * shortcut: a password in an array row, as in a repeater on a JSON column, still reaches the browser, because that row is written back whole and leaving it out would delete it. Keep the value on the server if one of those has to stay secret.
+     *
+     * @param  Model|array<string, mixed>|null  $source
+     */
+    public function fillState(Model|array|null $source): void
+    {
+        parent::fillState($this->isPassword() && $source instanceof Model ? null : $source);
+    }
+
+    /**
+     * Leaving a password empty means keeping it. saved() overrides this.
+     */
+    public function isDehydrated(): bool
+    {
+        if ($this->isPassword() && $this->dehydrated === null && blank(data_get($this->getForm()->getState(), $this->getStatePath()))) {
+            return false;
+        }
+
+        return parent::isDehydrated();
+    }
+
+    private function isPassword(): bool
+    {
+        return $this->inputType === 'password';
     }
 
     public function tel(): static

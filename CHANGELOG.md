@@ -2,6 +2,28 @@
 
 Xelqun Forms is pre-alpha. Until 1.0, a minor version can break existing code, and each break is listed here.
 
+## 0.6.0 - 2026-11-06
+
+This release fixes two ways a password could leak, and adds what `xelqun/panels` needs to protect its endpoints. The schema version (`$xq`) stays 1.
+
+### Upgrading
+
+Update both halves together: `composer update xelqun/forms` and `npm install @xelqun/forms@0.6.0`. Plugins that require `^0.5.0` need a new release, because a caret range on 0.x stops at the next minor version. That includes `xelqun/tables`, which needs 0.4.
+
+- **`TextInput::password()` no longer fills from a model, and an empty one is no longer saved.** To store an empty value on purpose, add `->saved()`. To show a stored value, drop `password()`. An array row, as in a repeater on a JSON column, still fills, because that row is written back whole.
+- **A top-level input called `data` is no longer flashed to the session** when validation fails, on any form in the app. A plain Blade form that reads `old('data.x')` needs another field name.
+- **A signed out user holding a form token now gets a 419, not a 403.** The form shows its "reload the page" message. A different signed-in user still gets a 403.
+
+### Added
+
+- **`FormTokenEncrypter::scopeUsing()`** ties every token to where it was issued, and runs your check on each request before the token's user is compared. It covers forms, tables, actions and their modals, so a section of an app can restore its guard and repeat its access checks on the `_xelqun` endpoints.
+
+### Fixed
+
+- **A failed submit no longer writes the password to the session.** Forms post under `data`, and Laravel's `dontFlash` list only covers top-level keys, so every field's value landed in `_old_input`.
+- **An edit page no longer sends a stored password hash to the browser.** `$hidden` doesn't apply when a field reads an attribute directly. An empty password field also no longer overwrites the stored value.
+- **Type checking passes in an app that types its flash data.**
+
 ## 0.5.0 - 2026-11-06
 
 This release adds what `xelqun/panels` will build on. The schema version (`$xq`) stays 1.

@@ -12,6 +12,7 @@ final class FormToken
      * @param  class-string  $formClass
      * @param  array<string, mixed>  $context
      * @param  array<int, array{k: string, s: array<string, mixed>}>  $actions  The actions to go through to reach a modal, each with the state posted to the form holding it.
+     * @param  string|null  $scope  Where the token was issued. See FormTokenEncrypter::scopeUsing().
      */
     public function __construct(
         public readonly string $formClass,
@@ -20,6 +21,7 @@ final class FormToken
         public readonly array $context = [],
         public readonly ?int $issuedAt = null,
         public readonly array $actions = [],
+        public readonly ?string $scope = null,
     ) {}
 
     /**
@@ -62,6 +64,7 @@ final class FormToken
             context: is_array($payload['c'] ?? null) ? $payload['c'] : [],
             issuedAt: is_int($payload['t'] ?? null) ? $payload['t'] : null,
             actions: is_array($payload['a'] ?? null) ? $payload['a'] : [],
+            scope: is_string($payload['p'] ?? null) ? $payload['p'] : null,
         );
     }
 }

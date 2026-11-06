@@ -2,11 +2,14 @@
 
 namespace Xelqun\Forms;
 
+use Illuminate\Contracts\Debug\ExceptionHandler;
+use Illuminate\Foundation\Exceptions\Handler;
 use Illuminate\Support\ServiceProvider;
 use Xelqun\Forms\Commands\InstallCommand;
 use Xelqun\Forms\Commands\InstallPluginCommand;
 use Xelqun\Forms\Commands\MakeFieldCommand;
 use Xelqun\Forms\Commands\PruneTemporaryUploadsCommand;
+use Xelqun\Forms\Security\FormTokenEncrypter;
 use Xelqun\Forms\Uploads\TemporaryUploadStore;
 use Xelqun\Notifications\NotificationQueue;
 
@@ -16,8 +19,16 @@ class FormsServiceProvider extends ServiceProvider
     {
         $this->mergeConfigFrom(__DIR__.'/../config/xelqun-forms.php', 'xelqun-forms');
 
+        $this->app->singleton(FormTokenEncrypter::class);
         $this->app->singleton(TemporaryUploadStore::class);
         $this->app->scoped(NotificationQueue::class);
+
+        // Laravel's own list only covers top-level keys, and a form posts everything under data.
+        $this->callAfterResolving(ExceptionHandler::class, function (ExceptionHandler $handler): void {
+            if ($handler instanceof Handler) {
+                $handler->dontFlash('data');
+            }
+        });
     }
 
     public function boot(): void

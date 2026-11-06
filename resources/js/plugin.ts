@@ -107,9 +107,10 @@ function mountNotifications(label?: string): () => void {
     const host = document.body.appendChild(document.createElement('div'));
     const toaster = createApp(XqNotifications, { label });
     const stopListening = router.on('flash', (event) => {
-        const { [FLASH_KEY]: notifications } = event.detail.flash;
+        // An app can type its flash data, and this key is ours, not part of that type.
+        const flash = event.detail.flash as Record<string, unknown>;
 
-        (notifications as XqNotification[] | undefined)?.forEach(notify);
+        (flash[FLASH_KEY] as XqNotification[] | undefined)?.forEach(notify);
     });
 
     toaster.mount(host);

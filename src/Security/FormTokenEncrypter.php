@@ -2,6 +2,7 @@
 
 namespace Xelqun\Forms\Security;
 
+use Closure;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Contracts\Encryption\StringEncrypter;
 use Xelqun\Actions\Action;
@@ -11,11 +12,39 @@ use Xelqun\Forms\Validation\FormValidator;
 
 final class FormTokenEncrypter
 {
+    /** @var (Closure(): ?string)|null */
+    private ?Closure $issueScope = null;
+
+    /** @var (Closure(?string): void)|null */
+    private ?Closure $verifyScope = null;
+
     public function __construct(private readonly StringEncrypter $encrypter) {}
 
+    /**
+     * Tie every token to where it was issued. Whoever owns a section of the app
+     * uses this to restore its guard and repeat its access checks on the
+     * endpoints here, which know nothing about that section.
+     *
+     * @param  Closure(): ?string  $issue  Names the current scope, if there is one.
+     * @param  Closure(?string): void  $verify  Runs before the token's user is compared, so it can change the guard. It refuses by throwing.
+     *
+     * @api
+     */
+    public function scopeUsing(Closure $issue, Closure $verify): void
+    {
+        $this->issueScope = $issue;
+        $this->verifyScope = $verify;
+    }
+
+    /**
+     * The scope is added here, not where a token is built, because tables build
+     * their own and an action's token is rebuilt from its parent's.
+     */
     public function encrypt(FormToken $token): string
     {
-        return $this->encrypter->encryptString((string) json_encode($token->toArray()));
+        $scope = $this->issueScope === null ? null : ($this->issueScope)();
+
+        return $this->encrypter->encryptString((string) json_encode([...$token->toArray(), 'p' => $scope]));
     }
 
     public function decrypt(string $value): FormToken
@@ -40,8 +69,13 @@ final class FormTokenEncrypter
             throw InvalidFormToken::make('the token has expired, reload the page', 419);
         }
 
+        if ($this->verifyScope !== null) {
+            ($this->verifyScope)($token->scope);
+        }
+
         if ((string) $token->userId !== (string) auth()->id()) {
-            throw InvalidFormToken::make('the token belongs to another user');
+            // A guest was most likely signed out, and reloading is how they sign back in.
+            throw InvalidFormToken::make('the token belongs to another user', auth()->guest() ? 419 : 403);
         }
     }
 
