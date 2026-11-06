@@ -1,0 +1,83 @@
+# Changelog
+
+Xelqun Forms is pre-alpha. Until 1.0, a minor version can break existing code, and each break is listed here.
+
+## 0.2.0 - 2026-11-06
+
+This release covers Filament parity (M10 to M22): a plugin foundation, the missing field types, relationships, wizards, actions, a block builder and three editors. The schema version (`$xq`) stays 1.
+
+### Upgrading
+
+Update both halves together: `composer update xelqun/forms` and `npm install @xelqun/forms@0.2.0`. Plugins that require `^0.1.0` need a new release, because a caret range on 0.x stops at the next minor version.
+
+Check these first, because they change behaviour without an error:
+
+- **`$get('data.name')` now returns null.** A path starting with `data.` is no longer absolute in `Get`, `Set`, `When`, `computed()` or `dependsOn()`. Write `$.name` for the form root. Search your code for it.
+- **`saved(false)` and `dehydrated(false)` fields now run their rules**, unless they are disabled. A form that relied on them being skipped shows errors now.
+- **A repeater with no relationship inside a related row now saves to a column on that row.** Add the column, or give the repeater `saved(false)`.
+- **A nested relationship repeater now saves its rows**, and deletes rows the browser removed.
+- **A file name is no longer a link.** Add `openable()`.
+- **Dates follow the server's locale**, not the browser's.
+
+This one fails loudly:
+
+- **`Field` has about 55 new public methods**, with names such as `in()`, `after()`, `string()` and `json()`. A subclass with a method of the same name and a different signature no longer loads.
+
+### Added
+
+- **Plugins:** capability contracts, `plugins` on `createXelqunForms()`, namespaced field types, `configureUsing()`, macros, translations, `make:xelqun-field`, `xelqun-forms:plugin`, test helpers and a [plugin guide](docs/plugins.md).
+- **State and field basics:** `hiddenOn()`, `visibleOn()`, `disabledOn()`, `readOnly()`, `formatStateUsing()`, `dehydrateStateUsing()`, `afterStateHydrated()`, `saved()`, `extraAttributes()`, `autofocus()`, `hiddenLabel()` and `inlineLabel()`. Forms know their operation.
+- **Relationships:** `BelongsToMany` selects with `pivotData()`, `MorphToSelect`, `Group::relationship()`, and `beforeSave()`, `afterSave()` and `afterCommit()` hooks.
+- **Validation:** `unique()`, `scopedUnique()`, the named rule helpers, `validationMessages()`, `validationAttribute()`, `frontendValidation()` and `liveValidation()`.
+- **Fields:** `DateTimePicker`, `TimePicker`, `CheckboxList`, `TagsInput`, `ToggleButtons`, `Slider`, `KeyValue`, `ColorPicker`, `Builder`, `RichEditor`, `MarkdownEditor` and `CodeEditor`, plus more options on `Select` and `TextInput`.
+- **Repeaters:** nesting, `cloneable()`, `collapsible()`, `simple()`, `grid()`, `table()`, `addable()`, `deletable()`, `distinct()`, delete confirmation, drag and drop, and `extraItemActions()`.
+- **Files:** `multiple()`, file relationships, reordering, pasting, `downloadable()`, `openable()`, `avatar()`, `imageEditor()`, automatic cropping and resizing, `storeFiles(false)` and `deleteRemovedFiles()`.
+- **Layout and display:** `Flex`, `FusedGroup`, `Callout`, `EmptyState`, `Text`, `Icon`, `Image`, `UnorderedList`, ten field slots, translated browser text and `unsavedChangesAlerts()`.
+- **Wizards:** `Wizard` and `Step`, with hooks, skipping and the step in the URL.
+- **Actions:** `Action` with modals, confirmation and `authorize()`, and `createOptionForm()`, `editOptionForm()`, `prefixAction()` and `suffixAction()` on fields. An action does nothing until `authorize()` allows it.
+
+### Changed
+
+For code that extends the package:
+
+- `Repeater::isSafeRowKey()` moved to `StatePath::isSafeRowKey()`, and `discardUnsafeRows()` and `restoreRowOrder()` are private. Call `normalizePostedRows()`.
+- `Repeater::getRowComponents()` builds from `getRowTemplates()`, and `toPlainRows()` from `toPlainRow()`. A subclass that overrode them should override those.
+- A hand-built node with rows needs `containsRows: true`.
+- `PersistsItself` declares `getName()`, and `FileUpload` now implements it. It only takes over saving with `relationship()`.
+- `DatePicker` extends `DateTimePicker`. `DatePicker::minDate()` keeps what it is given and formats it later.
+- `Repeater` and `Layout` get `columns()` from `HasColumns`.
+- `HasOptions` and `HandlesUploads` define `formatStateFromRecord()`, and `HandlesUploads` also `getDefaultState()` and `normalizeState()`. A class that overrides them keeps its own, but `parent::` from there skips the trait's.
+- `Field::dehydrated()` accepts a closure, and `Select::getRelationshipInstance()` can return a `BelongsToMany`, so an override must widen its types.
+- A field with `childComponents` of its own has to keep them apart from slots, which arrive as `children`.
+- `toOptionList()` can add `disabled`, and `getOptions()` flattens groups. Use `getOptionList()` to keep them.
+- A key missing from an array row gets `getDefaultState()` as it is, without going through `formatStateFromRecord()`.
+
+For everyone:
+
+- Package messages moved to translation keys, so a JSON translation of the old English text no longer applies. Browser text is in `xelqun-forms::client`.
+- Errors in a row name it at every level, such as `Qty (Section 2, Line 2)`, and that now includes built-in checks.
+- A `BelongsToMany` select fills its state with keys as the database gives them, not as strings.
+- A backed enum default becomes its value, also outside rows.
+- `submitLabel` on `XqForm` no longer defaults to `'Save'`. The default comes from the translation.
+- `Form::walk()` also visits a repeater's slots, after its rows.
+- `endpoints` gains `validate` and `action`, each with its own throttle. A config file published earlier keeps working, using the defaults.
+- New dependencies: `symfony/html-sanitizer`, `sortablejs`, `@tiptap/*`, `@codemirror/*` and `cropperjs`. Heavy fields load only when a form needs them.
+
+### Security
+
+- Update, search and upload requests now restore trusted state first, so a tampered disabled field can't influence `hidden()` or an options closure.
+- `hidden()` values no longer reach the browser.
+- `update` refuses nodes under a hidden parent, so a forged dependency map can't read a hidden section.
+- Closures no longer run before `authorize()`.
+- `orderable(false)`, `addable(false)` and `deletable(false)` are enforced on the server.
+- Rich text is cleaned on the server when it arrives and when it loads from a record.
+
+### Fixed
+
+- A failed save keeps its uploads, so the user can submit again.
+- Nested repeater rows no longer share paths.
+- `visible()` closures read the row they belong to.
+- Disabled values in rows keep their value between requests.
+- The first error inside a closed tab now gets focus.
+- Two fields on one state path throw a `FormDefinitionException`, instead of overwriting each other.
+- `Select` refuses a `MorphTo`, instead of crashing with a `TypeError`.
