@@ -29,15 +29,40 @@ final class UpdateProcessor
     public function process(Form $form, array $data, array $changed, array $dependencies, int $sequence): array
     {
         $this->validator->prepare($form, $data);
+        $validated = [];
 
         foreach ($changed as $path) {
             $component = $form->findComponent($path);
 
-            if ($component instanceof Field && $component->hasAfterStateUpdatedHooks() && $component->acceptsInput()) {
+            if (! $component instanceof Field || ! $component->acceptsInput()) {
+                continue;
+            }
+
+            if ($component->hasAfterStateUpdatedHooks()) {
                 $component->callAfterStateUpdated();
+            }
+
+            if ($component->isValidatedLive()) {
+                $validated[] = $component->getStatePath();
             }
         }
 
+        $errors = $validated === [] ? [] : $this->validator->errorsFor($form, $validated);
+
+        return $this->buildPatch($form, $data, $changed, $dependencies, $sequence, $errors);
+    }
+
+    /**
+     * Turn what closures did to the form into a patch for the browser.
+     *
+     * @param  array<string, mixed>  $data  The browser's current form data.
+     * @param  array<int, string>  $changed  Paths the user changed.
+     * @param  array<string, array<int, string>>  $dependencies  Node key => paths its closures read.
+     * @param  array<string, array<int, string>>  $errors
+     * @return array<string, mixed>
+     */
+    public function buildPatch(Form $form, array $data, array $changed, array $dependencies, int $sequence, array $errors = []): array
+    {
         $setPaths = $form->getSetPaths();
         $triggers = array_values(array_unique([...$changed, ...$setPaths]));
         $schema = [];
@@ -77,7 +102,7 @@ final class UpdateProcessor
             'seq' => $sequence,
             'set' => $set === [] ? new stdClass : $set,
             'schema' => $schema === [] ? new stdClass : $schema,
-            'errors' => new stdClass,
+            'errors' => $errors === [] ? new stdClass : $errors,
         ];
     }
 

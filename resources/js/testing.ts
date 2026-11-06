@@ -41,6 +41,7 @@ export function formSchema(
             update: '/_xelqun/forms/update',
             upload: '/_xelqun/forms/upload',
             search: '/_xelqun/forms/search',
+            validate: '/_xelqun/forms/validate',
         },
         state: { data },
         components,

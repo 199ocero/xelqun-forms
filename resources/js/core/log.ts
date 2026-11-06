@@ -1,7 +1,7 @@
 import { reactive } from 'vue';
 import type { UpdatePatch } from '../schema/types';
 
-export type RequestKind = 'update' | 'search' | 'upload';
+export type RequestKind = 'update' | 'search' | 'upload' | 'validate';
 
 export interface RequestLogEntry {
     id: number;

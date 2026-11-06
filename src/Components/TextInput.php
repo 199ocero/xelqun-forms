@@ -321,6 +321,35 @@ class TextInput extends Field
         return $rules;
     }
 
+    protected function getClientRules(): array
+    {
+        // The server checks the value after changing it, which the browser doesn't.
+        if ($this->stripCharacters !== [] || $this->shouldTrim !== false || $this->mask !== null) {
+            return [];
+        }
+
+        $rules = $this->inputType === 'email' ? [['rule' => 'email']] : [];
+
+        if ($this->isNumeric) {
+            $rules[] = ['rule' => $this->isInteger ? 'integer' : 'numeric'];
+            $minValue = $this->evaluate($this->minValue);
+            $maxValue = $this->evaluate($this->maxValue);
+
+            return [
+                ...$rules,
+                ...($minValue === null ? [] : [['rule' => 'min', 'type' => 'numeric', 'value' => $minValue]]),
+                ...($maxValue === null ? [] : [['rule' => 'max', 'type' => 'numeric', 'value' => $maxValue]]),
+            ];
+        }
+
+        return [
+            ...$rules,
+            ...($this->length === null ? [] : [['rule' => 'size', 'type' => 'string', 'value' => $this->length]]),
+            ...($this->minLength === null ? [] : [['rule' => 'min', 'type' => 'string', 'value' => $this->minLength]]),
+            ...($this->maxLength === null ? [] : [['rule' => 'max', 'type' => 'string', 'value' => $this->maxLength]]),
+        ];
+    }
+
     public function normalizeState(mixed $state): mixed
     {
         if (! is_string($state)) {

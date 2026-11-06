@@ -418,6 +418,20 @@ abstract class Component
     }
 
     /**
+     * Whether this component and all its ancestors show for the current state.
+     */
+    public function isShown(): bool
+    {
+        for ($component = $this; $component !== null; $component = $component->getParent()) {
+            if (! $component->isVisibleInState()) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * Whether this component is visible for the current state, ignoring ancestors.
      */
     public function isVisibleInState(): bool

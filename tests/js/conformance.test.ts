@@ -3,10 +3,12 @@ import conditions from '../Fixtures/conformance/conditions.json';
 import expressions from '../Fixtures/conformance/expressions.json';
 import pathOverlaps from '../Fixtures/conformance/paths-overlap.json';
 import pathReplacements from '../Fixtures/conformance/paths-replace-row.json';
+import validation from '../Fixtures/conformance/validation.json';
 import { evaluateCondition } from '../../resources/js/core/conditions';
 import { evaluateExpression } from '../../resources/js/core/expressions';
 import { getPath, overlaps, replaceRow } from '../../resources/js/core/paths';
-import type { ConditionNode, ExpressionNode } from '../../resources/js/schema/types';
+import { firstFailure } from '../../resources/js/core/validation';
+import type { ClientRule, ConditionNode, ExpressionNode } from '../../resources/js/schema/types';
 
 /**
  * Same fixtures as tests/Unit/ConformanceTest.php: PHP and the browser must agree.
@@ -36,5 +38,16 @@ describe('paths conformance', () => {
         expect(replaceRow(testCase.value, testCase.rowKey, testCase.placeholder)).toEqual(
             testCase.expected,
         );
+    });
+});
+
+describe('validation conformance', () => {
+    it.each(validation.map((testCase) => [testCase.name, testCase]))('%s', (_, testCase) => {
+        const rule = { ...testCase.rule, message: 'failed' } as ClientRule;
+
+        expect(
+            firstFailure({ attribute: 'Value', rules: [rule] }, testCase.value, true) === null,
+        ).toBe(testCase.client);
+        expect(!testCase.server || testCase.client).toBe(true);
     });
 });

@@ -57,6 +57,8 @@ class Form
 
     private bool $hasUnsavedChangesAlerts = false;
 
+    private bool $hasFrontendValidation = false;
+
     private readonly string $operation;
 
     /** @var array<string, Model> The record each row or related group was filled from, by container. */
@@ -139,6 +141,25 @@ class Form
         $this->hasUnsavedChangesAlerts = $condition;
 
         return $this;
+    }
+
+    /**
+     * Check the simple rules in the browser before calling the server: required,
+     * email, numeric, integer, and lengths and limits set with the typed helpers.
+     * The server still checks everything. The user sees those errors first, and
+     * errors only the server can find after fixing them, so it isn't the default.
+     * For a form class, call this from boot().
+     */
+    public function frontendValidation(bool $condition = true): static
+    {
+        $this->hasFrontendValidation = $condition;
+
+        return $this;
+    }
+
+    public function hasFrontendValidation(): bool
+    {
+        return $this->hasFrontendValidation;
     }
 
     public function getId(): string
@@ -580,6 +601,7 @@ class Form
                 'update' => route('xelqun.forms.update', absolute: false),
                 'upload' => route('xelqun.forms.upload', absolute: false),
                 'search' => route('xelqun.forms.search', absolute: false),
+                'validate' => route('xelqun.forms.validate', absolute: false),
             ],
             // Laravel writes pt_BR, and browsers throw on anything but pt-BR.
             'locale' => str_replace('_', '-', app()->getLocale()),

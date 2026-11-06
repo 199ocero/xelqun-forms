@@ -11,4 +11,12 @@ class Hidden extends Field
     {
         return 'hidden';
     }
+
+    /**
+     * The user can't reach this field to fix it, so only the server checks it.
+     */
+    public function getClientValidation(): ?array
+    {
+        return null;
+    }
 }

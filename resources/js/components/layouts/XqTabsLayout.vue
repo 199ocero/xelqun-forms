@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue';
 import { useFormStore } from '../../composables/context';
 import { gridStyle } from '../../composables/layout';
-import { eachNode } from '../../core/patch';
+import { usePanelErrors } from '../../composables/usePanelErrors';
 import type { SchemaNode } from '../../schema/types';
 import XqTabs from '../../ui/XqTabs.vue';
 import XqTabsContent from '../../ui/XqTabsContent.vue';
@@ -21,25 +21,7 @@ watch(tabs, (visible) => {
     }
 });
 
-function pathsIn(tab: SchemaNode): string[] {
-    const paths: string[] = [];
-    eachNode(tab.children ?? [], (child) => child.path && paths.push(child.path));
-
-    return paths;
-}
-
-function errorCount(tab: SchemaNode): number {
-    return pathsIn(tab).filter((path) => store.errors[path]).length;
-}
-
-watch(store.focusRequest, (request) => {
-    const tab =
-        request && tabs.value.find((candidate) => pathsIn(candidate).includes(request.path));
-
-    if (tab) {
-        active.value = tab.key;
-    }
-});
+const { errorCount } = usePanelErrors(tabs, (tab) => (active.value = tab.key));
 </script>
 
 <template>

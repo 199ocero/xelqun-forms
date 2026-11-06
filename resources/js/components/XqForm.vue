@@ -60,7 +60,16 @@ onMounted(() => {
     }
 });
 
+const unfinishedStepper = computed(() => [...store.steppers].find((item) => item.hasNext()));
+
 function submit(): void {
+    // Enter in a field of an unfinished wizard means "next", not "save".
+    if (unfinishedStepper.value) {
+        void unfinishedStepper.value.next();
+
+        return;
+    }
+
     if (!props.action) {
         emit('submit', store);
 
@@ -129,8 +138,9 @@ function submit(): void {
             :processing="processing"
             :uploading="uploading"
             :submit="submit"
+            :has-next-step="!!unfinishedStepper"
         >
-            <div v-if="action" class="gap-3 flex items-center justify-end">
+            <div v-if="action && !unfinishedStepper" class="gap-3 flex items-center justify-end">
                 <span v-if="uploading" class="text-xs text-xq-muted-foreground">{{
                     store.t('Waiting for uploads…')
                 }}</span>

@@ -1,5 +1,5 @@
 import { router } from '@inertiajs/vue3';
-import { effectScope, nextTick, reactive, ref, watch } from 'vue';
+import { effectScope, nextTick, reactive, ref, shallowReactive, watch } from 'vue';
 import type { Ref } from 'vue';
 import type {
     ConditionNode,
@@ -11,6 +11,7 @@ import type {
     UpdatePatch,
     UpdateRequest,
     UploadResult,
+    ValidateRequest,
 } from '../schema/types';
 import { SUPPORTED_SCHEMA_VERSIONS } from '../schema/types';
 import { evaluateCondition } from './conditions';
@@ -23,6 +24,7 @@ import { RequestQueue } from './queue';
 import { newRowKey } from './rows';
 import { translate } from './translate';
 import type { Replacements } from './translate';
+import { firstFailure } from './validation';
 import { isPlainObject } from './values';
 
 export type SetSource = 'user' | 'server' | 'computed';
@@ -40,6 +42,12 @@ export interface SubmitOptions {
     onSuccess?: (page: unknown) => void;
     onError?: (errors: Record<string, string>) => void;
     onFinish?: () => void;
+}
+
+/** A multi-step layout. While it has steps left, submitting moves to the next one. */
+export interface Stepper {
+    hasNext: () => boolean;
+    next: () => Promise<void>;
 }
 
 export interface FormStoreOptions {
@@ -89,6 +97,8 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
     const root: Ref<HTMLElement | null> = ref(null);
     const uploads = new Set<Promise<unknown>>();
     const uploading = ref(0);
+    const steppers = shallowReactive(new Set<Stepper>());
+    const validating = ref(false);
     let cleanState: string | null = null;
 
     function t(text: string, replacements?: Replacements): string {
@@ -426,7 +436,10 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
         }
 
         for (const [path, messages] of Object.entries(patch.errors ?? {})) {
-            errors[path] = Array.isArray(messages) ? messages[0] : messages;
+            // The user has already changed this value, so the message is about an old one.
+            if ((editVersions.get(path) ?? 0) === (versions.get(path) ?? 0)) {
+                errors[path] = Array.isArray(messages) ? messages[0] : messages;
+            }
         }
     }
 
@@ -537,6 +550,133 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
     }
 
     /**
+     * Forget the errors of these fields and the rows inside them, and no others.
+     */
+    function clearErrorsIn(paths: string[]): void {
+        Object.keys(errors)
+            .filter((path) => paths.some((scope) => startsWithPath(path, scope)))
+            .forEach((path) => delete errors[path]);
+    }
+
+    /**
+     * Run the rules the server sent for the browser, the way the server would:
+     * nothing under a hidden node, and nothing on a field the user can't change.
+     */
+    function findClientErrors(
+        list: SchemaNode[],
+        rowLabel: string | null = null,
+        found: Record<string, string> = {},
+    ): Record<string, string> {
+        for (const node of list) {
+            if (!isVisible(node)) {
+                continue;
+            }
+
+            const checked = node.path && node.validation && !node.computed && !node.readOnly;
+
+            if (checked && !isDisabled(node)) {
+                const message = firstFailure(node.validation!, get(node.path!), isRequired(node));
+
+                if (message) {
+                    const name = node.validation!.attribute;
+                    const attribute = rowLabel ? `${name} (${rowLabel})` : name;
+
+                    found[node.path!] = translate(undefined, message, {
+                        attribute,
+                        Attribute: attribute.charAt(0).toUpperCase() + attribute.slice(1),
+                        ATTRIBUTE: attribute.toUpperCase(),
+                    });
+                }
+            }
+
+            findClientErrors(node.children ?? [], rowLabel, found);
+
+            if (node.containsRows) {
+                rowKeys(node).forEach((key, index) => {
+                    const label = `${node.props?.itemLabel} ${index + 1}`;
+
+                    findClientErrors(
+                        rowsOf(node)[key] ?? [],
+                        rowLabel ? `${rowLabel}, ${label}` : label,
+                        found,
+                    );
+                });
+            }
+        }
+
+        return found;
+    }
+
+    /**
+     * Check one step, in the browser and then on the server, and say whether it
+     * passed. Its errors are replaced, and the rest of the form's stay.
+     */
+    async function validateStep(step: SchemaNode): Promise<boolean> {
+        const paths: string[] = [];
+
+        eachNode([step], (node) => node.path && paths.push(node.path));
+        validating.value = true;
+
+        try {
+            await Promise.allSettled(uploads);
+            await queue.idle();
+
+            const found = findClientErrors([step]);
+
+            clearErrorsIn(paths);
+
+            if (Object.keys(found).length > 0) {
+                Object.assign(errors, found);
+                focusFirstError();
+
+                return false;
+            }
+
+            const versions = new Map(editVersions);
+            const body: ValidateRequest = {
+                token: schema.token ?? '',
+                step: step.key,
+                state: { data: clone(state.data) },
+                deps: dependencyMap(),
+            };
+            const patch = await requests.track(
+                'validate',
+                paths,
+                step.label ?? null,
+                postJson<UpdatePatch>(schema.endpoints.validate, body),
+            );
+
+            applyPatch(patch, versions);
+
+            const failed = Object.keys(patch.errors ?? {}).length > 0;
+
+            if (failed) {
+                focusFirstError();
+            }
+
+            return !failed;
+        } catch (error) {
+            if (error instanceof HttpError && error.status === 422) {
+                applyPatch(
+                    { errors: error.validationErrors } as unknown as UpdatePatch,
+                    editVersions,
+                );
+                focusFirstError();
+            } else if (error instanceof HttpError && error.status === 419) {
+                fatalError.value = t('This form has expired. Reload the page to continue.');
+            } else {
+                liveError.value = t(
+                    'Some fields could not be updated. Check your connection and try again.',
+                );
+            }
+
+            return false;
+        } finally {
+            validating.value = false;
+        }
+    }
+
+    /**
      * Ask the UI to reveal and focus the first field with an error, in schema order.
      */
     function focusFirstError(): void {
@@ -592,6 +732,18 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
         processing.value = true;
         await Promise.allSettled(uploads);
         await queue.idle();
+
+        const found = findClientErrors(components);
+
+        if (Object.keys(found).length > 0) {
+            setErrors(found);
+            processing.value = false;
+            focusFirstError();
+            submitOptions.onError?.({ ...errors });
+            submitOptions.onFinish?.();
+
+            return;
+        }
 
         router.visit(url, {
             method: submitOptions.method ?? 'post',
@@ -706,6 +858,8 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
         root,
         queue,
         log: requests.entries,
+        steppers,
+        validating,
         t,
         markClean,
         isDirty,
@@ -727,6 +881,7 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
         applyPatch,
         setErrors,
         clearErrors,
+        validateStep,
         focusFirstError,
         focusPath,
         submit,

@@ -67,6 +67,8 @@ abstract class Field extends Component implements NeedsServer
     /** @var array<int, Closure> */
     protected array $afterStateHydrated = [];
 
+    protected bool $isValidatedLive = false;
+
     protected ?Closure $dehydrateStateUsing = null;
 
     /** @var array<int, string> */
@@ -259,6 +261,26 @@ abstract class Field extends Component implements NeedsServer
         };
 
         return $this;
+    }
+
+    /**
+     * Check this field's rules on the server as soon as it changes. Implies
+     * live(onBlur: true) unless the field already has a live() of its own.
+     */
+    public function liveValidation(bool $condition = true): static
+    {
+        $this->isValidatedLive = $condition;
+
+        if ($condition) {
+            $this->live ??= ['mode' => 'blur', 'ms' => null];
+        }
+
+        return $this;
+    }
+
+    public function isValidatedLive(): bool
+    {
+        return $this->isValidatedLive;
     }
 
     /**
@@ -685,6 +707,64 @@ abstract class Field extends Component implements NeedsServer
     }
 
     /**
+     * What the browser needs to check this field, or null if it can't. Whatever
+     * passes on the server must pass here too, so this stays a strict subset.
+     * Never send rules() strings or closures: nothing proves they mean the same.
+     *
+     * @internal Add to it through getClientRules().
+     *
+     * @return array{attribute: string, rules: array<int, array<string, mixed>>}|null
+     */
+    public function getClientValidation(): ?array
+    {
+        if ($this instanceof ContainsRows) {
+            return null;
+        }
+
+        $rules = $this->getClientRules();
+        $requiredRule = $this->getRequiredRule();
+
+        if (($this->required !== false || $this->requiredWhen !== null) && in_array($requiredRule, ['required', 'accepted'], true)) {
+            array_unshift($rules, ['rule' => $requiredRule]);
+        }
+
+        if ($rules === []) {
+            return null;
+        }
+
+        return [
+            'attribute' => $this->getValidationAttribute(),
+            'rules' => array_map(fn (array $rule): array => [...$rule, 'message' => $this->getClientMessage($rule)], $rules),
+        ];
+    }
+
+    /**
+     * Rules from this field's typed helpers. The browser understands email,
+     * numeric, integer, min and max with a type of string or numeric, and size
+     * with a type of string.
+     *
+     * @return array<int, array{rule: string, type?: string, value?: int|float}>
+     */
+    protected function getClientRules(): array
+    {
+        return [];
+    }
+
+    /**
+     * The browser fills in :attribute, which depends on the row the field is in.
+     *
+     * @param  array{rule: string, type?: string, value?: int|float}  $rule
+     */
+    private function getClientMessage(array $rule): string
+    {
+        $name = $rule['rule'];
+        $key = isset($rule['type']) ? "validation.{$name}.{$rule['type']}" : "validation.{$name}";
+        $message = $this->getValidationMessages()[$name] ?? __($key);
+
+        return str_replace(":{$name}", (string) ($rule['value'] ?? ''), $message);
+    }
+
+    /**
      * @return array<int, mixed>
      */
     protected function getTypeRules(): array
@@ -769,6 +849,7 @@ abstract class Field extends Component implements NeedsServer
             ...($this instanceof ContainsRows ? ['containsRows' => true] : []),
             ...($this instanceof AcceptsUploads ? ['acceptsUploads' => true] : []),
             ...($this->canBeReadOnly() ? ['readOnly' => $this->isReadOnly()] : []),
+            ...($this->getForm()->hasFrontendValidation() ? ['validation' => $this->getClientValidation()] : []),
             ...$this->evaluateConfigured([
                 'autofocus' => $this->autofocus,
                 'hiddenLabel' => $this->hiddenLabel,

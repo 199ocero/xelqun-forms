@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Xelqun\Forms\Http\Controllers\SearchController;
 use Xelqun\Forms\Http\Controllers\UpdateController;
 use Xelqun\Forms\Http\Controllers\UploadController;
+use Xelqun\Forms\Http\Controllers\ValidateController;
 
 Route::prefix(config('xelqun-forms.routes.prefix'))
     ->middleware(config('xelqun-forms.routes.middleware'))
@@ -20,4 +21,9 @@ Route::prefix(config('xelqun-forms.routes.prefix'))
         Route::post('search', SearchController::class)
             ->middleware('throttle:'.config('xelqun-forms.routes.throttle.search'))
             ->name('search');
+
+        // The default keeps an app working with a config file published before this route.
+        Route::post('validate', ValidateController::class)
+            ->middleware('throttle:'.config('xelqun-forms.routes.throttle.validate', '120,1'))
+            ->name('validate');
     });

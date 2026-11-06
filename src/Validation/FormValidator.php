@@ -43,19 +43,52 @@ final class FormValidator
      */
     public function validate(Form $form, array $data): array
     {
-        $this->rules = [];
-        $this->attributes = [];
-        $this->messages = [];
-        $this->kept = [];
-
         $this->prepare($form, $data);
-        $this->normalize($form);
-
-        $this->collect($form->getComponents(), true, null);
+        $this->collectRules($form);
 
         Validator::make($form->getState(), $this->rules, $this->messages, $this->attributes)->validate();
 
         return $this->dehydrate($form);
+    }
+
+    /**
+     * Check only these fields and the rows inside them, against the whole
+     * state. Call prepare() first. Nothing is thrown or saved.
+     *
+     * @param  array<int, string>  $paths
+     * @return array<string, array<int, string>> Messages by state path.
+     */
+    public function errorsFor(Form $form, array $paths): array
+    {
+        $this->collectRules($form);
+
+        $rules = array_filter($this->rules, function (string $path) use ($paths): bool {
+            foreach ($paths as $scope) {
+                if ($path === $scope || str_starts_with($path, $scope.'.')) {
+                    return true;
+                }
+            }
+
+            return false;
+        }, ARRAY_FILTER_USE_KEY);
+
+        return Validator::make($form->getState(), $rules, $this->messages, $this->attributes)->errors()->toArray();
+    }
+
+    /**
+     * Check the fields inside a component. See errorsFor().
+     *
+     * @return array<string, array<int, string>>
+     */
+    public function errorsIn(Form $form, Component $component): array
+    {
+        $paths = [];
+
+        Form::eachField([$component], function (Field $field) use (&$paths): void {
+            $paths[] = $field->getStatePath();
+        });
+
+        return $this->errorsFor($form, $paths);
     }
 
     /**
@@ -95,6 +128,17 @@ final class FormValidator
             $locks = $next;
             $this->applyLocks($form, $posted, $locks);
         }
+    }
+
+    private function collectRules(Form $form): void
+    {
+        $this->rules = [];
+        $this->attributes = [];
+        $this->messages = [];
+        $this->kept = [];
+
+        $this->normalize($form);
+        $this->collect($form->getComponents(), true, null);
     }
 
     /**

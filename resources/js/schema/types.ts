@@ -69,11 +69,25 @@ export interface SchemaNode {
     span?: ColumnSpan;
     /** False keeps a child of a Flex at its own width. */
     grow?: boolean;
+    /** Rules the browser can check, on forms with frontendValidation(). */
+    validation?: FieldValidation | null;
     /** The place around its field this child renders in. */
     slot?: FieldSlot;
     props?: Record<string, any>;
     children?: SchemaNode[];
     deps?: string[];
+}
+
+export interface ClientRule {
+    rule: 'required' | 'accepted' | 'email' | 'numeric' | 'integer' | 'min' | 'max' | 'size';
+    type?: 'string' | 'numeric';
+    value?: number;
+    message: string;
+}
+
+export interface FieldValidation {
+    attribute: string;
+    rules: ClientRule[];
 }
 
 export type FieldSlot =
@@ -92,6 +106,7 @@ export interface FormEndpoints {
     update: string;
     upload: string;
     search: string;
+    validate: string;
 }
 
 export interface FormSchema {
@@ -113,6 +128,13 @@ export interface UpdateRequest {
     seq: number;
     state: { data: Record<string, any> };
     changed: string[];
+    deps: Record<string, string[]>;
+}
+
+export interface ValidateRequest {
+    token: string;
+    step: string;
+    state: { data: Record<string, any> };
     deps: Record<string, string[]>;
 }
 

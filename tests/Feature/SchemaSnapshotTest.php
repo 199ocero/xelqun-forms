@@ -32,10 +32,12 @@ use Xelqun\Forms\Layouts\Group;
 use Xelqun\Forms\Layouts\Icon;
 use Xelqun\Forms\Layouts\Image;
 use Xelqun\Forms\Layouts\Section;
+use Xelqun\Forms\Layouts\Step;
 use Xelqun\Forms\Layouts\Tab;
 use Xelqun\Forms\Layouts\Tabs;
 use Xelqun\Forms\Layouts\Text;
 use Xelqun\Forms\Layouts\UnorderedList;
+use Xelqun\Forms\Layouts\Wizard;
 
 /**
  * A snapshot diff is a change to the JSON contract: decide whether the
@@ -96,6 +98,10 @@ it('serializes each component to a stable node', function (object $component) {
     'grid' => fn () => Grid::make(['default' => 2, 'lg' => 4])->schema([TextInput::make('a'), TextInput::make('b')->columnSpanFull()]),
     'fieldset' => fn () => Fieldset::make('Address')->schema([TextInput::make('city')]),
     'tabs' => fn () => Tabs::make()->tabs([Tab::make('One')->schema([TextInput::make('a')]), Tab::make('Two')->schema([TextInput::make('b')])]),
+    'wizard' => fn () => Wizard::make([
+        Step::make('Account')->description('Who you are')->icon('user')->completedIcon('star')->columns(2)->schema([TextInput::make('name')]),
+        Step::make('Plan')->schema([TextInput::make('plan')]),
+    ])->startOnStep(2)->skippable()->persistStepInQueryString(),
     'flex' => fn () => Flex::make([TextInput::make('a'), TextInput::make('b')->grow(false)])->from('md'),
     'fused group' => fn () => FusedGroup::make([TextInput::make('city')->placeholder('City'), TextInput::make('zip')])->label('Location')->columns(2),
     'callout' => fn () => Callout::make('Heads up')->description('Read this')->warning()->footer([Text::make('More')]),

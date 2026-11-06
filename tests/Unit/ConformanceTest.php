@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\Validator;
 use Xelqun\Forms\Conditions\Condition;
 use Xelqun\Forms\Expressions\Expression;
 use Xelqun\Forms\Expressions\ExpressionEvaluator;
@@ -35,3 +36,10 @@ it('decides whether two paths touch the same state', function (array $case) {
 it('fills in the row placeholder of one repeater level', function (array $case) {
     expect(StatePath::replaceRow($case['value'], $case['rowKey'], $case['placeholder']))->toBe($case['expected']);
 })->with(conformanceCases('paths-replace-row.json'));
+
+it('knows what Laravel accepts, and the browser never rejects any of it', function (array $case) {
+    $passes = Validator::make(['value' => $case['value']], ['value' => $case['rules']])->passes();
+
+    expect($passes)->toBe($case['server'])
+        ->and(! $case['server'] || $case['client'])->toBeTrue();
+})->with(conformanceCases('validation.json'));

@@ -440,7 +440,7 @@ Milestones 0–9 are built and tested. Milestone 9 added failure and loading fee
 | File upload inside a repeater row | browser test, package `UploadTest` |
 | Server errors on the correct nested field | browser tests (`Price (Item 2)`), package `ValidationTest` |
 
-**Test counts:** package Pest 782, package Vitest 376, playground feature and browser 64.
+**Test counts:** package Pest 875, package Vitest 475, playground feature and browser 69.
 
 ### Milestone 10: foundations
 
@@ -722,6 +722,37 @@ Limits to keep in mind:
 - `FusedGroup` shows `(required)` only on the label of each field, for screen readers. The group's visible star is the only sign on screen.
 - `aria-label` on an `Icon` also lands on its cell, because `extraAttributes` goes to the outer element.
 
+### Milestone 19: wizard and browser validation
+
+The proof is the "Wizard" example. Next stops on a missing name in the browser, on a taken username only the server can catch, and passes what a step's hook set to the next step.
+
+- **`POST validate`** checks one step's rules against the whole form's state. The server keeps no record of the steps, so the final submit checks everything again. It runs the same `prepare()` as every other endpoint, and refuses a key that isn't a step, or a step that doesn't show.
+- **`Wizard` and `Step`** with `icon()`, `completedIcon()`, `description()`, `startOnStep()`, `skippable()` and `persistStepInQueryString()`. Panels stay mounted, so uploads keep running. The header is plain buttons in a list, not Reka's stepper, because every move has to go through the step check.
+- **`beforeValidation()` and `afterValidation()`** run on Next. They can set state, and the patch brings it back. A `ValidationException` keeps the user on the step.
+- **Scoped errors.** Next replaces the errors of its own step and leaves the others. After a failed submit the wizard opens the step with the first error. `usePanelErrors` is shared with tabs.
+- **`frontendValidation()`** checks required, accepted, email, numeric, integer and the typed lengths and limits in the browser, on Next and on submit. It is opt-in, because the user then sees those errors first, and errors only the server can find after fixing them. `conformance/validation.json` runs the same cases through Laravel's validator and `core/validation.ts`, and proves the browser never rejects what the server accepts.
+- **`liveValidation()`** checks a field on the server as it changes, on blur by default. Errors come back in the patch, and one about a value the user has changed since is dropped. This closes the old limit: the protocol carried `errors`, but nothing sent them.
+- **`buildPatch()`** is now its own method on `UpdateProcessor`, ready for actions in M20.
+
+Where this differs from the plan and from Filament:
+
+- The header doesn't use Reka's stepper, as the plan guessed it might.
+- `submitAction()`, `cancelAction()`, `nextAction()` and `previousAction()` aren't built. The `actions` slot of `XqForm` gets `hasNextStep`, and the default submit button waits for the last step.
+- Filament stops a step with `Halt`. Here a `ValidationException` does it, which also says why.
+- A skippable wizard skips the hooks, as in Filament.
+
+Changes that can break existing code, for the release notes:
+
+- `endpoints` gains `validate`, and a new `validate` throttle. A config file published earlier still works, using the default.
+- Patches now carry errors, and the client drops one for a value that has changed.
+
+Limits to keep in mind:
+
+- `frontendValidation()` skips `TextInput`s with `trim()`, `stripCharacters()` or `mask()`, because the server checks the changed value. `url`, `regex`, `in`, dates and row counts are server-only.
+- A `:input` in a custom message isn't filled in the browser.
+- A wizard in a closed tab still holds back the default submit button until its steps are done.
+- Opening a later step from the URL skips the earlier checks. The final submit makes up for it.
+
 ### Where the build differs from the plan
 - **Patches have no `add`/`remove`.** A component hidden by a server closure is sent as a stub (`{ key, type, hidden: true, deps }`) and later patched to a full node, which keeps every key stable.
 - **The update request carries the client's dependency map** (`deps: { nodeKey: [paths] }`). The server uses it only to pick which closures to re-run, then re-records fresh dependencies.
@@ -732,4 +763,3 @@ Limits to keep in mind:
 ### Known limits (next steps)
 - The Pest browser test server corrupts binary uploads (the PNG header byte `0x89` arrives as `?`), so image uploads are covered by package feature tests instead of browser tests.
 - The `eject` command and a Vite plugin for distribution are still future work.
-- Live validation (`errors` in patches) is supported by the protocol and client, but no field triggers it yet.

@@ -1,0 +1,140 @@
+{
+    "state": {
+        "data": {
+            "name": null,
+            "plan": null
+        }
+    },
+    "components": [
+        {
+            "key": "data#0",
+            "type": "wizard",
+            "hidden": false,
+            "path": null,
+            "label": null,
+            "rules": {
+                "visible": null
+            },
+            "span": null,
+            "props": {
+                "startKey": "data#0.1",
+                "skippable": true,
+                "queryKey": "step"
+            },
+            "children": [
+                {
+                    "key": "data#0.0",
+                    "type": "step",
+                    "hidden": false,
+                    "path": null,
+                    "label": "Account",
+                    "rules": {
+                        "visible": null
+                    },
+                    "span": null,
+                    "props": {
+                        "columns": {
+                            "default": 1,
+                            "md": 2
+                        },
+                        "slug": "account",
+                        "description": "Who you are",
+                        "icon": "user",
+                        "completedIcon": "star"
+                    },
+                    "children": [
+                        {
+                            "key": "data.name",
+                            "type": "text-input",
+                            "hidden": false,
+                            "path": "data.name",
+                            "label": "Name",
+                            "hint": null,
+                            "placeholder": null,
+                            "required": false,
+                            "disabled": false,
+                            "rules": {
+                                "visible": null,
+                                "required": null,
+                                "disabled": null
+                            },
+                            "computed": null,
+                            "live": null,
+                            "span": null,
+                            "props": {
+                                "inputType": "text",
+                                "numeric": false,
+                                "integer": false,
+                                "min": null,
+                                "max": null,
+                                "step": null,
+                                "maxLength": null,
+                                "prefix": null,
+                                "suffix": null,
+                                "autocomplete": null
+                            },
+                            "children": [],
+                            "deps": []
+                        }
+                    ],
+                    "deps": []
+                },
+                {
+                    "key": "data#0.1",
+                    "type": "step",
+                    "hidden": false,
+                    "path": null,
+                    "label": "Plan",
+                    "rules": {
+                        "visible": null
+                    },
+                    "span": null,
+                    "props": {
+                        "columns": null,
+                        "slug": "plan",
+                        "description": null,
+                        "icon": null,
+                        "completedIcon": null
+                    },
+                    "children": [
+                        {
+                            "key": "data.plan",
+                            "type": "text-input",
+                            "hidden": false,
+                            "path": "data.plan",
+                            "label": "Plan",
+                            "hint": null,
+                            "placeholder": null,
+                            "required": false,
+                            "disabled": false,
+                            "rules": {
+                                "visible": null,
+                                "required": null,
+                                "disabled": null
+                            },
+                            "computed": null,
+                            "live": null,
+                            "span": null,
+                            "props": {
+                                "inputType": "text",
+                                "numeric": false,
+                                "integer": false,
+                                "min": null,
+                                "max": null,
+                                "step": null,
+                                "maxLength": null,
+                                "prefix": null,
+                                "suffix": null,
+                                "autocomplete": null
+                            },
+                            "children": [],
+                            "deps": []
+                        }
+                    ],
+                    "deps": []
+                }
+            ],
+            "deps": []
+        }
+    ]
+}

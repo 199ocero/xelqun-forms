@@ -1,0 +1,636 @@
+[
+    {
+        "name": "required: text",
+        "rule": {
+            "rule": "required"
+        },
+        "rules": "required",
+        "value": "x",
+        "server": true,
+        "client": true
+    },
+    {
+        "name": "required: empty string",
+        "rule": {
+            "rule": "required"
+        },
+        "rules": "required",
+        "value": "",
+        "server": false,
+        "client": false
+    },
+    {
+        "name": "required: spaces",
+        "rule": {
+            "rule": "required"
+        },
+        "rules": "required",
+        "value": "   ",
+        "server": false,
+        "client": false
+    },
+    {
+        "name": "required: non-breaking space",
+        "rule": {
+            "rule": "required"
+        },
+        "rules": "required",
+        "value": " ",
+        "server": true,
+        "client": true
+    },
+    {
+        "name": "required: empty list",
+        "rule": {
+            "rule": "required"
+        },
+        "rules": "required",
+        "value": [],
+        "server": false,
+        "client": false
+    },
+    {
+        "name": "required: false",
+        "rule": {
+            "rule": "required"
+        },
+        "rules": "required",
+        "value": false,
+        "server": true,
+        "client": true
+    },
+    {
+        "name": "required: zero",
+        "rule": {
+            "rule": "required"
+        },
+        "rules": "required",
+        "value": 0,
+        "server": true,
+        "client": true
+    },
+    {
+        "name": "required: null",
+        "rule": {
+            "rule": "required"
+        },
+        "rules": "required",
+        "value": null,
+        "server": false,
+        "client": false
+    },
+    {
+        "name": "accepted: True",
+        "rule": {
+            "rule": "accepted"
+        },
+        "rules": "accepted",
+        "value": true,
+        "server": true,
+        "client": true
+    },
+    {
+        "name": "accepted: 'yes'",
+        "rule": {
+            "rule": "accepted"
+        },
+        "rules": "accepted",
+        "value": "yes",
+        "server": true,
+        "client": true
+    },
+    {
+        "name": "accepted: 'on'",
+        "rule": {
+            "rule": "accepted"
+        },
+        "rules": "accepted",
+        "value": "on",
+        "server": true,
+        "client": true
+    },
+    {
+        "name": "accepted: '1'",
+        "rule": {
+            "rule": "accepted"
+        },
+        "rules": "accepted",
+        "value": "1",
+        "server": true,
+        "client": true
+    },
+    {
+        "name": "accepted: 1",
+        "rule": {
+            "rule": "accepted"
+        },
+        "rules": "accepted",
+        "value": 1,
+        "server": true,
+        "client": true
+    },
+    {
+        "name": "accepted: 'true'",
+        "rule": {
+            "rule": "accepted"
+        },
+        "rules": "accepted",
+        "value": "true",
+        "server": true,
+        "client": true
+    },
+    {
+        "name": "accepted: False",
+        "rule": {
+            "rule": "accepted"
+        },
+        "rules": "accepted",
+        "value": false,
+        "server": false,
+        "client": false
+    },
+    {
+        "name": "accepted: 'no'",
+        "rule": {
+            "rule": "accepted"
+        },
+        "rules": "accepted",
+        "value": "no",
+        "server": false,
+        "client": false
+    },
+    {
+        "name": "accepted: 0",
+        "rule": {
+            "rule": "accepted"
+        },
+        "rules": "accepted",
+        "value": 0,
+        "server": false,
+        "client": false
+    },
+    {
+        "name": "email: plain address",
+        "rule": {
+            "rule": "email"
+        },
+        "rules": "email",
+        "value": "a@b.co",
+        "server": true,
+        "client": true
+    },
+    {
+        "name": "email: no dot",
+        "rule": {
+            "rule": "email"
+        },
+        "rules": "email",
+        "value": "a@b",
+        "server": true,
+        "client": true
+    },
+    {
+        "name": "email: quoted space",
+        "rule": {
+            "rule": "email"
+        },
+        "rules": "email",
+        "value": "\"a b\"@c.de",
+        "server": true,
+        "client": true
+    },
+    {
+        "name": "email: no at",
+        "rule": {
+            "rule": "email"
+        },
+        "rules": "email",
+        "value": "plain",
+        "server": false,
+        "client": false
+    },
+    {
+        "name": "email: nothing before",
+        "rule": {
+            "rule": "email"
+        },
+        "rules": "email",
+        "value": "@b.co",
+        "server": false,
+        "client": false
+    },
+    {
+        "name": "email: nothing after",
+        "rule": {
+            "rule": "email"
+        },
+        "rules": "email",
+        "value": "a@",
+        "server": false,
+        "client": false
+    },
+    {
+        "name": "email: bare space",
+        "rule": {
+            "rule": "email"
+        },
+        "rules": "email",
+        "value": "a b@c.de",
+        "server": false,
+        "client": true
+    },
+    {
+        "name": "numeric: '12'",
+        "rule": {
+            "rule": "numeric"
+        },
+        "rules": "numeric",
+        "value": "12",
+        "server": true,
+        "client": true
+    },
+    {
+        "name": "numeric: '-1.5'",
+        "rule": {
+            "rule": "numeric"
+        },
+        "rules": "numeric",
+        "value": "-1.5",
+        "server": true,
+        "client": true
+    },
+    {
+        "name": "numeric: '.5'",
+        "rule": {
+            "rule": "numeric"
+        },
+        "rules": "numeric",
+        "value": ".5",
+        "server": true,
+        "client": true
+    },
+    {
+        "name": "numeric: '5.'",
+        "rule": {
+            "rule": "numeric"
+        },
+        "rules": "numeric",
+        "value": "5.",
+        "server": true,
+        "client": true
+    },
+    {
+        "name": "numeric: '1e3'",
+        "rule": {
+            "rule": "numeric"
+        },
+        "rules": "numeric",
+        "value": "1e3",
+        "server": true,
+        "client": true
+    },
+    {
+        "name": "numeric: ' 12'",
+        "rule": {
+            "rule": "numeric"
+        },
+        "rules": "numeric",
+        "value": " 12",
+        "server": true,
+        "client": true
+    },
+    {
+        "name": "numeric: '12 '",
+        "rule": {
+            "rule": "numeric"
+        },
+        "rules": "numeric",
+        "value": "12 ",
+        "server": true,
+        "client": true
+    },
+    {
+        "name": "numeric: '+3'",
+        "rule": {
+            "rule": "numeric"
+        },
+        "rules": "numeric",
+        "value": "+3",
+        "server": true,
+        "client": true
+    },
+    {
+        "name": "numeric: 'abc'",
+        "rule": {
+            "rule": "numeric"
+        },
+        "rules": "numeric",
+        "value": "abc",
+        "server": false,
+        "client": false
+    },
+    {
+        "name": "numeric: '0x1A'",
+        "rule": {
+            "rule": "numeric"
+        },
+        "rules": "numeric",
+        "value": "0x1A",
+        "server": false,
+        "client": false
+    },
+    {
+        "name": "numeric: '1,000'",
+        "rule": {
+            "rule": "numeric"
+        },
+        "rules": "numeric",
+        "value": "1,000",
+        "server": false,
+        "client": false
+    },
+    {
+        "name": "numeric: '1 2'",
+        "rule": {
+            "rule": "numeric"
+        },
+        "rules": "numeric",
+        "value": "1 2",
+        "server": false,
+        "client": false
+    },
+    {
+        "name": "integer: '12'",
+        "rule": {
+            "rule": "integer"
+        },
+        "rules": "integer",
+        "value": "12",
+        "server": true,
+        "client": true
+    },
+    {
+        "name": "integer: '+12'",
+        "rule": {
+            "rule": "integer"
+        },
+        "rules": "integer",
+        "value": "+12",
+        "server": true,
+        "client": true
+    },
+    {
+        "name": "integer: '-12'",
+        "rule": {
+            "rule": "integer"
+        },
+        "rules": "integer",
+        "value": "-12",
+        "server": true,
+        "client": true
+    },
+    {
+        "name": "integer: ' 12 '",
+        "rule": {
+            "rule": "integer"
+        },
+        "rules": "integer",
+        "value": " 12 ",
+        "server": true,
+        "client": true
+    },
+    {
+        "name": "integer: '1.5'",
+        "rule": {
+            "rule": "integer"
+        },
+        "rules": "integer",
+        "value": "1.5",
+        "server": false,
+        "client": false
+    },
+    {
+        "name": "integer: 'abc'",
+        "rule": {
+            "rule": "integer"
+        },
+        "rules": "integer",
+        "value": "abc",
+        "server": false,
+        "client": false
+    },
+    {
+        "name": "integer: '012'",
+        "rule": {
+            "rule": "integer"
+        },
+        "rules": "integer",
+        "value": "012",
+        "server": false,
+        "client": true
+    },
+    {
+        "name": "min string: too short",
+        "rule": {
+            "rule": "min",
+            "type": "string",
+            "value": 3
+        },
+        "rules": "string|min:3",
+        "value": "ab",
+        "server": false,
+        "client": false
+    },
+    {
+        "name": "min string: exact",
+        "rule": {
+            "rule": "min",
+            "type": "string",
+            "value": 3
+        },
+        "rules": "string|min:3",
+        "value": "abc",
+        "server": true,
+        "client": true
+    },
+    {
+        "name": "min string: counts characters, not bytes",
+        "rule": {
+            "rule": "min",
+            "type": "string",
+            "value": 3
+        },
+        "rules": "string|min:3",
+        "value": "😀😀😀",
+        "server": true,
+        "client": true
+    },
+    {
+        "name": "min string: spaces count on the server",
+        "rule": {
+            "rule": "min",
+            "type": "string",
+            "value": 3
+        },
+        "rules": "string|min:3",
+        "value": " a ",
+        "server": true,
+        "client": true
+    },
+    {
+        "name": "min string: skipped when empty",
+        "rule": {
+            "rule": "min",
+            "type": "string",
+            "value": 3
+        },
+        "rules": "string|min:3",
+        "value": "",
+        "server": true,
+        "client": true
+    },
+    {
+        "name": "max string: too long",
+        "rule": {
+            "rule": "max",
+            "type": "string",
+            "value": 3
+        },
+        "rules": "string|max:3",
+        "value": "abcd",
+        "server": false,
+        "client": false
+    },
+    {
+        "name": "max string: exact",
+        "rule": {
+            "rule": "max",
+            "type": "string",
+            "value": 3
+        },
+        "rules": "string|max:3",
+        "value": "😀😀😀",
+        "server": true,
+        "client": true
+    },
+    {
+        "name": "max string: an app that trims would accept this",
+        "rule": {
+            "rule": "max",
+            "type": "string",
+            "value": 3
+        },
+        "rules": "string|max:3",
+        "value": " abc ",
+        "server": false,
+        "client": true
+    },
+    {
+        "name": "size string: exact",
+        "rule": {
+            "rule": "size",
+            "type": "string",
+            "value": 3
+        },
+        "rules": "string|size:3",
+        "value": "abc",
+        "server": true,
+        "client": true
+    },
+    {
+        "name": "size string: wrong",
+        "rule": {
+            "rule": "size",
+            "type": "string",
+            "value": 3
+        },
+        "rules": "string|size:3",
+        "value": "ab",
+        "server": false,
+        "client": false
+    },
+    {
+        "name": "size string: an app that trims would accept this",
+        "rule": {
+            "rule": "size",
+            "type": "string",
+            "value": 3
+        },
+        "rules": "string|size:3",
+        "value": " abc ",
+        "server": false,
+        "client": true
+    },
+    {
+        "name": "min numeric: exact",
+        "rule": {
+            "rule": "min",
+            "type": "numeric",
+            "value": 5
+        },
+        "rules": "numeric|min:5",
+        "value": "5",
+        "server": true,
+        "client": true
+    },
+    {
+        "name": "min numeric: below",
+        "rule": {
+            "rule": "min",
+            "type": "numeric",
+            "value": 5
+        },
+        "rules": "numeric|min:5",
+        "value": "4.9",
+        "server": false,
+        "client": false
+    },
+    {
+        "name": "min numeric: not a number is another rule's job",
+        "rule": {
+            "rule": "min",
+            "type": "numeric",
+            "value": 5
+        },
+        "rules": "numeric|min:5",
+        "value": "abc",
+        "server": false,
+        "client": true
+    },
+    {
+        "name": "max numeric: above",
+        "rule": {
+            "rule": "max",
+            "type": "numeric",
+            "value": 999
+        },
+        "rules": "numeric|max:999",
+        "value": "1e3",
+        "server": false,
+        "client": false
+    },
+    {
+        "name": "max numeric: below",
+        "rule": {
+            "rule": "max",
+            "type": "numeric",
+            "value": 999
+        },
+        "rules": "numeric|max:999",
+        "value": "999",
+        "server": true,
+        "client": true
+    },
+    {
+        "name": "max numeric: beyond what JavaScript can tell apart",
+        "rule": {
+            "rule": "max",
+            "type": "numeric",
+            "value": 9007199254740992
+        },
+        "rules": "numeric|max:9007199254740992",
+        "value": "9007199254740993",
+        "server": false,
+        "client": true
+    }
+]

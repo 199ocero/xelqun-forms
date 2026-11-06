@@ -40,6 +40,11 @@ class Textarea extends Field
         return $this->maxLength !== null ? ['string', 'max:'.$this->maxLength] : ['string'];
     }
 
+    protected function getClientRules(): array
+    {
+        return $this->maxLength === null ? [] : [['rule' => 'max', 'type' => 'string', 'value' => $this->maxLength]];
+    }
+
     protected function getProps(): array
     {
         return ['rows' => $this->rows, 'maxLength' => $this->maxLength];
