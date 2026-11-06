@@ -2,6 +2,28 @@
 
 Xelqun Forms is pre-alpha. Until 1.0, a minor version can break existing code, and each break is listed here.
 
+## 0.4.0 - 2026-11-06
+
+This release puts actions on a page with no form or table around them, and redesigns their modals. The schema version (`$xq`) stays 1.
+
+### Upgrading
+
+Update both halves together: `composer update xelqun/forms` and `npm install @xelqun/forms@0.4.0`. Plugins that require `^0.3.0` need a new release, because a caret range on 0.x stops at the next minor version.
+
+- **Actions have their own namespace.** Replace `Xelqun\Forms\Actions\` with `Xelqun\Actions\` in your imports. `Xelqun\Forms\Layouts\Actions` stays where it is.
+
+### Added
+
+- **`ActionSet` and `XqActions`** put action buttons on a page with no form or table around them. The page reloads after an action runs.
+
+- **`Action::successRedirectUrl()`** sends the user somewhere else after an action runs, for a page that won't exist any more.
+- **Modals can be customized.** `modalIcon()`, `modalIconColor()`, `modalAlignment()`, `modalFooterActionsAlignment()`, `modalCloseButton()` and `closeModalByClickingAway()` on `Action`, and `modalWidth()` now goes up to `5xl`.
+
+### Changed
+
+- **Modals have a new look.** Larger headings, a close button, a soft entrance, and buttons that stay in reach while a long form scrolls. A confirmation is centered with a warning icon and full-width buttons. `XqDialog` and `XqConfirmDialog` take the same options as props.
+- **Action buttons stay still while they run.** A quick action changes nothing on screen until it's done, and a slow one shows a spinner over its label after 200ms. The button keeps its width and keyboard focus, because it no longer disables itself while running. `aria-busy` is set the whole time.
+
 ## 0.3.1 - 2026-11-06
 
 ### Fixed
