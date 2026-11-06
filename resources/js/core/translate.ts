@@ -9,9 +9,16 @@ export function translate(
     text: string,
     replacements: Replacements = {},
 ): string {
-    return Object.entries(replacements).reduce(
-        // A function, so a "$&" in a file name isn't read as a pattern.
-        (line, [name, value]) => line.replaceAll(`:${name}`, () => String(value)),
-        messages?.[text] ?? text,
+    const line = messages?.[text] ?? text;
+    const names = Object.keys(replacements).sort((first, second) => second.length - first.length);
+
+    if (names.length === 0) {
+        return line;
+    }
+
+    // One pass, longest name first, so :to can't match inside :total and a value
+    // holding ":name" isn't filled in again. A function, so "$&" isn't a pattern.
+    return line.replace(new RegExp(`:(${names.join('|')})`, 'g'), (_, name: string) =>
+        String(replacements[name]),
     );
 }

@@ -321,6 +321,47 @@ describe('translations', () => {
         wrapper.unmount();
     });
 
+    it('keeps a placeholder apart from a longer one that starts the same', () => {
+        const { t } = createFormStore(schema([]));
+
+        expect(t('Showing :to of :total', { to: 10, total: 25 })).toBe('Showing 10 of 25');
+        expect(t('Showing :to of :total', { total: 25, to: 10 })).toBe('Showing 10 of 25');
+        expect(t(':item and :items', { item: 'one', items: 'many' })).toBe('one and many');
+    });
+
+    it('leaves a value that looks like a placeholder as it is', () => {
+        const { t } = createFormStore(schema([]));
+
+        expect(t('Upload :file for :name', { file: ':name.png', name: 'Ada' })).toBe(
+            'Upload :name.png for Ada',
+        );
+    });
+
+    it('leaves a placeholder it has no value for', () => {
+        const { t } = createFormStore(schema([]));
+
+        expect(t('Remove :name at :time', { name: 'a' })).toBe('Remove a at :time');
+        expect(t('Remove :constructor')).toBe('Remove :constructor');
+    });
+
+    it('fills a placeholder with text right after it, as Laravel does', () => {
+        const { t } = createFormStore(schema([]));
+
+        expect(t('Up to :sizeMB', { size: 5 })).toBe('Up to 5MB');
+    });
+
+    it('leaves text with a colon alone', () => {
+        const { t } = createFormStore(schema([]));
+
+        expect(t('Note: at 12:30')).toBe('Note: at 12:30');
+    });
+
+    it('fills in a value of zero', () => {
+        const { t } = createFormStore(schema([]));
+
+        expect(t(':count left', { count: 0 })).toBe('0 left');
+    });
+
     it('fills placeholders in a translated line', () => {
         const store = createFormStore({
             ...schema([]),
