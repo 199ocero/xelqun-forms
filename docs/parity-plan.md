@@ -6,7 +6,7 @@ A comparison with Filament v5.11 showed `xelqun/forms` covers 10 of Filament's 2
 
 This continues `docs/forms-plan.md`, so milestones start at **M10**. Each one ends with something visible in the playground.
 
-**Scope:** every gap from the comparison, nested repeaters (needed by Builder), and a plugin foundation so other developers can build fields like Filament's standalone plugins. **Out of scope:** `ModalTableSelect` (no tables package exists), panel plugins (no panel exists), a shared package for forms and tables (extract when tables starts), Alpine-specific APIs such as `RawJs`, and rich editor mentions and custom blocks (follow-up after M22).
+**Scope:** every gap from the comparison, nested repeaters (needed by Builder), and a plugin foundation so other developers can build fields like Filament's standalone plugins. **Out of scope:** `ModalTableSelect` (no tables package exists), panel plugins (no panel exists), a shared package for forms and tables (decided against: `xelqun/tables` requires this package, and one can still be extracted if something needs it without forms), Alpine-specific APIs such as `RawJs`, and rich editor mentions and custom blocks (follow-up after M22).
 
 **Build order rule:** fix the shared pipeline first (M10), then build the plugin foundation (M11), then add features on top of it. Every new field uses the same contracts as a third-party plugin.
 
@@ -43,7 +43,7 @@ Confirmed by reading the code. Nothing has been run yet, so each fix starts with
 8. **Builder extends Repeater.** Row state is `{key: {type, data}}`. The server rejects undeclared or hidden block types. Upload scope includes the block name, and uploads post state so the server can resolve the block.
 9. **Action modals use a nested `ActionForm`** with its own client store. The token gains an action chain, so update, upload and search keep working unchanged.
 10. **Action authorisation runs on every call:** `resolveForm`, `prepare`, find a declared action, `acceptsInput()`, then `Action::authorize()`. It denies when there is no policy or closure, because `Form::authorize()` does not imply permission to create a related record. Posted ids are re-resolved through the relationship query.
-11. **Actions live in `src/Actions`** and are extracted to a package when tables arrive.
+11. **Actions live in `src/Actions`**, and tables uses them from here.
 12. **Frontend validation is a strict subset.** Only typed helpers serialize, never `rules()` strings, closures, `unique`, `exists` or regex. The client must never reject what the server accepts, and `conformance/validation.json` runs against both Laravel's validator and the JS validator.
 13. **The wizard validates the whole form's state but only a step's rules**, through `POST validate`. The server tracks no progress, and final submit revalidates everything.
 14. **Server-enforced flags.** `addable()`, `deletable()` and `orderable()` are checked in `prepare()`, and `unique()` inside rows ignores only ids owned by the record.

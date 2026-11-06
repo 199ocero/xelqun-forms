@@ -3,6 +3,8 @@ export type { XelqunFormsOptions, XelqunPlugin, XelqunPluginContext } from './pl
 
 export { default as XqForm } from './components/XqForm.vue';
 export { default as XqNode } from './components/XqNode.vue';
+export { default as XqAction } from './components/XqAction.vue';
+export type { ActionRunner } from './components/XqAction.vue';
 export { default as XqFieldWrapper } from './components/XqFieldWrapper.vue';
 export { createRegistry, defaultComponents } from './components/defaults';
 
@@ -10,12 +12,14 @@ export { useXqForm } from './composables/useXqForm';
 export { useField } from './composables/useField';
 export { useFormStore, useTranslator } from './composables/context';
 export { gridStyle, spanStyle } from './composables/layout';
+export { useRegistry } from './composables/registry';
 export type { ComponentRegistry, ComponentResolver } from './composables/registry';
 
-export { createFormStore, defaultLiveConfig } from './core/store';
-export type { FormStore, FormStoreOptions, SubmitOptions } from './core/store';
+export { createFormStore, defaultLiveConfig, reportRequestFailure } from './core/store';
+export type { ActionModal, FormStore, FormStoreOptions, SubmitOptions } from './core/store';
 export type { RequestKind, RequestLogEntry } from './core/log';
-export { HttpError } from './core/http';
+export { HttpError, postJson } from './core/http';
+export { translate } from './core/translate';
 export { evaluateCondition } from './core/conditions';
 export { evaluateExpression } from './core/expressions';
 export { getPath, overlaps } from './core/paths';

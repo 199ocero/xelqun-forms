@@ -64,6 +64,27 @@ export interface ActionModal {
     liveError: Ref<string | null>;
 }
 
+/**
+ * Show why a request failed: on the fields a validation error names, or as a
+ * message on the target.
+ */
+export function reportRequestFailure(
+    error: unknown,
+    target: Omit<ActionModal, 'state' | 'settled' | 'validate'>,
+    t: (text: string) => string,
+): void {
+    if (error instanceof HttpError && error.status === 422) {
+        target.addErrors(error.validationErrors);
+        target.focusFirstError();
+    } else if (error instanceof HttpError && error.status === 419) {
+        target.fatalError.value = t('This form has expired. Reload the page to continue.');
+    } else {
+        target.liveError.value = t(
+            'Some fields could not be updated. Check your connection and try again.',
+        );
+    }
+}
+
 export interface FormStoreOptions {
     send?: (url: string, request: UpdateRequest, signal: AbortSignal) => Promise<UpdatePatch>;
 }
@@ -679,16 +700,7 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
             liveError,
         },
     ): void {
-        if (error instanceof HttpError && error.status === 422) {
-            target.addErrors(error.validationErrors);
-            target.focusFirstError();
-        } else if (error instanceof HttpError && error.status === 419) {
-            target.fatalError.value = t('This form has expired. Reload the page to continue.');
-        } else {
-            target.liveError.value = t(
-                'Some fields could not be updated. Check your connection and try again.',
-            );
-        }
+        reportRequestFailure(error, target, t);
     }
 
     function actionBody(

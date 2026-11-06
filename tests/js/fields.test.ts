@@ -2,6 +2,7 @@ import { flushPromises, mount } from '@vue/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { nextTick } from 'vue';
 import XqForm from '../../resources/js/components/XqForm.vue';
+import XqCheckbox from '../../resources/js/ui/XqCheckbox.vue';
 import { createFormStore } from '../../resources/js/core/store';
 import { moveItem } from '../../resources/js/ui/options';
 import { field, schema } from './fixtures';
@@ -311,5 +312,18 @@ describe('color picker', () => {
         expect(warn).not.toHaveBeenCalled();
         wrapper.unmount();
         warn.mockRestore();
+    });
+});
+
+describe('indeterminate checkbox', () => {
+    it('shows the mixed state and turns on when clicked', async () => {
+        const wrapper = mount(XqCheckbox, { props: { indeterminate: true, modelValue: false } });
+        const box = wrapper.find('button[role="checkbox"]');
+
+        expect(box.attributes('aria-checked')).toBe('mixed');
+
+        await box.trigger('click');
+
+        expect(wrapper.emitted('update:modelValue')).toEqual([[true]]);
     });
 });

@@ -10,6 +10,7 @@ use Illuminate\Support\Str;
 use Xelqun\Forms\Components\Component;
 use Xelqun\Forms\Components\Field;
 use Xelqun\Forms\Contracts\NeedsServer;
+use Xelqun\Forms\Support\SafeUrl;
 use Xelqun\Forms\Support\StatePath;
 
 /**
@@ -67,6 +68,10 @@ class Action extends Component implements NeedsServer
 
     protected bool $sendsResult = false;
 
+    protected string|Closure|null $url = null;
+
+    protected bool|Closure $opensUrlInNewTab = false;
+
     final public function __construct(protected string $name) {}
 
     public static function make(string $name): static
@@ -86,7 +91,7 @@ class Action extends Component implements NeedsServer
 
     public function needsServer(): bool
     {
-        return true;
+        return $this->url === null;
     }
 
     public function label(string|Closure|null $label): static
@@ -267,6 +272,25 @@ class Action extends Component implements NeedsServer
     }
 
     /**
+     * Go to a URL instead of running anything, so the button never reaches the
+     * server. It still needs authorize(). The action hides itself when the URL
+     * isn't http(s), mailto, tel or a path on this site, because a closure may
+     * build it from a record.
+     */
+    public function url(string|Closure|null $url, bool|Closure $openInNewTab = false): static
+    {
+        $this->url = $url;
+        $this->opensUrlInNewTab = $openInNewTab;
+
+        return $this;
+    }
+
+    public function getUrl(): ?string
+    {
+        return SafeUrl::filter($this->evaluate($this->url));
+    }
+
+    /**
      * The model modal fields read relationships from, and the policy's subject
      * when there is no record.
      *
@@ -324,7 +348,9 @@ class Action extends Component implements NeedsServer
     public function isHiddenDynamically(): bool
     {
         // In this order, so a policy only sees an action that could show.
-        return parent::isHiddenDynamically() || ! $this->isAuthorized();
+        return parent::isHiddenDynamically()
+            || ! $this->isAuthorized()
+            || ($this->url !== null && $this->getUrl() === null);
     }
 
     /**
@@ -412,6 +438,10 @@ class Action extends Component implements NeedsServer
             'description' => $this->evaluate($this->modalDescription),
             'submitLabel' => $this->evaluate($this->modalSubmitActionLabel),
             'cancelLabel' => $this->evaluate($this->modalCancelActionLabel),
+            ...($this->url === null ? [] : [
+                'url' => $this->getUrl(),
+                'openInNewTab' => (bool) $this->evaluate($this->opensUrlInNewTab),
+            ]),
             ...$this->evaluateConfigured([
                 'icon' => $this->icon,
                 'color' => $this->color,

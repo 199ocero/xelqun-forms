@@ -378,3 +378,37 @@ describe('where an action sits', function () {
         ])->assertOk();
     });
 });
+
+class LinkActionTestForm extends Form
+{
+    public function schema(): array
+    {
+        return [
+            Actions::make([
+                Action::make('guide')->authorize(true)->url(fn () => '/guide', openInNewTab: true),
+                Action::make('unsafe')->authorize(true)->url('javascript:alert(1)'),
+                Action::make('unauthorized')->url('/guide'),
+            ]),
+        ];
+    }
+}
+
+it('sends a link to the browser and hides one with an unsafe or unauthorized target', function () {
+    $schema = json_decode(json_encode(LinkActionTestForm::make()->toSchema()), true);
+    $shown = collect($schema['components'][0]['children'])->reject(fn (array $node): bool => $node['hidden'])->values();
+
+    expect($shown)->toHaveCount(1)
+        ->and($shown[0]['props'])->toMatchArray(['label' => 'Guide', 'url' => '/guide', 'openInNewTab' => true]);
+});
+
+it('lets a link work in a form with no class to rebuild', function () {
+    $form = Form::make([Actions::make([Action::make('guide')->authorize(true)->url('/guide')])]);
+
+    $schema = json_decode(json_encode($form->toSchema()), true);
+
+    expect($schema['components'][0]['children'][0]['props']['url'])->toBe('/guide');
+});
+
+it('still requires a class for an action that runs', function () {
+    Form::make([Actions::make([Action::make('run')->authorize(true)])])->toSchema();
+})->throws(FormDefinitionException::class);

@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -572,3 +574,33 @@ describe('relationship selects', function () {
             ->toThrow(ValidationException::class);
     })->with([MultipleScopedRelationshipForm::class, AsyncSelectForm::class]);
 });
+
+class ScopedRecordTestForm extends Form
+{
+    public function schema(): array
+    {
+        return [TextInput::make('name')];
+    }
+
+    public function model(): ?string
+    {
+        return Country::class;
+    }
+
+    public function resolveRecord(int|string $key): Model
+    {
+        return Country::query()->where('name', 'Allowed')->findOrFail($key);
+    }
+}
+
+it('finds a token\'s record through the form\'s own query', function () {
+    $allowed = Country::create(['name' => 'Allowed']);
+    $outside = Country::create(['name' => 'Outside']);
+    $token = fn (Country $country): string => app(FormTokenEncrypter::class)->encrypt(
+        new FormToken(ScopedRecordTestForm::class, $country->getKey(), null),
+    );
+
+    expect(app(FormTokenEncrypter::class)->resolveForm($token($allowed))->getRecord()->is($allowed))->toBeTrue();
+
+    app(FormTokenEncrypter::class)->resolveForm($token($outside));
+})->throws(ModelNotFoundException::class);

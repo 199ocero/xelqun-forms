@@ -4,7 +4,6 @@ namespace Xelqun\Forms\Security;
 
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Contracts\Encryption\StringEncrypter;
-use Illuminate\Database\Eloquent\Model;
 use Xelqun\Forms\Actions\Action;
 use Xelqun\Forms\Exceptions\InvalidFormToken;
 use Xelqun\Forms\Form;
@@ -31,6 +30,22 @@ final class FormTokenEncrypter
     }
 
     /**
+     * Reject a token that has expired or was issued to someone else.
+     *
+     * @param  int  $ttl  Minutes a token lasts. Zero or less means it never expires.
+     */
+    public function assertUsable(FormToken $token, int $ttl): void
+    {
+        if ($ttl > 0 && $token->issuedAt !== null && $token->issuedAt < time() - $ttl * 60) {
+            throw InvalidFormToken::make('the token has expired, reload the page', 419);
+        }
+
+        if ((string) $token->userId !== (string) auth()->id()) {
+            throw InvalidFormToken::make('the token belongs to another user');
+        }
+    }
+
+    /**
      * Decrypt the token, check it and rebuild the form it describes.
      */
     public function resolveForm(string $value): Form
@@ -41,26 +56,14 @@ final class FormTokenEncrypter
             throw InvalidFormToken::make('the token does not describe a form');
         }
 
-        $ttl = (int) config('xelqun-forms.token_ttl', 720);
-
-        if ($ttl > 0 && $token->issuedAt !== null && $token->issuedAt < time() - $ttl * 60) {
-            throw InvalidFormToken::make('the token has expired, reload the page', 419);
-        }
-
-        if ((string) $token->userId !== (string) auth()->id()) {
-            throw InvalidFormToken::make('the token belongs to another user');
-        }
+        $this->assertUsable($token, (int) config('xelqun-forms.token_ttl', 720));
 
         /** @var class-string<Form> $formClass */
         $formClass = $token->formClass;
         $record = null;
 
         if ($token->recordKey !== null) {
-            $form = new $formClass(null, $token->context);
-            $model = $form->model() ?? throw InvalidFormToken::make('the form has no model to load the record from');
-            /** @var Model $instance */
-            $instance = new $model;
-            $record = $instance->newQuery()->findOrFail($token->recordKey);
+            $record = (new $formClass(null, $token->context))->resolveRecord($token->recordKey);
         }
 
         $form = new $formClass($record, $token->context);

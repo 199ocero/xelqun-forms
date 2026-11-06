@@ -10,6 +10,7 @@ export { registerIcons, resolveIcon } from './icons';
 export { default as XqIcon } from './XqIcon.vue';
 export { default as XqInput } from './XqInput.vue';
 export { default as XqLabel } from './XqLabel.vue';
+export { default as XqPopover } from './XqPopover.vue';
 export { default as XqRadioGroup } from './XqRadioGroup.vue';
 export { default as XqRadioGroupItem } from './XqRadioGroupItem.vue';
 export { default as XqSelect } from './XqSelect.vue';

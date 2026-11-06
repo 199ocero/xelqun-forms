@@ -19,7 +19,7 @@ trait EditsHostApp
     private function installNodePackage(string $package): bool
     {
         if (! File::exists(base_path('package.json'))) {
-            $this->components->error('No package.json found. Xelqun Forms needs an app that builds its frontend with Vite.');
+            $this->components->error('No package.json found. Xelqun needs an app that builds its frontend with Vite.');
 
             return false;
         }
@@ -60,6 +60,42 @@ trait EditsHostApp
                 return $path;
             }
         }
+
+        return null;
+    }
+
+    /**
+     * @return string|null The step left for the developer, or null when none remains.
+     */
+    private function importStylesheet(string $stylesheet): ?string
+    {
+        $manualStep = "Add `@import '{$stylesheet}';` after `@import 'tailwindcss';` in your Tailwind entry file.";
+
+        $path = resource_path('css/app.css');
+
+        if (! File::exists($path)) {
+            return $manualStep;
+        }
+
+        $source = File::get($path);
+
+        if (str_contains($source, $stylesheet)) {
+            return null;
+        }
+
+        $patched = preg_replace(
+            '/^@import\s+([\'"])tailwindcss\1[^;\n]*;[ \t]*$/m',
+            '$0'."\n".'@import $1'.$stylesheet.'$1;',
+            $source,
+            1,
+            $replacements,
+        );
+
+        if ($replacements === 0) {
+            return $manualStep;
+        }
+
+        File::put($path, $patched);
 
         return null;
     }

@@ -21,6 +21,7 @@ use Xelqun\Forms\Contracts\HasSearchResults;
 use Xelqun\Forms\Contracts\NeedsServer;
 use Xelqun\Forms\Eloquent\ModelPersister;
 use Xelqun\Forms\Exceptions\FormDefinitionException;
+use Xelqun\Forms\Exceptions\InvalidFormToken;
 use Xelqun\Forms\Schema\SchemaVersion;
 use Xelqun\Forms\Security\FormToken;
 use Xelqun\Forms\Security\FormTokenEncrypter;
@@ -105,6 +106,20 @@ class Form
     }
 
     protected function boot(): void {}
+
+    /**
+     * Find the record a token names. A form that may only reach some records
+     * overrides this, so requests made after the page loaded stay inside them.
+     */
+    public function resolveRecord(int|string $key): Model
+    {
+        $model = $this->model() ?? throw InvalidFormToken::make('the form has no model to load the record from');
+
+        /** @var Model $instance */
+        $instance = new $model;
+
+        return $instance->newQuery()->findOrFail($key);
+    }
 
     /**
      * @return array<int, Component>

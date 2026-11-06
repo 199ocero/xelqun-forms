@@ -1,11 +1,16 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { ref } from 'vue';
+import XqAction from '../../resources/js/components/XqAction.vue';
 import XqForm from '../../resources/js/components/XqForm.vue';
 import { createFormStore } from '../../resources/js/core/store';
 import type { SchemaNode } from '../../resources/js/schema/types';
 import { field, schema } from './fixtures';
 
-vi.mock('@inertiajs/vue3', () => ({ router: { visit: vi.fn() } }));
+vi.mock('@inertiajs/vue3', () => ({
+    router: { visit: vi.fn() },
+    Link: { props: ['href'], template: '<a data-inertia-link :href="href"><slot /></a>' },
+}));
 
 function action(props: Record<string, unknown> = {}): SchemaNode {
     return {
@@ -477,6 +482,48 @@ describe('actions', () => {
         const { wrapper } = await mountAction({ ...action(), hidden: true });
 
         expect(wrapper.find('[data-xq-action]').exists()).toBe(false);
+        wrapper.unmount();
+    });
+
+    it('goes to a url without calling the server', async () => {
+        const { wrapper } = await mountAction(action({ url: '/guide' }));
+        const link = wrapper.find('[data-xq-action] a');
+
+        expect(link.attributes('href')).toBe('/guide');
+        expect(link.attributes('data-inertia-link')).toBeDefined();
+        expect(fetch).not.toHaveBeenCalled();
+        wrapper.unmount();
+    });
+
+    it('uses a plain link for another site and a new tab', async () => {
+        const external = await mountAction(action({ url: 'https://example.com/a' }));
+
+        expect(external.wrapper.find('a').attributes('data-inertia-link')).toBeUndefined();
+        external.wrapper.unmount();
+
+        const newTab = await mountAction(action({ url: '/guide', openInNewTab: true }));
+        const link = newTab.wrapper.find('a');
+
+        expect(link.attributes('data-inertia-link')).toBeUndefined();
+        expect(link.attributes('target')).toBe('_blank');
+        expect(link.attributes('rel')).toBe('noopener noreferrer');
+        newTab.wrapper.unmount();
+    });
+
+    it('runs through a runner outside a form', async () => {
+        const runner = {
+            mountAction: vi.fn(),
+            runAction: vi.fn().mockResolvedValue({}),
+            processing: ref(false),
+            t: (text: string) => text,
+        };
+        const node = action();
+        const wrapper = mount(XqAction, { props: { node, runner } });
+
+        await wrapper.find('button').trigger('click');
+        await flushPromises();
+
+        expect(runner.runAction).toHaveBeenCalledWith(node, undefined);
         wrapper.unmount();
     });
 });

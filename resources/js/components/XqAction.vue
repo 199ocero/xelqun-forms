@@ -1,9 +1,18 @@
+<script lang="ts">
+import type { FormStore } from '../core/store';
+
+/**
+ * What the button needs from whatever holds it. Outside a form, pass your own.
+ */
+export type ActionRunner = Pick<FormStore, 'mountAction' | 'runAction' | 'processing' | 't'>;
+</script>
+
 <script setup lang="ts">
+import { Link } from '@inertiajs/vue3';
 import { LoaderCircle } from 'lucide-vue-next';
 import { computed, onScopeDispose, ref, shallowRef, watch } from 'vue';
 import { useFormStore } from '../composables/context';
 import { createFormStore } from '../core/store';
-import type { FormStore } from '../core/store';
 import type { SchemaNode } from '../schema/types';
 import XqButton from '../ui/XqButton.vue';
 import XqConfirmDialog from '../ui/XqConfirmDialog.vue';
@@ -11,8 +20,8 @@ import XqDialog from '../ui/XqDialog.vue';
 import XqIcon from '../ui/XqIcon.vue';
 import XqForm from './XqForm.vue';
 
-const props = defineProps<{ node: SchemaNode }>();
-const store = useFormStore();
+const props = defineProps<{ node: SchemaNode; runner?: ActionRunner }>();
+const store = props.runner ?? useFormStore();
 const options = computed(() => props.node.props ?? {});
 const running = ref(false);
 const confirming = ref(false);
@@ -31,6 +40,19 @@ const variant = computed(() =>
           ? 'ghost'
           : (variants[options.value.color] ?? 'outline'),
 );
+
+// Inertia can only visit its own app, and a new tab isn't a visit.
+const isVisit = computed(() => {
+    if (options.value.openInNewTab) {
+        return false;
+    }
+
+    const url: string = options.value.url;
+
+    return typeof window === 'undefined'
+        ? url.startsWith('/')
+        : new URL(url, window.location.href).origin === window.location.origin;
+});
 
 async function run(): Promise<void> {
     // Enter in a modal field reaches this without the button.
@@ -87,6 +109,25 @@ onScopeDispose(closeModal);
 <template>
     <div class="inline-flex" data-xq-action>
         <XqButton
+            v-if="options.url"
+            as-child
+            :variant="variant"
+            :size="options.style === 'icon' ? 'icon-sm' : 'sm'"
+            :title="options.tooltip"
+            :aria-label="options.style === 'icon' ? options.label : undefined"
+        >
+            <component
+                :is="isVisit ? Link : 'a'"
+                :href="options.url"
+                :target="options.openInNewTab ? '_blank' : undefined"
+                :rel="options.openInNewTab ? 'noopener noreferrer' : undefined"
+            >
+                <XqIcon v-if="options.icon" :name="options.icon" />
+                <template v-if="options.style !== 'icon'">{{ options.label }}</template>
+            </component>
+        </XqButton>
+        <XqButton
+            v-else
             type="button"
             :variant="variant"
             :size="options.style === 'icon' ? 'icon-sm' : 'sm'"

@@ -29,7 +29,7 @@ class InstallCommand extends Command
             return self::FAILURE;
         }
 
-        $manualSteps = array_filter([$this->registerPlugin(), $this->importStylesheet()]);
+        $manualSteps = array_filter([$this->registerPlugin(), $this->importStylesheet(self::STYLESHEET)]);
 
         if ($this->option('config')) {
             $this->callSilently('vendor:publish', ['--tag' => 'xelqun-forms-config']);
@@ -127,42 +127,6 @@ class InstallCommand extends Command
                 $match[1],
             ), $source, 1);
         }
-
-        return null;
-    }
-
-    /**
-     * @return string|null The step left for the developer, or null when none remains.
-     */
-    private function importStylesheet(): ?string
-    {
-        $manualStep = "Add `@import '".self::STYLESHEET."';` after `@import 'tailwindcss';` in your Tailwind entry file.";
-
-        $path = resource_path('css/app.css');
-
-        if (! File::exists($path)) {
-            return $manualStep;
-        }
-
-        $source = File::get($path);
-
-        if (str_contains($source, self::STYLESHEET)) {
-            return null;
-        }
-
-        $patched = preg_replace(
-            '/^@import\s+([\'"])tailwindcss\1[^;\n]*;[ \t]*$/m',
-            '$0'."\n".'@import $1'.self::STYLESHEET.'$1;',
-            $source,
-            1,
-            $replacements,
-        );
-
-        if ($replacements === 0) {
-            return $manualStep;
-        }
-
-        File::put($path, $patched);
 
         return null;
     }
