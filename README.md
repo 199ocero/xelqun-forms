@@ -40,6 +40,8 @@ class OrderForm extends Form
 - **Small server updates.** Dependent fields update through small patches that keep focus and cursor position.
 - **Secure by default.** Forms rebuild from an encrypted token, and every endpoint re-runs `authorize()` and validation.
 - **Repeaters and uploads included.** Nested rows map to validation errors, and files upload as soon as they're picked.
+- **Every field you'd expect.** Select with relationships, date and time pickers, tags, sliders, colors, a block `Builder`, and rich text, Markdown and code editors.
+- **Wizards and actions.** Multi-step forms check each step on the server, and buttons can run PHP through a modal with its own fields.
 
 ## Installation
 
@@ -92,6 +94,7 @@ Other packages can add fields, with the same search, uploads, rows and saving as
 ## Before going to production
 
 - **Add your rules to `authorize()`.** It allows everything by default.
+- **Give each action its own `authorize()`.** An action does nothing without one, and the form's `authorize()` doesn't count.
 - **Schedule `php artisan xelqun-forms:prune-uploads`.** Temporary uploads stay on disk until it runs.
 
 ## License

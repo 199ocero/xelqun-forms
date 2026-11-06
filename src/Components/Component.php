@@ -330,6 +330,20 @@ abstract class Component
     }
 
     /**
+     * The "type" of the rows this component is for, when a row's shape depends
+     * on it, as in a Builder.
+     */
+    public function getRowType(): ?string
+    {
+        return null;
+    }
+
+    public function getContainerPattern(): string
+    {
+        return $this->containerPattern;
+    }
+
+    /**
      * The key with every repeater row key replaced by "*".
      */
     public function getKeyPattern(): string

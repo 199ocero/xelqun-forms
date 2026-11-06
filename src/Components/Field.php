@@ -804,6 +804,35 @@ abstract class Field extends Component implements NeedsServer
     }
 
     /**
+     * The sets of components a row can be built from. Field names only have to
+     * differ within a set.
+     *
+     * @internal
+     *
+     * @return array<int, array<int, Component>>
+     */
+    public function getTemplateGroups(): array
+    {
+        return $this instanceof ContainsRows ? [$this->getTemplateComponents()] : [];
+    }
+
+    /**
+     * Whether a save deletes files this field no longer holds. See HandlesUploads.
+     */
+    public function deletesRemovedFiles(): bool
+    {
+        return false;
+    }
+
+    /**
+     * Whether an upload goes to its final disk. See HandlesUploads.
+     */
+    public function storesFiles(): bool
+    {
+        return true;
+    }
+
+    /**
      * What ties an upload to this field: the form, the path, and anything around
      * it that a path can't tell apart.
      */

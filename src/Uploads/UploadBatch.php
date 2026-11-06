@@ -2,11 +2,14 @@
 
 namespace Xelqun\Forms\Uploads;
 
+use Closure;
 use Illuminate\Database\Connection;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Throwable;
 use Xelqun\Forms\Components\Component;
+use Xelqun\Forms\Components\Field;
 use Xelqun\Forms\Contracts\AcceptsUploads;
 use Xelqun\Forms\Contracts\EmbedsUploads;
 use Xelqun\Forms\Form;
@@ -23,6 +26,9 @@ final class UploadBatch
 {
     /** @var array<string, array{disk: string, path: string}> Upload id => where it was stored. */
     private array $stored = [];
+
+    /** @var array<int, array{disk: string, path: string}> Stored files this save leaves behind. */
+    private array $removed = [];
 
     private bool $isSettled = false;
 
@@ -84,7 +90,133 @@ final class UploadBatch
             foreach (array_keys($this->stored) as $id) {
                 $this->store->delete($id);
             }
+
+            foreach ($this->removed as $file) {
+                Storage::disk($file['disk'])->delete($file['path']);
+            }
         });
+    }
+
+    /**
+     * Note the stored files this save drops, for fields with deleteRemovedFiles().
+     * They go once the save commits, so a rollback keeps them. save() calls this
+     * and validate() doesn't, because only save() knows the data was written.
+     *
+     * @param  array<string, mixed>  $data  Validated, row-keyed data with stored paths.
+     */
+    public function markRemovedFiles(Form $form, array $data): void
+    {
+        $output = [StatePath::ROOT => $data];
+        $initial = $form->getInitialValue(StatePath::ROOT);
+
+        $this->eachTemplateField($form->getComponents(), function (Field $field) use ($output, $initial): void {
+            if (! $field->deletesRemovedFiles() || $field->isHiddenOnServer()) {
+                return;
+            }
+
+            $pattern = $field->getStatePathPattern();
+            $segments = array_slice(explode('.', $pattern), 1);
+            $removed = $this->findRemoved($segments, $initial, $output[StatePath::ROOT], false, $this->getRowTypes($field));
+            $kept = $this->filesIn(StatePath::get($output, $pattern));
+
+            foreach (array_diff($removed, $kept) as $path) {
+                $this->removed[] = ['disk' => $this->diskOf($field), 'path' => $path];
+            }
+        });
+    }
+
+    /**
+     * Blocks can share a field name, so a path alone doesn't say whose file it
+     * is. By the number of path segments after the row they apply to.
+     *
+     * @return array<int, string>
+     */
+    private function getRowTypes(Field $field): array
+    {
+        $types = [];
+        $depth = substr_count($field->getStatePathPattern(), '.');
+
+        for ($component = $field->getParent(); $component !== null; $component = $component->getParent()) {
+            if (($type = $component->getRowType()) !== null) {
+                $types[$depth - substr_count($component->getContainerPattern(), '.')] = $type;
+            }
+        }
+
+        return $types;
+    }
+
+    private function diskOf(Field $field): string
+    {
+        return $field instanceof AcceptsUploads ? $field->getDiskName() : (string) config('xelqun-forms.uploads.disk');
+    }
+
+    /**
+     * @param  array<int, Component>  $components
+     * @param  Closure(Field): void  $callback
+     */
+    private function eachTemplateField(array $components, Closure $callback): void
+    {
+        Form::eachField($components, function (Field $field) use ($callback): void {
+            $callback($field);
+
+            foreach ($field->getTemplateGroups() as $group) {
+                $this->eachTemplateField($group, $callback);
+            }
+        });
+    }
+
+    /**
+     * Walk a field's path through what the form was filled with. A row that's
+     * gone takes its files with it. A key the output simply doesn't have means the
+     * field was left out, by a condition for example, and that removes nothing.
+     *
+     * @param  array<int, string>  $segments
+     * @param  array<int, string>  $rowTypes  See getRowTypes().
+     * @return array<int, string>
+     */
+    private function findRemoved(array $segments, mixed $initial, mixed $current, bool $isGone, array $rowTypes): array
+    {
+        if ($segments === []) {
+            return $isGone ? $this->filesIn($initial) : array_values(array_diff($this->filesIn($initial), $this->filesIn($current)));
+        }
+
+        $segment = array_shift($segments);
+
+        if (! is_array($initial) || (! $isGone && ! is_array($current))) {
+            return [];
+        }
+
+        if ($segment === '*') {
+            $found = [];
+
+            $type = $rowTypes[count($segments)] ?? null;
+
+            foreach ($initial as $key => $row) {
+                if ($type !== null && data_get($row, 'type') !== $type) {
+                    continue;
+                }
+
+                $rowIsGone = $isGone || ! array_key_exists($key, $current);
+
+                array_push($found, ...$this->findRemoved($segments, $row, $rowIsGone ? null : $current[$key], $rowIsGone, $rowTypes));
+            }
+
+            return $found;
+        }
+
+        if (! array_key_exists($segment, $initial) || (! $isGone && ! array_key_exists($segment, $current))) {
+            return [];
+        }
+
+        return $this->findRemoved($segments, $initial[$segment], $isGone ? null : $current[$segment], $isGone, $rowTypes);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function filesIn(mixed $value): array
+    {
+        return array_values(array_filter(Arr::flatten(Arr::wrap($value)), fn (mixed $file): bool => is_string($file) && $file !== ''));
     }
 
     /**
@@ -123,12 +255,16 @@ final class UploadBatch
      * them out, and a token made elsewhere could then copy another field's file.
      * So this comes first: another field storing the upload proves nothing here.
      */
-    private function promoteFile(AcceptsUploads $field, string $id): string
+    private function promoteFile(AcceptsUploads $field, string $id): string|TemporaryUpload
     {
         if (! $this->store->isUsable($id, $field->getUploadScope())) {
             throw ValidationException::withMessages([
                 $field->getStatePath() => __('xelqun-forms::messages.uploads.expired', ['attribute' => $field->getValidationAttribute()]),
             ]);
+        }
+
+        if (! $field->storesFiles()) {
+            return $this->store->open($id);
         }
 
         if (isset($this->stored[$id])) {

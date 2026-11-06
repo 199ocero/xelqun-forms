@@ -52,6 +52,27 @@ trait HandlesUploads
 
     protected ?int $minSize = null;
 
+    protected bool|Closure $hasImageEditor = false;
+
+    /** @var array<int, string|null> */
+    protected array $imageEditorAspectRatios = [];
+
+    protected ?string $imageEditorFillColor = null;
+
+    protected ?string $imageCropRatio = null;
+
+    protected ?string $imageResizeMode = null;
+
+    protected ?int $imageResizeWidth = null;
+
+    protected ?int $imageResizeHeight = null;
+
+    protected bool $imageResizeUpscales = true;
+
+    protected bool|Closure $shouldStoreFiles = true;
+
+    protected bool|Closure $shouldDeleteRemovedFiles = false;
+
     protected bool|Closure $isFileReorderable = false;
 
     protected bool|Closure $isPasteable = true;
@@ -246,6 +267,117 @@ trait HandlesUploads
         return $this;
     }
 
+    /**
+     * Let the user crop, rotate and flip an image, in the browser, before saving.
+     */
+    public function imageEditor(bool|Closure $condition = true): static
+    {
+        $this->hasImageEditor = $condition;
+
+        return $this;
+    }
+
+    /**
+     * The shapes the editor offers, such as ['16:9', '1:1']. Null means free.
+     *
+     * @param  array<int, string|null>  $ratios
+     */
+    public function imageEditorAspectRatioOptions(array $ratios): static
+    {
+        $this->imageEditorAspectRatios = $ratios;
+
+        return $this;
+    }
+
+    /**
+     * What fills the empty corners of a rotated image. Clear by default.
+     */
+    public function imageEditorEmptyFillColor(?string $color): static
+    {
+        $this->imageEditorFillColor = $color;
+
+        return $this;
+    }
+
+    /**
+     * Crop each image to this shape before it uploads, such as '16:9'. This and
+     * the resize options below run in the browser, so a request that skips them
+     * isn't resized. Use rules for anything that must hold.
+     */
+    public function automaticallyCropImagesToAspectRatio(?string $ratio): static
+    {
+        $this->imageCropRatio = $ratio;
+
+        return $this;
+    }
+
+    /**
+     * force stretches to the size, cover fills it and crops the rest, and
+     * contain fits inside it.
+     */
+    public function automaticallyResizeImagesMode(?string $mode): static
+    {
+        $this->imageResizeMode = $mode;
+
+        return $this;
+    }
+
+    public function automaticallyResizeImagesToWidth(?int $pixels): static
+    {
+        $this->imageResizeWidth = $pixels;
+
+        return $this;
+    }
+
+    public function automaticallyResizeImagesToHeight(?int $pixels): static
+    {
+        $this->imageResizeHeight = $pixels;
+
+        return $this;
+    }
+
+    public function automaticallyUpscaleImagesWhenResizing(bool $condition = true): static
+    {
+        $this->imageResizeUpscales = $condition;
+
+        return $this;
+    }
+
+    /**
+     * Leave files on the temporary disk. The form's data then holds a
+     * TemporaryUpload instead of a path, for an import or an email attachment.
+     * Handle it while the request runs: the prune command clears it later.
+     */
+    public function storeFiles(bool|Closure $condition = true): static
+    {
+        $this->shouldStoreFiles = $condition;
+
+        return $this;
+    }
+
+    public function storesFiles(): bool
+    {
+        return (bool) $this->evaluate($this->shouldStoreFiles);
+    }
+
+    /**
+     * Delete a stored file from its disk once a save no longer uses it, including
+     * files of a deleted row. It runs after the save commits, and only for save(),
+     * so writing the data yourself keeps every file. Leave this off if two records
+     * can point at one file, because nothing here can see the other one.
+     */
+    public function deleteRemovedFiles(bool|Closure $condition = true): static
+    {
+        $this->shouldDeleteRemovedFiles = $condition;
+
+        return $this;
+    }
+
+    public function deletesRemovedFiles(): bool
+    {
+        return (bool) $this->evaluate($this->shouldDeleteRemovedFiles);
+    }
+
     public function isMultiple(): bool
     {
         return (bool) $this->evaluate($this->isMultiple);
@@ -433,6 +565,17 @@ trait HandlesUploads
                 'openable' => $this->isOpenable,
                 'avatar' => $this->isAvatar,
                 'maxParallelUploads' => $this->maxParallelUploads,
+                'imageEditor' => $this->hasImageEditor === false ? null : fn (): ?array => $this->evaluate($this->hasImageEditor) ? [
+                    'aspectRatios' => $this->imageEditorAspectRatios,
+                    'fillColor' => $this->imageEditorFillColor,
+                ] : null,
+                'imageResize' => $this->imageCropRatio === null && $this->imageResizeWidth === null && $this->imageResizeHeight === null ? null : fn (): array => [
+                    'ratio' => $this->imageCropRatio,
+                    'mode' => $this->imageResizeMode,
+                    'width' => $this->imageResizeWidth,
+                    'height' => $this->imageResizeHeight,
+                    'upscale' => $this->imageResizeUpscales,
+                ],
             ]),
             ...$this->getFlagsThatChanged(),
         ];

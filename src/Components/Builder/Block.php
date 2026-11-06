@@ -123,6 +123,11 @@ class Block extends Layout
         return $this->evaluate($this->maxItems);
     }
 
+    public function getRowType(): ?string
+    {
+        return $this->name;
+    }
+
     public function getUploadScopePart(): string
     {
         return '|'.$this->name;

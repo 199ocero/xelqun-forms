@@ -60,7 +60,7 @@ Confirmed by reading the code. Nothing has been run yet, so each fix starts with
 
 ## Milestones
 
-M10 to M21 are built. The plugin author guide is [`plugins.md`](plugins.md).
+M10 to M22 are built. The plugin author guide is [`plugins.md`](plugins.md).
 
 | # | Milestone | Adds | Playground proof |
 |---|---|---|---|
@@ -76,7 +76,7 @@ M10 to M21 are built. The plugin author guide is [`plugins.md`](plugins.md).
 | **M19** ✓ | Wizard and browser validation | `POST validate`, scoped error replacement, `Wizard`, `Step`, step query param, step hooks, frontend validation, live validation in patches | Multi-step form blocks on invalid steps |
 | **M20** ✓ | Action core | `Action`, `run` endpoint, token action chain, `ActionForm`, confirmation, reka Dialog modal, parent patch through a reusable `buildPatch` | A row action opens a modal and updates the form |
 | **M21** ✓ | Action features | Select `createOptionForm()`, `editOptionForm()`, `manageOptionForm()`, prefix and suffix actions, `extraItemActions()` | Create a country from its select |
-| **M22** | Heavy fields | `Builder` (groups, previews, block limits), `RichEditor`, `MarkdownEditor`, `CodeEditor`, image editor, cropping, resizing, `storeFiles(false)`, deleting removed files from the disk | Block-based page editor |
+| **M22** ✓ | Heavy fields | `Builder` (groups, previews, block limits), `RichEditor`, `MarkdownEditor`, `CodeEditor`, image editor, cropping, resizing, `storeFiles(false)`, deleting removed files from the disk | Block-based page editor |
 
 **Dependencies:** M10 blocks everything. M11 blocks all feature milestones. M12 blocks M13 and M14. M13 blocks M16 and M20. M16 blocks M17 and Builder. M14 blocks M19. M20 blocks M21 and the markdown preview. M15 and M18 can run in parallel after M12.
 
@@ -103,7 +103,7 @@ M10 to M21 are built. The plugin author guide is [`plugins.md`](plugins.md).
 | `@tiptap/*` | Rich editor | M22 |
 | `symfony/html-sanitizer` | Server-side rich text sanitising | M22 |
 | `@codemirror/*` | Code editor | M22 |
-| `cropperjs` | Image editor | M22 |
+| `cropperjs` | Image editor, version 1 | M22 |
 
 Reka UI should cover tags, slider, toggle group, time field, dialog, stepper and collapsible. Its color primitives covered `ColorPicker` in M15. `maska` was dropped: `core/mask.ts` handles the same mask grammar with no dependency. Markdown preview uses Laravel's `Str::markdown` on the server, so it needs no new package.
 

@@ -99,18 +99,17 @@ class Builder extends Repeater
 
         foreach ($this->getBlocks() as $block) {
             $block->showsPreview($this->hasBlockPreviews());
-            $form->ensureUniqueStatePaths($block->getChildComponents());
         }
 
         return $this;
     }
 
     /**
-     * Blocks may reuse a name between them, so mount() checks each on its own.
+     * Blocks may reuse a field name between them, because a row only ever is one.
      */
-    public function getTemplateComponents(): array
+    public function getTemplateGroups(): array
     {
-        return [];
+        return array_map(fn (Block $block): array => [$block], $this->getBlocks());
     }
 
     /**

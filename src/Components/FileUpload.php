@@ -48,7 +48,7 @@ class FileUpload extends Field implements AcceptsUploads, PersistsItself
 
     public function shouldPersistItself(): bool
     {
-        return $this->relationship !== null;
+        return $this->relationship !== null && $this->storesFiles();
     }
 
     /**

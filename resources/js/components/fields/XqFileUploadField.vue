@@ -7,11 +7,13 @@ import {
     FileText,
     GripVertical,
     LoaderCircle,
+    Pencil,
     UploadCloud,
     X,
 } from 'lucide-vue-next';
-import { computed, nextTick, onBeforeUnmount, ref } from 'vue';
+import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, ref } from 'vue';
 import { useField } from '../../composables/useField';
+import { prepareImage } from '../../core/images';
 import { useSortable } from '../../composables/useSortable';
 import { HttpError } from '../../core/http';
 import { cn, focusFirstEnabled, formatBytes } from '../../lib/utils';
@@ -22,6 +24,8 @@ import XqFieldWrapper from '../XqFieldWrapper.vue';
 import { useTranslator } from '../../composables/context';
 
 const t = useTranslator();
+const XqImageEditor = defineAsyncComponent(() => import('./XqImageEditor.vue'));
+
 interface PendingFile {
     id: number;
     file: File;
@@ -48,6 +52,7 @@ const fileList = ref<HTMLElement | null>(null);
 const dragging = ref(false);
 const uploadError = ref<string | null>(null);
 const pending = ref<PendingFile[]>([]);
+const editing = ref<ReturnType<typeof describe> | null>(null);
 /** What this page knows about files it uploaded, before they have a stored path. */
 const uploaded = ref(new Map<string, { name: string; size: number; preview: string | null }>());
 let nextPendingId = 0;
@@ -174,9 +179,10 @@ async function uploadOne(item: PendingFile): Promise<void> {
     item.status = 'uploading';
 
     try {
+        const file = await prepareImage(item.file, options.value.imageResize);
         const result = await store.upload(
             path,
-            item.file,
+            file,
             (percent) => (item.percent = percent),
             item.controller.signal,
         );
@@ -184,7 +190,7 @@ async function uploadOne(item: PendingFile): Promise<void> {
         uploaded.value.set(result.token, {
             name: result.name,
             size: result.size,
-            preview: item.file.type.startsWith('image/') ? URL.createObjectURL(item.file) : null,
+            preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : null,
         });
         item.token = result.token;
     } catch (failure) {
@@ -295,6 +301,43 @@ function cancelAll(): void {
     pending.value = [];
 }
 
+/**
+ * The edited image uploads as a new file, in the place of the old one. The server
+ * gives a stored file back if it may not go, so that one can't be edited.
+ */
+function canEdit(file: ReturnType<typeof describe>): boolean {
+    return (
+        !!options.value.imageEditor &&
+        file.isImage &&
+        !disabled.value &&
+        (file.isNew || options.value.deletable !== false)
+    );
+}
+
+async function saveEdit(edited: File): Promise<void> {
+    const original = editing.value!.value;
+
+    editing.value = null;
+    uploadError.value = null;
+
+    try {
+        const result = await store.upload(path, edited, () => {});
+
+        uploaded.value.set(result.token, {
+            name: result.name,
+            size: result.size,
+            preview: URL.createObjectURL(edited),
+        });
+        setValues(values.value.map((file) => (file === original ? result.token : file)));
+        forget(original);
+    } catch (failure) {
+        uploadError.value =
+            failure instanceof HttpError
+                ? (failure.validationErrors.file?.[0] ?? failure.message)
+                : t('The upload failed. Please try again.');
+    }
+}
+
 async function remove(file: string): Promise<void> {
     const index = values.value.indexOf(file);
 
@@ -343,6 +386,18 @@ onBeforeUnmount(() => {
                 >
                     <FileText class="size-6 text-xq-muted-foreground" />
                 </div>
+                <XqButton
+                    v-if="canEdit(files[0])"
+                    type="button"
+                    variant="outline"
+                    size="icon-sm"
+                    class="right-0 bottom-0 absolute rounded-full"
+                    :aria-label="t('Edit :name', { name: files[0].name })"
+                    data-xq-edit-image
+                    @click="editing = files[0]"
+                >
+                    <Pencil />
+                </XqButton>
                 <XqButton
                     v-if="canRemove(files[0])"
                     type="button"
@@ -414,6 +469,17 @@ onBeforeUnmount(() => {
                             <ChevronDown />
                         </XqButton>
                     </template>
+                    <XqButton
+                        v-if="canEdit(file)"
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        :aria-label="t('Edit :name', { name: file.name })"
+                        data-xq-edit-image
+                        @click="editing = file"
+                    >
+                        <Pencil />
+                    </XqButton>
                     <XqButton
                         v-if="options.openable && file.url && !file.isNew"
                         as="a"
@@ -527,5 +593,14 @@ onBeforeUnmount(() => {
                 />
             </label>
         </div>
+        <XqImageEditor
+            v-if="editing"
+            :src="editing.url!"
+            :name="editing.name"
+            :aspect-ratios="options.imageEditor?.aspectRatios"
+            :fill-color="options.imageEditor?.fillColor"
+            @save="saveEdit"
+            @cancel="editing = null"
+        />
     </XqFieldWrapper>
 </template>

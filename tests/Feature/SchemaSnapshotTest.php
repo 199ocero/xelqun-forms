@@ -121,6 +121,8 @@ it('serializes each component to a stable node', function (object $component) {
     'rich editor' => fn () => RichEditor::make('body')->toolbarButtons([['bold', 'attachFiles'], ['link']])->disableToolbarButtons(['link'])->minHeight('8rem'),
     'markdown editor' => fn () => MarkdownEditor::make('notes')->minHeight('6rem')->maxHeight('20rem'),
     'code editor' => fn () => CodeEditor::make('snippet')->language(Language::Php)->wrap()->default('<?php'),
+    'file upload with image tools' => fn () => FileUpload::make('photo')->image()->imageEditor()->imageEditorAspectRatioOptions([null, '16:9'])->imageEditorEmptyFillColor('#fff')
+        ->automaticallyCropImagesToAspectRatio('1:1')->automaticallyResizeImagesMode('cover')->automaticallyResizeImagesToWidth(200)->automaticallyResizeImagesToHeight(200),
     'wizard' => fn () => Wizard::make([
         Step::make('Account')->description('Who you are')->icon('user')->completedIcon('star')->columns(2)->schema([TextInput::make('name')]),
         Step::make('Plan')->schema([TextInput::make('plan')]),

@@ -295,11 +295,9 @@ class Form
      * State, validation, live patches and the browser all address a field by
      * its path, so two fields on one path would silently overwrite each other.
      *
-     * @internal
-     *
      * @param  array<int, Component>  $components
      */
-    public function ensureUniqueStatePaths(array $components): void
+    private function ensureUniqueStatePaths(array $components): void
     {
         $paths = [];
 
@@ -314,8 +312,8 @@ class Form
 
             $paths[$path] = true;
 
-            if ($field instanceof ContainsRows) {
-                $this->ensureUniqueStatePaths($field->getTemplateComponents());
+            foreach ($field->getTemplateGroups() as $group) {
+                $this->ensureUniqueStatePaths($group);
             }
         });
     }
@@ -800,6 +798,7 @@ class Form
         $data = $uploads->promote($this, $this->validateInput($input));
 
         try {
+            $uploads->markRemovedFiles($this, $data);
             $this->record = app(ModelPersister::class)->save($this, $data, $uploads);
         } catch (Throwable $exception) {
             $uploads->discardUnlessSettled();

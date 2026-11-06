@@ -430,7 +430,7 @@ Each one ends with something visible at `/playground/forms`.
 
 ## Implementation status (2026-11-05)
 
-Milestones 0–9 are built and tested. Milestone 9 added failure and loading feedback for live updates, screen reader and keyboard support across every field type, reduced motion, and WCAG AA text contrast. It has not been checked with a real screen reader, on real phones, or in Safari and Firefox.
+Milestones 0–22 are built and tested. Milestone 9 added failure and loading feedback for live updates, screen reader and keyboard support across every field type, reduced motion, and WCAG AA text contrast. It has not been checked with a real screen reader, on real phones, or in Safari and Firefox.
 
 | Proof point | Covered by |
 |---|---|
@@ -440,7 +440,7 @@ Milestones 0–9 are built and tested. Milestone 9 added failure and loading fee
 | File upload inside a repeater row | browser test, package `UploadTest` |
 | Server errors on the correct nested field | browser tests (`Price (Item 2)`), package `ValidationTest` |
 
-**Test counts:** package Pest 985, package Vitest 511, playground feature and browser 77.
+**Test counts:** package Pest 1054, package Vitest 576, playground feature and browser 81.
 
 ### Milestone 10: foundations
 
@@ -674,7 +674,7 @@ Changes that can break existing code, for the release notes:
 
 Limits to keep in mind:
 
-- Removing a file doesn't delete it from the disk, with or without a relationship. That matches single uploads before this. A cleanup job can find unused files.
+- Removing a file doesn't delete it from the disk, with or without a relationship, unless the field has `deleteRemovedFiles()` from M22.
 - `maxParallelUploads()` is per field, so two fields started at the same moment can still hit the SQLite lock. Only that file fails, and it can be picked again.
 - A private file's link lasts 5 minutes, so it fails on a page left open longer.
 - The upload route allows 30 requests a minute by default (`routes.throttle.upload`), so a large gallery can hit it. Raise it in the config.
@@ -683,7 +683,6 @@ Limits to keep in mind:
 - A pasted file needs the field to have focus. Clicking the dropzone opens the file picker, so tabbing to it is the reliable way.
 - `appendFiles()` differs from Filament, where it works around FilePond sometimes adding files at the start. New files here go last unless the form sets `appendFiles(false)`, which puts the newest file first, so two files picked together end up in reverse order.
 - `deletable(false)` protects a stored file, not the row around it: removing a repeater row still removes that row's files.
-- `storeFiles(false)` and deleting removed files from the disk aren't built. They're listed under M22.
 
 ### Milestone 18: layout and display
 
@@ -874,6 +873,28 @@ Limits to keep in mind:
 - An image removed from the text stays on the disk.
 - An image inserted by pasting isn't uploaded. Use the toolbar button.
 - A value saved outside this field isn't clean until it passes through `formatStateFromRecord()`, so print it with care.
+
+#### Files
+
+The proof is the "File uploads" example. On a real server, a 1600×900 image shrank to 1200×675 in the browser as it uploaded, and the editor cropped it to 675×675.
+
+- **`imageEditor()`** opens Cropper from a pencil on the file, with `imageEditorAspectRatioOptions()` and `imageEditorEmptyFillColor()`. It loads only when opened, as a chunk of about 16 KB. The edited image uploads as a new file, in the old one's place, through the same rules. A stored file with `deletable(false)` can't be edited, because the server would give it back.
+- **`automaticallyCropImagesToAspectRatio()`, `automaticallyResizeImagesMode()`, `automaticallyResizeImagesToWidth()`, `automaticallyResizeImagesToHeight()` and `automaticallyUpscaleImagesWhenResizing()`** run in the browser before the upload. They are a convenience, and a request can skip them, so use rules for what must hold. A GIF goes up unchanged, because redrawing it would lose its frames, and so does an image the browser can't read, so that the server can give the reason.
+- **`storeFiles(false)`** leaves a file on the temporary disk, and the data holds a `TemporaryUpload`. It is meant for imports, and works well inside an action. On `save()` it stays out of the columns, after `mutateBeforeSave()` has had it.
+- **`deleteRemovedFiles()`** deletes a stored file once a save no longer uses it, including the files of a deleted row. It is off by default, runs after the commit, and only for `save()`, so a rollback or a `validate()` keeps everything. A key the output doesn't have means the field was left out, and that removes nothing. In a builder it only looks at rows of its own block.
+
+Where this differs from Filament:
+
+- Cropper is version 1, not 2, whose API is built on web components. The plan named only the package.
+- `imageEditorMode()`, `imageEditorViewportWidth()`, `imageEditorViewportHeight()` and `circleCropper()` aren't built.
+- `deleteRemovedFiles()` is new here. Filament has `deleteUploadedFileUsing()`.
+
+Limits to keep in mind:
+
+- An edited image is saved as a PNG, whatever its name says, so a JPEG can grow.
+- Editing a stored file on another origin needs CORS. Without it, the editor says it can't edit the image.
+- `deleteRemovedFiles()` can't see another record pointing at the same file, so leave it off if yours can.
+- The pest browser server corrupts binary uploads, so the image tools were checked by hand on Herd, and by Vitest with Cropper mocked.
 
 ### Where the build differs from the plan
 - **Patches have no `add`/`remove`.** A component hidden by a server closure is sent as a stub (`{ key, type, hidden: true, deps }`) and later patched to a full node, which keeps every key stable.

@@ -134,6 +134,7 @@ Implement a contract from `Xelqun\Forms\Contracts` and the matching endpoint sta
 |---|---|---|
 | `HasSearchResults` | The search endpoint | `store.search(path, term, signal)` |
 | `AcceptsUploads` | The upload endpoint and storage on save | `store.upload(path, file, onProgress, signal)` |
+| `EmbedsUploads` | The same for uploads kept inside a field's text. See `HasFileAttachments` | `store.upload(path, file, onProgress, signal)` |
 | `ContainsRows` | Rows with their own components | `store.addRow`, `removeRow`, `moveRow` |
 | `PersistsItself` | Saving somewhere other than a column | None |
 | `PersistsBeforeSave` | Also doing something before the record is saved, such as setting a foreign key | None |
@@ -299,4 +300,4 @@ On the browser side, the public API is what `@xelqun/forms` and `@xelqun/forms/t
 - **A repeater with no relationship has no row model**, so `persist()` isn't called in its rows and the value stays in the row's data.
 - **Icons come from a fixed set.** Add your own with `icons` on your plugin, as `{ name: component }`.
 - **Debounce depends on the type.** A text-like field that another field depends on sends every change, because the browser only debounces built-in text types. Call `live(debounce: 400)` on your field to set it.
-- **Action modals don't exist yet.** They arrive in M20.
+- **Actions have no contract of their own.** An `Action` goes in a field slot with `suffixAction()`, and an action your Vue component runs itself can use `sendsResult()` and `store.runAction(node)`. See `MarkdownEditor`.

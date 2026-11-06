@@ -44,6 +44,22 @@ final class TemporaryUploadStore
         return is_string($value) && str_starts_with($value, self::TOKEN_PREFIX);
     }
 
+    /**
+     * The temporary file, for code that handles it itself.
+     */
+    public function open(string $id): TemporaryUpload
+    {
+        $metadata = $this->metadata($id) ?? [];
+
+        return new TemporaryUpload(
+            (string) ($metadata['name'] ?? $id),
+            (int) ($metadata['size'] ?? 0),
+            $metadata['mime'] ?? null,
+            $this->disk(),
+            $this->directory().'/'.$id,
+        );
+    }
+
     public function idFromToken(string $token): string
     {
         return substr($token, strlen(self::TOKEN_PREFIX));

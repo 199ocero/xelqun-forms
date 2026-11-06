@@ -10,6 +10,7 @@ use Xelqun\Forms\Contracts\ContainsRows;
 use Xelqun\Forms\Contracts\PersistsBeforeSave;
 use Xelqun\Forms\Contracts\PersistsItself;
 use Xelqun\Forms\Form;
+use Xelqun\Forms\Uploads\TemporaryUpload;
 use Xelqun\Forms\Uploads\UploadBatch;
 
 /**
@@ -77,7 +78,7 @@ final class ModelPersister
             }
         }
 
-        $record->forceFill($attributes)->save();
+        $record->forceFill(array_filter($attributes, fn (mixed $value): bool => ! $this->isUnstoredFile($value)))->save();
 
         foreach ($selfPersisting as $component) {
             $component->persist($record, $data[$component->getName()]);
@@ -113,5 +114,15 @@ final class ModelPersister
         foreach ($component->getChildComponents() as $child) {
             $this->collect($child, $data, $attributes, $selfPersisting);
         }
+    }
+
+    /**
+     * A file with storeFiles(false) is for mutateBeforeSave() or the like. If
+     * nothing took it, there is nothing to put in a column.
+     */
+    private function isUnstoredFile(mixed $value): bool
+    {
+        return $value instanceof TemporaryUpload
+            || (is_array($value) && array_any($value, fn (mixed $file): bool => $file instanceof TemporaryUpload));
     }
 }
