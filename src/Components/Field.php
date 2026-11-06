@@ -432,7 +432,9 @@ abstract class Field extends Component implements NeedsServer
 
     public function getDefaultState(): mixed
     {
-        return $this->evaluate($this->default);
+        $default = $this->evaluate($this->default);
+
+        return $default instanceof \BackedEnum ? $default->value : $default;
     }
 
     /**
@@ -453,7 +455,7 @@ abstract class Field extends Component implements NeedsServer
     {
         $value = match (true) {
             $source instanceof Model && $source->exists => $this->formatStateFromRecord($source->getAttribute($this->name)),
-            is_array($source) => $this->formatStateFromRecord($source[$this->name] ?? $this->getDefaultState()),
+            is_array($source) && isset($source[$this->name]) => $this->formatStateFromRecord($source[$this->name]),
             default => $this->getDefaultState(),
         };
 
@@ -688,6 +690,15 @@ abstract class Field extends Component implements NeedsServer
     }
 
     /**
+     * Clean up a value from the browser before the rules see it. A locked field
+     * keeps its server value, so this doesn't run on one.
+     */
+    public function normalizeState(mixed $state): mixed
+    {
+        return $state;
+    }
+
+    /**
      * Transform the validated value before it is returned or saved.
      */
     public function dehydrateState(mixed $value): mixed
@@ -733,14 +744,11 @@ abstract class Field extends Component implements NeedsServer
             'live' => $this->getLiveConfig(),
             ...($this instanceof ContainsRows ? ['containsRows' => true] : []),
             ...($this->canBeReadOnly() ? ['readOnly' => $this->isReadOnly()] : []),
-            ...array_map(
-                fn (bool|Closure $flag): bool => (bool) $this->evaluate($flag),
-                array_filter([
-                    'autofocus' => $this->autofocus,
-                    'hiddenLabel' => $this->hiddenLabel,
-                    'inlineLabel' => $this->inlineLabel,
-                ], fn (bool|Closure $flag): bool => $flag !== false),
-            ),
+            ...$this->evaluateConfigured([
+                'autofocus' => $this->autofocus,
+                'hiddenLabel' => $this->hiddenLabel,
+                'inlineLabel' => $this->inlineLabel,
+            ]),
         ];
     }
 }

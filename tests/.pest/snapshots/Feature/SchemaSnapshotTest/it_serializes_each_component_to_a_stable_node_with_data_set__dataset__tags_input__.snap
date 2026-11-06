@@ -1,0 +1,41 @@
+{
+    "state": {
+        "data": {
+            "tags": []
+        }
+    },
+    "components": [
+        {
+            "key": "data.tags",
+            "type": "tags-input",
+            "hidden": false,
+            "path": "data.tags",
+            "label": "Tags",
+            "hint": null,
+            "placeholder": null,
+            "required": false,
+            "disabled": false,
+            "rules": {
+                "visible": null,
+                "required": null,
+                "disabled": null
+            },
+            "computed": null,
+            "live": null,
+            "span": null,
+            "props": {
+                "suggestions": [
+                    "a"
+                ],
+                "splitKeys": [
+                    "Tab",
+                    " "
+                ],
+                "reorderable": true,
+                "tagPrefix": "#"
+            },
+            "children": [],
+            "deps": []
+        }
+    ]
+}

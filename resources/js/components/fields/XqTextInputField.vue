@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { LoaderCircle } from 'lucide-vue-next';
-import { computed, ref, watch } from 'vue';
+import { Check, Copy, Eye, EyeOff, LoaderCircle } from 'lucide-vue-next';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useField } from '../../composables/useField';
+import { applyMask } from '../../core/mask';
 import { isNumeric, toNumber } from '../../core/values';
 import { cn } from '../../lib/utils';
 import type { SchemaNode } from '../../schema/types';
 import { controlClass, spinnerClass } from '../../ui/classes';
+import XqIcon from '../../ui/XqIcon.vue';
 import XqFieldWrapper from '../XqFieldWrapper.vue';
 
 const props = defineProps<{ node: SchemaNode }>();
@@ -26,7 +28,9 @@ const options = computed(() => props.node.props ?? {});
 const inputDisabled = computed(() => disabled.value && !readOnly.value);
 
 function format(next: unknown): string {
-    return next === null || next === undefined ? '' : String(next);
+    const value = next === null || next === undefined ? '' : String(next);
+
+    return options.value.mask ? applyMask(value, options.value.mask) : value;
 }
 
 /**
@@ -46,7 +50,20 @@ watch(value, (next) => {
 });
 
 function onInput(event: Event): void {
-    text.value = (event.target as HTMLInputElement).value;
+    const input = event.target as HTMLInputElement;
+
+    if (options.value.mask) {
+        const typed = input.value;
+        const caret = input.selectionStart ?? typed.length;
+
+        input.value = applyMask(typed, options.value.mask);
+
+        const position = Math.max(0, caret + input.value.length - typed.length);
+
+        input.setSelectionRange?.(position, position);
+    }
+
+    text.value = input.value;
 
     if (!options.value.numeric) {
         value.value = text.value;
@@ -58,9 +75,43 @@ function onInput(event: Event): void {
     value.value = trimmed === '' ? null : isNumeric(trimmed) ? toNumber(trimmed) : trimmed;
 }
 
-const inputType = computed(() =>
-    options.value.numeric ? 'text' : (options.value.inputType ?? 'text'),
-);
+const revealed = ref(false);
+const inputType = computed(() => {
+    if (options.value.numeric || (revealed.value && options.value.revealable)) {
+        return 'text';
+    }
+
+    return options.value.inputType ?? 'text';
+});
+
+const copied = ref(false);
+let copiedTimer: ReturnType<typeof setTimeout> | null = null;
+
+async function copy(): Promise<void> {
+    if (!navigator.clipboard) {
+        return;
+    }
+
+    try {
+        await navigator.clipboard.writeText(text.value);
+    } catch {
+        return;
+    }
+
+    copied.value = true;
+
+    if (copiedTimer) {
+        clearTimeout(copiedTimer);
+    }
+
+    copiedTimer = setTimeout(() => (copied.value = false), options.value.copyable?.duration);
+}
+
+onBeforeUnmount(() => {
+    if (copiedTimer) {
+        clearTimeout(copiedTimer);
+    }
+});
 </script>
 
 <template>
@@ -81,6 +132,11 @@ const inputType = computed(() =>
             >
                 {{ options.prefix }}
             </span>
+            <XqIcon
+                v-if="options.prefixIcon"
+                :name="options.prefixIcon"
+                class="ml-3 text-xq-muted-foreground"
+            />
             <input
                 :id="id"
                 :name="path"
@@ -93,6 +149,7 @@ const inputType = computed(() =>
                 :required="required"
                 :maxlength="options.maxLength ?? undefined"
                 :autocomplete="options.autocomplete ?? undefined"
+                :list="options.datalist ? `${id}-list` : undefined"
                 :aria-invalid="error ? true : undefined"
                 :aria-describedby="describedBy"
                 :class="
@@ -104,7 +161,41 @@ const inputType = computed(() =>
                 @input="onInput"
                 @blur="onBlur"
             />
+            <datalist v-if="options.datalist" :id="`${id}-list`">
+                <option
+                    v-for="suggestion in options.datalist"
+                    :key="suggestion"
+                    :value="suggestion"
+                />
+            </datalist>
             <LoaderCircle v-if="showLoading" :class="cn(spinnerClass, 'mr-3')" aria-hidden="true" />
+            <XqIcon
+                v-if="options.suffixIcon"
+                :name="options.suffixIcon"
+                class="mr-3 text-xq-muted-foreground"
+            />
+            <button
+                v-if="options.revealable"
+                type="button"
+                class="mr-2 size-6 rounded-sm flex cursor-pointer items-center justify-center text-xq-muted-foreground hover:text-xq-foreground"
+                :aria-label="revealed ? 'Hide password' : 'Show password'"
+                :aria-pressed="revealed"
+                @click="revealed = !revealed"
+            >
+                <component :is="revealed ? EyeOff : Eye" class="size-4" />
+            </button>
+            <button
+                v-if="options.copyable"
+                type="button"
+                class="mr-2 size-6 rounded-sm flex cursor-pointer items-center justify-center text-xq-muted-foreground hover:text-xq-foreground"
+                aria-label="Copy"
+                @click="copy"
+            >
+                <component :is="copied ? Check : Copy" class="size-4" />
+            </button>
+            <span v-if="options.copyable" role="status" class="sr-only">{{
+                copied ? options.copyable.message : ''
+            }}</span>
             <span
                 v-if="options.suffix"
                 class="px-3 text-sm flex h-full items-center border-l border-xq-input bg-xq-muted text-xq-muted-foreground"

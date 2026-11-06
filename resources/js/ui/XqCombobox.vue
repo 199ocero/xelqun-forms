@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { Check, ChevronsUpDown, LoaderCircle, X } from 'lucide-vue-next';
+import { Check, ChevronLeft, ChevronRight, ChevronsUpDown, LoaderCircle, X } from 'lucide-vue-next';
 import {
     ComboboxAnchor,
     ComboboxContent,
     ComboboxEmpty,
+    ComboboxGroup,
     ComboboxInput,
     ComboboxItem,
     ComboboxItemIndicator,
+    ComboboxLabel,
     ComboboxPortal,
     ComboboxRoot,
     ComboboxTrigger,
@@ -15,8 +17,9 @@ import {
 import { computed, reactive, ref, watch } from 'vue';
 import type { HTMLAttributes } from 'vue';
 import { cn } from '../lib/utils';
-import type { SelectOption } from '../schema/types';
-import { controlClass, optionClass, popoverClass, spinnerClass } from './classes';
+import type { SelectMessages, SelectOption } from '../schema/types';
+import { controlClass, groupLabelClass, optionClass, popoverClass, spinnerClass } from './classes';
+import { groupOptions, moveItem } from './options';
 
 type Value = string | number;
 
@@ -32,12 +35,16 @@ const props = defineProps<{
     invalid?: boolean;
     describedBy?: string;
     searchFailed?: boolean;
+    messages?: SelectMessages;
+    /** shortcut: moved with buttons, until drag and drop arrives with sortablejs in M16. */
+    reorderable?: boolean;
     class?: HTMLAttributes['class'];
 }>();
 const emit = defineEmits<{ search: [term: string]; blur: [] }>();
 const model = defineModel<Value | Value[] | null>();
 const searchTerm = ref('');
 const labels = reactive(new Map<string, string>());
+const groups = computed(() => groupOptions(props.options));
 
 watch(
     () => props.options,
@@ -65,6 +72,10 @@ function labelFor(value: unknown): string {
 
 function remove(value: Value): void {
     model.value = selectedValues.value.filter((item) => item !== value);
+}
+
+function move(value: Value, offset: number): void {
+    model.value = moveItem(selectedValues.value, value, offset);
 }
 
 function clear(): void {
@@ -96,11 +107,31 @@ function clear(): void {
         >
             <template v-if="multiple">
                 <span
-                    v-for="value in selectedValues"
+                    v-for="(value, index) in selectedValues"
                     :key="String(value)"
                     class="gap-1 py-0.5 pr-1 pl-2 text-xs font-medium inline-flex items-center rounded-xq-sm bg-xq-secondary text-xq-secondary-foreground"
                 >
+                    <button
+                        v-if="reorderable && index > 0"
+                        type="button"
+                        class="rounded-sm cursor-pointer opacity-60 hover:opacity-100"
+                        :aria-label="`Move ${labelFor(value)} earlier`"
+                        :disabled="disabled"
+                        @click.stop="move(value, -1)"
+                    >
+                        <ChevronLeft class="size-3" />
+                    </button>
                     {{ labelFor(value) }}
+                    <button
+                        v-if="reorderable && index < selectedValues.length - 1"
+                        type="button"
+                        class="rounded-sm cursor-pointer opacity-60 hover:opacity-100"
+                        :aria-label="`Move ${labelFor(value)} later`"
+                        :disabled="disabled"
+                        @click.stop="move(value, 1)"
+                    >
+                        <ChevronRight class="size-3" />
+                    </button>
                     <button
                         type="button"
                         class="rounded-sm cursor-pointer opacity-60 hover:opacity-100"
@@ -155,28 +186,36 @@ function clear(): void {
                     <ComboboxEmpty class="px-2 py-6 text-sm text-center text-xq-muted-foreground">
                         {{
                             searching
-                                ? 'Searching…'
+                                ? (messages?.searching ?? 'Searching…')
                                 : loading
-                                  ? 'Loading…'
-                                  : searchTerm || !remote
-                                    ? 'No results'
-                                    : 'Type to search'
+                                  ? (messages?.loading ?? 'Loading…')
+                                  : searchTerm
+                                    ? (messages?.noResults ?? 'No results')
+                                    : remote
+                                      ? (messages?.prompt ?? 'Type to search')
+                                      : (messages?.noOptions ?? 'No results')
                         }}
                     </ComboboxEmpty>
-                    <ComboboxItem
-                        v-for="option in options"
-                        :key="String(option.value)"
-                        :value="option.value"
-                        :text-value="option.label"
-                        :class="optionClass"
-                    >
-                        <span class="truncate">{{ option.label }}</span>
-                        <ComboboxItemIndicator
-                            class="right-2 size-3.5 absolute flex items-center justify-center"
+                    <ComboboxGroup v-for="group in groups" :key="group.label ?? ''">
+                        <ComboboxLabel v-if="group.label" :class="groupLabelClass">{{
+                            group.label
+                        }}</ComboboxLabel>
+                        <ComboboxItem
+                            v-for="option in group.options"
+                            :key="String(option.value)"
+                            :value="option.value"
+                            :text-value="option.label"
+                            :disabled="option.disabled"
+                            :class="optionClass"
                         >
-                            <Check class="size-4" />
-                        </ComboboxItemIndicator>
-                    </ComboboxItem>
+                            <span class="truncate">{{ option.label }}</span>
+                            <ComboboxItemIndicator
+                                class="right-2 size-3.5 absolute flex items-center justify-center"
+                            >
+                                <Check class="size-4" />
+                            </ComboboxItemIndicator>
+                        </ComboboxItem>
+                    </ComboboxGroup>
                 </ComboboxViewport>
             </ComboboxContent>
         </ComboboxPortal>

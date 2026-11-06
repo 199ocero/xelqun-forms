@@ -60,7 +60,7 @@ Confirmed by reading the code. Nothing has been run yet, so each fix starts with
 
 ## Milestones
 
-M10 to M14 are built. The plugin author guide is [`plugins.md`](plugins.md).
+M10 to M15 are built. The plugin author guide is [`plugins.md`](plugins.md).
 
 | # | Milestone | Adds | Playground proof |
 |---|---|---|---|
@@ -69,7 +69,7 @@ M10 to M14 are built. The plugin author guide is [`plugins.md`](plugins.md).
 | **M12** ✓ | State and field basics | Operation, `hiddenOn()`, `visibleOn()`, `disabledOn()`, `readOnly()`, `formatStateUsing()`, `dehydrateStateUsing()`, `afterStateHydrated()`, `saved()`, `extraAttributes()`, `autofocus()`, `hiddenLabel()`, `inlineLabel()` | Same form behaves differently on create and edit |
 | **M13** ✓ | Relationships and hooks | Recursive persister, `beforeSave`/`afterSave`/`afterCommit`, repeater mutate and after hooks, BelongsToMany with `pivotData()`, `MorphToSelect`, relationship `Group` (HasOne), `getOptionLabelFromRecordUsing()` | Order form with tags and a morph owner round-trips |
 | **M14** ✓ | Validation API | `unique()`, `scopedUnique()`, Filament's dedicated rule helpers, `validationMessages()`, `validationAttribute()`, field-reference paths for `same`, `confirmed` | Validation example shows custom messages |
-| **M15** | Everyday fields | `DateTimePicker`, `TimePicker`, `timezone()`, `format()`, `displayFormat()`, `disabledDates()`, steps; `CheckboxList`, `TagsInput`, `ToggleButtons`, `Slider`, `KeyValue`, `ColorPicker`; Select groups, `disableOptionWhen()`, `boolean()`, `reorderable()`, messages; TextInput `revealable()`, `trim()`, `mask()`, `stripCharacters()`, `datalist()`, `copyable()`, `length()`, icons | New "All fields" example |
+| **M15** ✓ | Everyday fields | `DateTimePicker`, `TimePicker`, `timezone()`, `format()`, `displayFormat()`, `disabledDates()`, steps; `CheckboxList`, `TagsInput`, `ToggleButtons`, `Slider`, `KeyValue`, `ColorPicker`; Select groups, `disableOptionWhen()`, `boolean()`, `reorderable()`, messages; TextInput `revealable()`, `trim()`, `mask()`, `stripCharacters()`, `datalist()`, `copyable()`, `length()`, icons | New "All fields" example |
 | **M16** | Repeater upgrade | Nested repeaters, `cloneable()`, `collapsible()`, `collapsed()`, `simple()`, `grid()`, `table()`, `addable()`, `deletable()`, `distinct()`, delete confirmation, item numbers, drag-and-drop (up/down stays for keyboard users) | Two-level repeater saves and reloads |
 | **M17** | Files | `multiple()`, `minFiles()`, `maxFiles()`, `reorderable()`, `minSize()`, `pasteable()`, `downloadable()`, `openable()`, `avatar()`, parallel limit, file relations | Multi-file gallery in a row |
 | **M18** | Layout and display | `Flex`, `FusedGroup`, `Callout`, empty states, `Text`, `Icon`, `Image`, `UnorderedList`, field slots, translated Vue strings, unsaved-changes warning | Layout example; a translated locale; leave warning |
@@ -99,14 +99,13 @@ M10 to M14 are built. The plugin author guide is [`plugins.md`](plugins.md).
 
 | Package | For | Milestone |
 |---|---|---|
-| `maska` | Input masks | M15 |
 | `sortablejs` | Drag-and-drop | M16 |
 | `@tiptap/*` | Rich editor | M22 |
 | `symfony/html-sanitizer` | Server-side rich text sanitising | M22 |
 | `@codemirror/*` | Code editor | M22 |
 | `cropperjs` | Image editor | M22 |
 
-Reka UI should cover tags, slider, toggle group, time field, dialog, stepper and collapsible. Check its color primitives in M15; the fallback is a native color input with a hex field. Markdown preview uses Laravel's `Str::markdown` on the server, so it needs no new package.
+Reka UI should cover tags, slider, toggle group, time field, dialog, stepper and collapsible. Its color primitives covered `ColorPicker` in M15. `maska` was dropped: `core/mask.ts` handles the same mask grammar with no dependency. Markdown preview uses Laravel's `Str::markdown` on the server, so it needs no new package.
 
 ## Risks
 

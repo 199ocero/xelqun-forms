@@ -1,7 +1,8 @@
-import type { App, Plugin } from 'vue';
+import type { App, Component, Plugin } from 'vue';
 import { createRegistry, defaultComponents } from './components/defaults';
 import { REGISTRY, toComponent } from './composables/registry';
 import type { ComponentRegistry, ComponentResolver } from './composables/registry';
+import { registerIcons } from './ui/icons';
 
 export interface XelqunPluginContext {
     app: App;
@@ -17,6 +18,8 @@ export interface XelqunPlugin {
     components?: Record<string, ComponentResolver>;
     /** Built-in types this plugin takes over on purpose. Another plugin's type is always a collision. */
     replaces?: string[];
+    /** Icons PHP can name, as { name: component }. */
+    icons?: Record<string, Component>;
     /** Runs once, after every plugin has registered its components. */
     setup?: (context: XelqunPluginContext) => void;
 }
@@ -25,6 +28,8 @@ export interface XelqunFormsOptions {
     plugins?: XelqunPlugin[];
     /** The app's own renderers, keyed by schema type. These win over plugins and built-ins. */
     components?: Record<string, ComponentResolver>;
+    /** Icons PHP can name, as { name: component }, on top of the built-in set. */
+    icons?: Record<string, Component>;
 }
 
 const VENDOR_PREFIXED_TYPE = /^[a-z0-9-]+\/[a-z0-9-]+$/;
@@ -95,6 +100,8 @@ export function createXelqunForms(options: XelqunFormsOptions = {}): Plugin {
             const registry = createRegistry();
 
             registerPlugins(registry, plugins, import.meta.env?.DEV ?? false);
+            plugins.forEach((plugin) => registerIcons(plugin.icons ?? {}));
+            registerIcons(options.icons ?? {});
 
             for (const [type, resolver] of Object.entries(options.components ?? {})) {
                 registry.set(type, toComponent(resolver));

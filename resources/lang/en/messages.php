@@ -1,6 +1,16 @@
 <?php
 
 return [
+    'boolean' => [
+        'true' => 'Yes',
+        'false' => 'No',
+    ],
+    'copied' => 'Copied',
+    'key_value' => [
+        'key' => 'Key',
+        'value' => 'Value',
+        'add' => 'Add row',
+    ],
     'morph' => [
         'type' => 'Type',
         'record' => 'Record',

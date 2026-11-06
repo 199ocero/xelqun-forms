@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Validation\Rule;
 use LogicException;
 use Xelqun\Forms\Components\Concerns\HasOptions;
 use Xelqun\Forms\Contracts\HasSearchResults;
@@ -23,6 +22,8 @@ class Select extends Field implements HasSearchResults, PersistsItself
 {
     use HasOptions {
         getOptions as getStaticOptions;
+        formatStateFromRecord as formatOptionState;
+        getDefaultState as getOptionDefaultState;
     }
 
     protected bool $isSearchable = false;
@@ -49,6 +50,11 @@ class Select extends Field implements HasSearchResults, PersistsItself
     protected int $searchLimit = 50;
 
     protected int $searchDebounce = 250;
+
+    protected bool|Closure $isReorderable = false;
+
+    /** @var array<string, string|Closure|null> */
+    protected array $messages = [];
 
     public function getType(): string
     {
@@ -197,6 +203,67 @@ class Select extends Field implements HasSearchResults, PersistsItself
             ->whereIn($keyName, $this->getAllAttachedKeys($record))
             ->pluck($keyName)
             ->all();
+    }
+
+    /**
+     * Let users change the order of what they picked, with multiple(). A
+     * BelongsToMany relationship has no order to save.
+     */
+    public function reorderable(bool|Closure $condition = true): static
+    {
+        $this->isReorderable = $condition;
+
+        return $this;
+    }
+
+    /**
+     * Shown while the options load.
+     */
+    public function loadingMessage(string|Closure|null $message): static
+    {
+        $this->messages['loading'] = $message;
+
+        return $this;
+    }
+
+    /**
+     * Shown when the field has no options at all.
+     */
+    public function noOptionsMessage(string|Closure|null $message): static
+    {
+        $this->messages['noOptions'] = $message;
+
+        return $this;
+    }
+
+    /**
+     * Shown when a search finds nothing.
+     */
+    public function noSearchResultsMessage(string|Closure|null $message): static
+    {
+        $this->messages['noResults'] = $message;
+
+        return $this;
+    }
+
+    /**
+     * Shown before the user types in a search.
+     */
+    public function searchPrompt(string|Closure|null $message): static
+    {
+        $this->messages['prompt'] = $message;
+
+        return $this;
+    }
+
+    /**
+     * Shown while a search runs.
+     */
+    public function searchingMessage(string|Closure|null $message): static
+    {
+        $this->messages['searching'] = $message;
+
+        return $this;
     }
 
     /**
@@ -385,7 +452,7 @@ class Select extends Field implements HasSearchResults, PersistsItself
                 }
             };
 
-            return $this->isMultiple ? ['array', $exists] : [$exists];
+            return [...($this->isMultiple ? ['array', $exists] : [$exists]), ...$this->getDisabledOptionRules()];
         }
 
         if ($this->isAsync()) {
@@ -399,39 +466,22 @@ class Select extends Field implements HasSearchResults, PersistsItself
                 }
             };
 
-            return $this->isMultiple ? ['array', $validate] : [$validate];
+            return [...($this->isMultiple ? ['array', $validate] : [$validate]), ...$this->getDisabledOptionRules()];
         }
 
-        $allowed = array_map('strval', array_keys($this->getOptions()));
-
-        if ($this->isMultiple) {
-            return ['array', $this->eachRule(Rule::in($allowed))];
-        }
-
-        return [Rule::in($allowed)];
-    }
-
-    private function eachRule(mixed $rule): Closure
-    {
-        return function (string $attribute, mixed $value, Closure $fail) use ($rule): void {
-            $validator = validator(['items' => (array) $value], ['items.*' => [$rule]]);
-
-            if ($validator->fails()) {
-                $fail($this->getFailureMessage('in'));
-            }
-        };
+        return $this->getOptionRules($this->isMultiple);
     }
 
     public function formatStateFromRecord(mixed $value): mixed
     {
-        $value = parent::formatStateFromRecord($value);
+        $value = $this->formatOptionState($value);
 
         return $this->isMultiple ? array_values((array) ($value ?? [])) : $value;
     }
 
     public function getDefaultState(): mixed
     {
-        $default = parent::getDefaultState();
+        $default = $this->getOptionDefaultState();
 
         return $this->isMultiple ? array_values((array) ($default ?? [])) : $default;
     }
@@ -440,12 +490,20 @@ class Select extends Field implements HasSearchResults, PersistsItself
     {
         $isAsync = $this->isAsync();
 
+        $messages = $this->evaluateConfigured($this->messages);
+
         return [
-            'options' => $this->toOptionList($isAsync ? $this->getSelectedOptions() : $this->getOptions()),
+            'options' => match (true) {
+                $isAsync => $this->toOptionList($this->getSelectedOptions()),
+                $this->relationship !== null && $this->options === null => $this->toOptionList($this->getOptions()),
+                default => $this->getOptionList(),
+            },
             'searchable' => $this->isSearchable,
             'multiple' => $this->isMultiple,
             'async' => $isAsync,
             'searchDebounce' => $this->searchDebounce,
+            ...($messages === [] ? [] : ['messages' => $messages]),
+            ...$this->evaluateConfigured(['reorderable' => $this->isReorderable]),
         ];
     }
 }

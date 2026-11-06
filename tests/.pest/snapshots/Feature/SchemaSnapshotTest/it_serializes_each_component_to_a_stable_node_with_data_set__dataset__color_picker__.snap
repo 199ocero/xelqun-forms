@@ -1,0 +1,33 @@
+{
+    "state": {
+        "data": {
+            "tint": "rgba(1, 2, 3, 0.5)"
+        }
+    },
+    "components": [
+        {
+            "key": "data.tint",
+            "type": "color-picker",
+            "hidden": false,
+            "path": "data.tint",
+            "label": "Tint",
+            "hint": null,
+            "placeholder": null,
+            "required": false,
+            "disabled": false,
+            "rules": {
+                "visible": null,
+                "required": null,
+                "disabled": null
+            },
+            "computed": null,
+            "live": null,
+            "span": null,
+            "props": {
+                "format": "rgba"
+            },
+            "children": [],
+            "deps": []
+        }
+    ]
+}

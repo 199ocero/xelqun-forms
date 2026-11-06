@@ -134,6 +134,8 @@ const hasValue = computed(
             :invalid="!!error"
             :described-by="describedBy"
             :search-failed="searchFailed"
+            :messages="node.props?.messages"
+            :reorderable="node.props?.reorderable"
             @search="onSearch"
             @blur="onBlur"
         />
@@ -147,6 +149,7 @@ const hasValue = computed(
                 :disabled="disabled"
                 :invalid="!!error"
                 :described-by="describedBy"
+                :messages="node.props?.messages"
                 :class="!required && hasValue ? '[&>span:first-child]:pr-6' : undefined"
             />
             <button

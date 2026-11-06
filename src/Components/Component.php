@@ -100,6 +100,22 @@ abstract class Component
     abstract public function getType(): string;
 
     /**
+     * Evaluate the optional props that were set, leaving out the rest. A prop
+     * that was set is sent even when it comes out false or null, because the
+     * browser merges patches and would otherwise keep the old value.
+     *
+     * @param  array<string, mixed>  $props
+     * @return array<string, mixed>
+     */
+    protected function evaluateConfigured(array $props): array
+    {
+        return array_map(
+            fn (mixed $value): mixed => $this->evaluate($value),
+            array_filter($props, fn (mixed $value): bool => $value !== null && $value !== false),
+        );
+    }
+
+    /**
      * Type-specific data for the renderer.
      *
      * @return array<string, mixed>

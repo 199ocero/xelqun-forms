@@ -10,5 +10,7 @@ export const spinnerClass = 'size-4 shrink-0 motion-safe:animate-spin text-xq-mu
 export const popoverClass =
     'z-50 overflow-hidden rounded-xq-md border border-xq-border bg-xq-popover text-xq-popover-foreground shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0';
 
+export const groupLabelClass = 'px-2 py-1.5 text-xs font-medium text-xq-muted-foreground';
+
 export const optionClass =
     'relative flex w-full cursor-default items-center gap-2 rounded-xq-sm py-1.5 pr-8 pl-2 text-sm outline-none select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[highlighted]:bg-xq-accent data-[highlighted]:text-xq-accent-foreground';

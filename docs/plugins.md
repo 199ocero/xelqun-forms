@@ -297,5 +297,6 @@ On the browser side, the public API is what `@xelqun/forms` and `@xelqun/forms/t
 - **`AcceptsUploads` holds one file.** Tokens in an array are not stored. Multi-file state arrives in M17.
 - **A repeater with no relationship has no row model**, so `persist()` isn't called in its rows and the value stays in the row's data.
 - **A repeater inside a related row doesn't save its rows yet.** That arrives in M16 with nested repeaters.
+- **Icons come from a fixed set.** Add your own with `icons` on your plugin, as `{ name: component }`.
 - **Debounce depends on the type.** A text-like field that another field depends on sends every change, because the browser only debounces built-in text types. Call `live(debounce: 400)` on your field to set it.
 - **Action modals don't exist yet.** They arrive in M20.

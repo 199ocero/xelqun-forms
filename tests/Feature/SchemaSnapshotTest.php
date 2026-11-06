@@ -1,16 +1,24 @@
 <?php
 
 use Xelqun\Forms\Components\Checkbox;
+use Xelqun\Forms\Components\CheckboxList;
+use Xelqun\Forms\Components\ColorPicker;
 use Xelqun\Forms\Components\CustomField;
 use Xelqun\Forms\Components\DatePicker;
+use Xelqun\Forms\Components\DateTimePicker;
 use Xelqun\Forms\Components\FileUpload;
 use Xelqun\Forms\Components\Hidden;
+use Xelqun\Forms\Components\KeyValue;
 use Xelqun\Forms\Components\Radio;
 use Xelqun\Forms\Components\Repeater;
 use Xelqun\Forms\Components\Select;
+use Xelqun\Forms\Components\Slider;
+use Xelqun\Forms\Components\TagsInput;
 use Xelqun\Forms\Components\Textarea;
 use Xelqun\Forms\Components\TextInput;
+use Xelqun\Forms\Components\TimePicker;
 use Xelqun\Forms\Components\Toggle;
+use Xelqun\Forms\Components\ToggleButtons;
 use Xelqun\Forms\Conditions\When;
 use Xelqun\Forms\Form;
 use Xelqun\Forms\Layouts\Fieldset;
@@ -47,6 +55,16 @@ it('serializes each component to a stable node', function (object $component) {
 })->with([
     'text input' => fn () => TextInput::make('budget')->numeric()->prefix('$')->minValue(0)->required()->hint('Yearly'),
     'email input' => fn () => TextInput::make('email')->email()->placeholder('you@example.com'),
+    'date time picker' => fn () => DateTimePicker::make('starts_at')->seconds(false)->minutesStep(15)->displayFormat('d M Y H:i')->disabledDates(['2026-01-01']),
+    'time picker' => fn () => TimePicker::make('opens_at')->minDate('09:00'),
+    'text input with every option' => fn () => TextInput::make('code')->password()->revealable()->mask('99-99')->datalist(['a'])->copyable()->prefixIcon('mail')->suffixIcon('check'),
+    'select with groups' => fn () => Select::make('status')->options(['Open' => ['a' => 'A']])->disableOptionWhen(fn (): bool => true)->noOptionsMessage('None'),
+    'checkbox list' => fn () => CheckboxList::make('perks')->options(['a' => 'A', 'b' => 'B'])->descriptions(['a' => 'First'])->columns(2)->searchable()->bulkToggleable(),
+    'toggle buttons' => fn () => ToggleButtons::make('status')->options(['a' => 'A'])->colors(['a' => 'success'])->icons(['a' => 'check'])->inline(),
+    'tags input' => fn () => TagsInput::make('tags')->suggestions(['a'])->splitKeys(['Tab', ' '])->reorderable()->tagPrefix('#'),
+    'slider' => fn () => Slider::make('volume')->range(0, 10)->step(2)->tooltips()->default([2, 6]),
+    'key value' => fn () => KeyValue::make('meta')->default(['a' => '1'])->reorderable(),
+    'color picker' => fn () => ColorPicker::make('tint')->rgba()->default('rgba(1, 2, 3, 0.5)'),
     'group' => fn () => Group::make([TextInput::make('name')])->columns(2),
     'display options' => fn () => TextInput::make('code')->readOnly()->autofocus()->hiddenLabel()->inlineLabel()->extraAttributes(['data-kind' => 'code']),
     'textarea' => fn () => Textarea::make('bio')->rows(5)->maxLength(500),

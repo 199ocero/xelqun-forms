@@ -30,7 +30,11 @@ const { value, error, label, describedBy, required, disabled, id } = useField<
                 :key="String(option.value)"
                 class="gap-2.5 flex items-start"
             >
-                <XqRadioGroupItem :id="`${id}-${index}`" :value="option.value" />
+                <XqRadioGroupItem
+                    :id="`${id}-${index}`"
+                    :value="option.value"
+                    :disabled="option.disabled"
+                />
                 <div class="gap-1 grid">
                     <XqLabel :for="`${id}-${index}`" class="leading-4 font-normal cursor-pointer">{{
                         option.label

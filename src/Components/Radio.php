@@ -2,7 +2,6 @@
 
 namespace Xelqun\Forms\Components;
 
-use Illuminate\Validation\Rule;
 use Xelqun\Forms\Components\Concerns\HasOptions;
 
 /**
@@ -41,7 +40,7 @@ class Radio extends Field
 
     protected function getTypeRules(): array
     {
-        return [Rule::in(array_map('strval', array_keys($this->getOptions())))];
+        return $this->getOptionRules();
     }
 
     protected function getProps(): array

@@ -1,6 +1,6 @@
 # Xelqun Forms: planning document
 
-> Status: approved plan (2026-10-28), implemented through Milestone 9. Parity work continues in [`parity-plan.md`](parity-plan.md), through Milestone 14. See "Implementation status" at the end.
+> Status: approved plan (2026-10-28), implemented through Milestone 9. Parity work continues in [`parity-plan.md`](parity-plan.md), through Milestone 15. See "Implementation status" at the end.
 
 ## Context
 
@@ -440,7 +440,7 @@ Milestones 0–9 are built and tested. Milestone 9 added failure and loading fee
 | File upload inside a repeater row | browser test, package `UploadTest` |
 | Server errors on the correct nested field | browser tests (`Price (Item 2)`), package `ValidationTest` |
 
-**Test counts:** package Pest 578, package Vitest 219, playground feature and browser 44.
+**Test counts:** package Pest 691, package Vitest 276, playground feature and browser 49.
 
 ### Milestone 10: foundations
 
@@ -576,6 +576,48 @@ Limits to keep in mind:
 - A rule closure can't ask for `Get`. Filament's wrapped form, a closure that returns the rule, wasn't in scope. A condition on `rule()` can.
 - `after()` and `before()` read a value PHP can parse as a date as a date, like Laravel does. Write `$.today` for a field named like a date.
 - `requiredIf()` and similar rules don't show the asterisk. `requiredWhen()` does, and it runs in the browser.
+
+### Milestone 15: everyday fields
+
+The package now covers the fields most forms need. The proof is the "All fields" example in the playground, and a browser test types through it and submits it. Every new limit is checked on the server, because the browser can post anything.
+
+- **Dates.** `DateTimePicker` is the base, `DatePicker` turns the time off and `TimePicker` turns the date off. The browser always holds one fixed format in the shown timezone, so `format()` and `timezone()` convert on the server, on fill and on save, and there is no timezone logic in JS. `displayFormat()` takes PHP date tokens. `disabledDates()` is refused on the server. `hoursStep()`, `minutesStep()` and `secondsStep()` set the time field.
+- **New fields.** `CheckboxList`, `ToggleButtons`, `TagsInput`, `Slider`, `KeyValue` and `ColorPicker`. Each is lazy-loaded, so a form only pays for the fields it uses.
+- **Options.** `HasOptions` gains groups (a nested array), `disableOptionWhen()` and `boolean()`, shared by `Select`, `Radio`, `CheckboxList` and `ToggleButtons`. A disabled option is refused on the server, unless the record already has that value, so an old record can still be saved.
+- **Select.** `reorderable()`, plus `loadingMessage()`, `noOptionsMessage()`, `noSearchResultsMessage()`, `searchPrompt()` and `searchingMessage()`.
+- **TextInput.** `revealable()`, `trim()`, `mask()`, `stripCharacters()`, `datalist()`, `copyable()`, `length()`, `prefixIcon()` and `suffixIcon()`.
+- **A new step before validation.** `Field::normalizeState()` cleans up a posted value before the rules see it. `trim()`, `stripCharacters()`, `TagsInput` and `KeyValue` use it, and computed values run again afterwards. A locked field keeps its server value.
+- **`Component::evaluateConfigured()`** sends an optional prop whenever it was set, even when it comes out false, because the browser merges patches and would otherwise keep the old value.
+- **`HasColumns`** replaces the `columns()` code that `Layout` and `Repeater` each had.
+
+Where this differs from the plan and from Filament:
+
+- `maska` wasn't added. Installing it was blocked in this environment, and the mask grammar is only three tokens, so `core/mask.ts` does it in about 30 lines with tests. It doesn't support Filament's dynamic `RawJs` masks, which the plan already ruled out.
+- Icon names come from a fixed set in `resources/js/ui/icons.ts`, and `createXelqunForms({ icons })` adds more. A dynamic import of lucide would pull all of its icons into the main bundle.
+- `reorderable()` moves items with buttons on `Select` and `TagsInput`, not by dragging. Drag and drop arrives with `sortablejs` in M16.
+
+Changes that can break existing code, for the release notes:
+
+- `DatePicker` now extends `DateTimePicker`. `formatStateFromRecord()`, `getMinDate()` and `getMaxDate()` live there. `DatePicker::minDate()` keeps what it is given and formats it later.
+- `Repeater` and `Layout` get `columns()` from `HasColumns`.
+- `HasOptions` now defines `formatStateFromRecord()` and `dehydrateState()`. A class that uses the trait and overrides them keeps its own, and calling `parent::` from there skips the trait's.
+- `toOptionList()` can add `disabled`, and `getOptions()` flattens groups. Use `getOptionList()` to keep them.
+- `Field` has a new public `normalizeState()`, `Component` a new protected `evaluateConfigured()`.
+- A key missing from an array row now gets `getDefaultState()` as it is, without going through `formatStateFromRecord()`. A field that relied on that second pass should do the work in `getDefaultState()`.
+- A backed enum default becomes its value, also outside rows.
+
+Limits to keep in mind:
+
+- `CheckboxList` has no `relationship()`. Use `Select` with `multiple()` for a BelongsToMany.
+- `hoursStep()`, `minutesStep()` and `secondsStep()` only guide the time field. The server doesn't refuse a time between steps.
+- A `DateTimePicker` keeps its last full time while the time is being retyped, so a time can't be cleared on its own. Clearing the date clears both.
+- `copyable()` gives no feedback when the browser refuses the copy, or has no clipboard.
+- `mask()` is a typing aid. Check the format with a rule too. A numeric field with a mask holds text while typing, so a `computed()` reading it can't calculate in the browser. The server result is correct.
+- `disableOptionWhen()` on a searchable field only marks options from search results and the current list.
+- `KeyValue` values are strings, and a number-like key can't hold its position, because JS sorts those keys first.
+- `Slider` has no pips, vertical mode, `minDifference()` or non-linear points, and `tooltips()` shows the value beside the track, not above each handle.
+- `TagsInput` has no `color()`. `ColorPicker` has no `hsla()`.
+- `displayFormat()` shows English month and day names unless the browser's locale says otherwise, because no `locale()` option exists yet.
 
 ### Where the build differs from the plan
 - **Patches have no `add`/`remove`.** A component hidden by a server closure is sent as a stub (`{ key, type, hidden: true, deps }`) and later patched to a full node, which keeps every key stable.

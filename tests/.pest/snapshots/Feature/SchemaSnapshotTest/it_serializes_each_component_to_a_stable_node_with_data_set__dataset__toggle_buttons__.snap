@@ -1,0 +1,44 @@
+{
+    "state": {
+        "data": {
+            "status": null
+        }
+    },
+    "components": [
+        {
+            "key": "data.status",
+            "type": "toggle-buttons",
+            "hidden": false,
+            "path": "data.status",
+            "label": "Status",
+            "hint": null,
+            "placeholder": null,
+            "required": false,
+            "disabled": false,
+            "rules": {
+                "visible": null,
+                "required": null,
+                "disabled": null
+            },
+            "computed": null,
+            "live": null,
+            "span": null,
+            "props": {
+                "options": [
+                    {
+                        "value": "a",
+                        "label": "A",
+                        "color": "success",
+                        "icon": "check"
+                    }
+                ],
+                "multiple": false,
+                "inline": true,
+                "grouped": false,
+                "columns": null
+            },
+            "children": [],
+            "deps": []
+        }
+    ]
+}

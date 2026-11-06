@@ -1,0 +1,44 @@
+{
+    "state": {
+        "data": {
+            "meta": {
+                "a": "1"
+            }
+        }
+    },
+    "components": [
+        {
+            "key": "data.meta",
+            "type": "key-value",
+            "hidden": false,
+            "path": "data.meta",
+            "label": "Meta",
+            "hint": null,
+            "placeholder": null,
+            "required": false,
+            "disabled": false,
+            "rules": {
+                "visible": null,
+                "required": null,
+                "disabled": null
+            },
+            "computed": null,
+            "live": null,
+            "span": null,
+            "props": {
+                "keyLabel": "Key",
+                "valueLabel": "Value",
+                "keyPlaceholder": null,
+                "valuePlaceholder": null,
+                "addLabel": "Add row",
+                "addable": true,
+                "deletable": true,
+                "editableKeys": true,
+                "editableValues": true,
+                "reorderable": true
+            },
+            "children": [],
+            "deps": []
+        }
+    ]
+}

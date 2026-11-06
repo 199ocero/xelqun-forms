@@ -172,6 +172,177 @@ describe('XqForm rendering', () => {
         });
     });
 
+    describe('text input options', () => {
+        function render(props: Record<string, unknown>, value: unknown = null) {
+            const store = createFormStore(
+                schema([field('data.code', 'text-input', { props })], { code: value }),
+            );
+            const wrapper = mount(XqForm, { props: { form: store }, attachTo: document.body });
+
+            return { store, wrapper };
+        }
+
+        it('masks what is typed and what the server sends', async () => {
+            const { store, wrapper } = render({ mask: '99/99' }, '1225');
+            const input = wrapper.find('input');
+
+            expect(input.element.value).toBe('12/25');
+
+            await input.setValue('1231');
+
+            expect(input.element.value).toBe('12/31');
+            expect(store.get('data.code')).toBe('12/31');
+            wrapper.unmount();
+        });
+
+        it('shows a password on request', async () => {
+            const { wrapper } = render({ inputType: 'password', revealable: true }, 'secret');
+            const input = wrapper.find('input');
+            const button = wrapper.find('[aria-label="Show password"]');
+
+            expect(input.attributes('type')).toBe('password');
+
+            await button.trigger('click');
+
+            expect(input.attributes('type')).toBe('text');
+            expect(button.attributes('aria-label')).toBe('Hide password');
+            wrapper.unmount();
+        });
+
+        it('copies the value and announces it', async () => {
+            const writeText = vi.fn().mockResolvedValue(undefined);
+
+            Object.defineProperty(navigator, 'clipboard', {
+                value: { writeText },
+                configurable: true,
+            });
+
+            const { wrapper } = render({ copyable: { message: 'Done', duration: 100 } }, 'abc');
+
+            await wrapper.find('[aria-label="Copy"]').trigger('click');
+            await nextTick();
+            await nextTick();
+
+            expect(writeText).toHaveBeenCalledWith('abc');
+            expect(wrapper.find('[role="status"].sr-only').text()).toContain('Done');
+            wrapper.unmount();
+        });
+
+        it('claims nothing when there is no clipboard', async () => {
+            Object.defineProperty(navigator, 'clipboard', {
+                value: undefined,
+                configurable: true,
+            });
+
+            const { wrapper } = render({ copyable: { message: 'Done', duration: 100 } }, 'abc');
+
+            await wrapper.find('[aria-label="Copy"]').trigger('click');
+            await nextTick();
+            await nextTick();
+
+            expect(wrapper.find('[role="status"].sr-only').text()).toBe('');
+            wrapper.unmount();
+        });
+
+        it('claims nothing when the browser refuses the copy', async () => {
+            Object.defineProperty(navigator, 'clipboard', {
+                value: { writeText: vi.fn().mockRejectedValue(new Error('Denied')) },
+                configurable: true,
+            });
+
+            const { wrapper } = render({ copyable: { message: 'Done', duration: 100 } }, 'abc');
+
+            await wrapper.find('[aria-label="Copy"]').trigger('click');
+            await nextTick();
+            await nextTick();
+
+            expect(wrapper.find('[role="status"].sr-only').text()).toBe('');
+            wrapper.unmount();
+        });
+
+        it('links suggestions and shows icons', () => {
+            const { wrapper } = render({
+                datalist: ['BMW'],
+                prefixIcon: 'mail',
+                suffixIcon: 'unknown',
+            });
+
+            expect(wrapper.find('input').attributes('list')).toBe(
+                wrapper.find('datalist').attributes('id'),
+            );
+            expect(wrapper.find('datalist option').attributes('value')).toBe('BMW');
+            expect(wrapper.findAll('svg')).toHaveLength(1);
+            wrapper.unmount();
+        });
+    });
+
+    describe('select options', () => {
+        const options = [
+            { value: 'draft', label: 'Draft', group: 'In process' },
+            { value: 'review', label: 'Review', group: 'In process', disabled: true },
+            { value: 'live', label: 'Live', group: 'Done' },
+            { value: 'none', label: 'None' },
+        ];
+
+        it('lists groups, labels and disabled options in a combobox', async () => {
+            const store = createFormStore(
+                schema(
+                    [
+                        field('data.status', 'select', {
+                            props: {
+                                options,
+                                searchable: true,
+                                messages: { noResults: 'Nothing matched' },
+                            },
+                        }),
+                    ],
+                    { status: null },
+                ),
+            );
+            const wrapper = mount(XqForm, { props: { form: store }, attachTo: document.body });
+
+            await wrapper.find('input').trigger('click');
+            await nextTick();
+            await nextTick();
+
+            const items = [...document.querySelectorAll('[role="option"]')];
+
+            expect(document.body.textContent).toContain('In process');
+            expect(document.body.textContent).toContain('Done');
+            expect(items.map((item) => item.textContent?.trim())).toEqual([
+                'Draft',
+                'Review',
+                'Live',
+                'None',
+            ]);
+            expect(items[1].hasAttribute('data-disabled')).toBe(true);
+            expect(items[0].hasAttribute('data-disabled')).toBe(false);
+            wrapper.unmount();
+        });
+
+        it('moves a chosen value with its buttons', async () => {
+            const store = createFormStore(
+                schema(
+                    [
+                        field('data.tags', 'select', {
+                            props: { options, multiple: true, reorderable: true },
+                        }),
+                    ],
+                    { tags: ['draft', 'live', 'none'] },
+                ),
+            );
+            const wrapper = mount(XqForm, { props: { form: store }, attachTo: document.body });
+
+            expect(wrapper.find('[aria-label="Move Draft earlier"]').exists()).toBe(false);
+            expect(wrapper.find('[aria-label="Move None later"]').exists()).toBe(false);
+
+            await wrapper.find('[aria-label="Move Live earlier"]').trigger('click');
+
+            expect(store.get('data.tags')).toEqual(['live', 'draft', 'none']);
+            wrapper.unmount();
+        });
+    });
+
     describe('conditional text', () => {
         const when = { op: 'eq', path: 'data.is_gift', value: true } as const;
         const text = { when, text: 'Gift', otherwise: 'Plain' };

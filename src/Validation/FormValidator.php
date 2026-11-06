@@ -49,6 +49,7 @@ final class FormValidator
         $this->kept = [];
 
         $this->prepare($form, $data);
+        $this->normalize($form);
 
         $this->collect($form->getComponents(), true, null);
 
@@ -125,6 +126,27 @@ final class FormValidator
         }
 
         return $state[StatePath::ROOT];
+    }
+
+    /**
+     * Let fields clean up what the browser posted. Computed values run again,
+     * because they may read a value that just changed.
+     */
+    private function normalize(Form $form): void
+    {
+        $form->walk(function (Component $component) use ($form): void {
+            if (! $component instanceof Field || $component->isDisabledInState() || $component->isReadOnly()) {
+                return;
+            }
+
+            $path = $component->getStatePath();
+
+            if (Arr::has($form->getState(), $path)) {
+                $form->setStateValue($path, $component->normalizeState($form->getStateValue($path)));
+            }
+        });
+
+        $form->recomputeComputedFields();
     }
 
     /**

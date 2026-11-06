@@ -1,0 +1,42 @@
+{
+    "state": {
+        "data": {
+            "opens_at": null
+        }
+    },
+    "components": [
+        {
+            "key": "data.opens_at",
+            "type": "time-picker",
+            "hidden": false,
+            "path": "data.opens_at",
+            "label": "Opens At",
+            "hint": null,
+            "placeholder": null,
+            "required": false,
+            "disabled": false,
+            "rules": {
+                "visible": null,
+                "required": null,
+                "disabled": null
+            },
+            "computed": null,
+            "live": null,
+            "span": null,
+            "props": {
+                "min": "09:00:00",
+                "max": null,
+                "time": true,
+                "timeOnly": true,
+                "seconds": true,
+                "steps": {
+                    "hour": 1,
+                    "minute": 1,
+                    "second": 1
+                }
+            },
+            "children": [],
+            "deps": []
+        }
+    ]
+}

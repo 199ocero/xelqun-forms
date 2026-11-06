@@ -9,6 +9,7 @@ import { eachNode } from '../../resources/js/core/patch';
 import { createFormStore } from '../../resources/js/core/store';
 import { createXelqunForms, registerPlugins } from '../../resources/js/plugin';
 import type { XelqunPlugin } from '../../resources/js/plugin';
+import { resolveIcon } from '../../resources/js/ui/icons';
 import type { FormStore } from '../../resources/js/core/store';
 import type { SchemaNode } from '../../resources/js/schema/types';
 
@@ -28,6 +29,23 @@ afterEach(() => {
 });
 
 describe('createXelqunForms', () => {
+    it('registers icons from the app and from plugins', () => {
+        const fromApp = marker('app');
+        const fromPlugin = marker('plugin');
+
+        render(
+            {
+                icons: { 'app-icon': fromApp },
+                plugins: [{ id: 'acme/icons', icons: { 'plugin-icon': fromPlugin } }],
+            },
+            'text-input',
+        ).unmount();
+
+        expect(resolveIcon('app-icon')).toBe(fromApp);
+        expect(resolveIcon('plugin-icon')).toBe(fromPlugin);
+        expect(resolveIcon('mail')).not.toBeNull();
+    });
+
     it('renders a type from a plugin', () => {
         const plugin: XelqunPlugin = {
             id: 'acme/fields',

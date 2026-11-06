@@ -1,0 +1,47 @@
+{
+    "state": {
+        "data": {
+            "status": null
+        }
+    },
+    "components": [
+        {
+            "key": "data.status",
+            "type": "select",
+            "hidden": false,
+            "path": "data.status",
+            "label": "Status",
+            "hint": null,
+            "placeholder": null,
+            "required": false,
+            "disabled": false,
+            "rules": {
+                "visible": null,
+                "required": null,
+                "disabled": null
+            },
+            "computed": null,
+            "live": null,
+            "span": null,
+            "props": {
+                "options": [
+                    {
+                        "value": "a",
+                        "label": "A",
+                        "disabled": true,
+                        "group": "Open"
+                    }
+                ],
+                "searchable": false,
+                "multiple": false,
+                "async": false,
+                "searchDebounce": 250,
+                "messages": {
+                    "noOptions": "None"
+                }
+            },
+            "children": [],
+            "deps": []
+        }
+    ]
+}

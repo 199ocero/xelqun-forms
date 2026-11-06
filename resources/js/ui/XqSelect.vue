@@ -2,19 +2,23 @@
 import { Check, ChevronDown, LoaderCircle } from 'lucide-vue-next';
 import {
     SelectContent,
+    SelectGroup,
     SelectItem,
     SelectItemIndicator,
     SelectItemText,
+    SelectLabel,
     SelectPortal,
     SelectRoot,
     SelectTrigger,
     SelectValue,
     SelectViewport,
 } from 'reka-ui';
+import { computed } from 'vue';
 import type { HTMLAttributes } from 'vue';
 import { cn } from '../lib/utils';
-import type { SelectOption } from '../schema/types';
-import { controlClass, optionClass, popoverClass, spinnerClass } from './classes';
+import type { SelectMessages, SelectOption } from '../schema/types';
+import { controlClass, groupLabelClass, optionClass, popoverClass, spinnerClass } from './classes';
+import { groupOptions } from './options';
 
 const props = defineProps<{
     id?: string;
@@ -24,9 +28,11 @@ const props = defineProps<{
     disabled?: boolean;
     invalid?: boolean;
     describedBy?: string;
+    messages?: SelectMessages;
     class?: HTMLAttributes['class'];
 }>();
 const model = defineModel<string | number | null>();
+const groups = computed(() => groupOptions(props.options));
 </script>
 
 <template>
@@ -55,24 +61,34 @@ const model = defineModel<string | number | null>();
                 :class="cn(popoverClass, 'max-h-72 min-w-32 w-(--reka-select-trigger-width)')"
             >
                 <SelectViewport class="p-1">
-                    <SelectItem
-                        v-for="option in options"
-                        :key="String(option.value)"
-                        :value="option.value"
-                        :class="optionClass"
-                    >
-                        <SelectItemText>{{ option.label }}</SelectItemText>
-                        <SelectItemIndicator
-                            class="right-2 size-3.5 absolute flex items-center justify-center"
+                    <SelectGroup v-for="group in groups" :key="group.label ?? ''">
+                        <SelectLabel v-if="group.label" :class="groupLabelClass">{{
+                            group.label
+                        }}</SelectLabel>
+                        <SelectItem
+                            v-for="option in group.options"
+                            :key="String(option.value)"
+                            :value="option.value"
+                            :disabled="option.disabled"
+                            :class="optionClass"
                         >
-                            <Check class="size-4" />
-                        </SelectItemIndicator>
-                    </SelectItem>
+                            <SelectItemText>{{ option.label }}</SelectItemText>
+                            <SelectItemIndicator
+                                class="right-2 size-3.5 absolute flex items-center justify-center"
+                            >
+                                <Check class="size-4" />
+                            </SelectItemIndicator>
+                        </SelectItem>
+                    </SelectGroup>
                     <div
                         v-if="options.length === 0"
                         class="px-2 py-6 text-sm text-center text-xq-muted-foreground"
                     >
-                        {{ loading ? 'Loading…' : 'No options' }}
+                        {{
+                            loading
+                                ? (messages?.loading ?? 'Loading…')
+                                : (messages?.noOptions ?? 'No options')
+                        }}
                     </div>
                 </SelectViewport>
             </SelectContent>

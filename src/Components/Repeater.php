@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 use LogicException;
 use stdClass;
+use Xelqun\Forms\Components\Concerns\HasColumns;
 use Xelqun\Forms\Contracts\ContainsRows;
 use Xelqun\Forms\Contracts\PersistsItself;
 use Xelqun\Forms\Eloquent\ModelPersister;
@@ -24,6 +25,8 @@ use Xelqun\Forms\Support\StatePath;
  */
 class Repeater extends Field implements ContainsRows, PersistsItself
 {
+    use HasColumns;
+
     public const string RECORD_KEY_PREFIX = 'record-';
 
     private const string STORED_ROW_KEY_PREFIX = 'stored-';
@@ -45,9 +48,6 @@ class Repeater extends Field implements ContainsRows, PersistsItself
     protected bool $isOrderable = true;
 
     protected string|Closure|null $itemLabel = null;
-
-    /** @var array<string, int>|null */
-    protected ?array $columns = null;
 
     protected ?Closure $mutateBeforeFill = null;
 
@@ -185,21 +185,6 @@ class Repeater extends Field implements ContainsRows, PersistsItself
     public function itemLabel(string|Closure|null $label): static
     {
         $this->itemLabel = $label;
-
-        return $this;
-    }
-
-    /**
-     * Grid columns inside each row. An integer means one column on small
-     * screens and that many from the "md" breakpoint.
-     *
-     * @param  int|array<string, int>  $columns
-     */
-    public function columns(int|array $columns): static
-    {
-        $this->columns = is_int($columns)
-            ? ($columns > 1 ? ['default' => 1, 'md' => $columns] : ['default' => 1])
-            : $columns;
 
         return $this;
     }

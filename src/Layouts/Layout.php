@@ -3,6 +3,7 @@
 namespace Xelqun\Forms\Layouts;
 
 use Xelqun\Forms\Components\Component;
+use Xelqun\Forms\Components\Concerns\HasColumns;
 
 /**
  * Base class for components that only arrange other components.
@@ -11,23 +12,7 @@ use Xelqun\Forms\Components\Component;
  */
 abstract class Layout extends Component
 {
-    /** @var array<string, int>|null */
-    protected ?array $columns = null;
-
-    /**
-     * Number of grid columns. An integer means one column on small screens
-     * and that many from the "md" breakpoint.
-     *
-     * @param  int|array<string, int>  $columns
-     */
-    public function columns(int|array $columns): static
-    {
-        $this->columns = is_int($columns)
-            ? ($columns > 1 ? ['default' => 1, 'md' => $columns] : ['default' => 1])
-            : $columns;
-
-        return $this;
-    }
+    use HasColumns;
 
     /**
      * @return array<string, mixed>

@@ -106,6 +106,18 @@ export interface SelectOption {
     value: string | number;
     label: string;
     description?: string | null;
+    disabled?: boolean;
+    /** The group this option is listed under. */
+    group?: string;
+}
+
+/** Text a select shows in place of its defaults. */
+export interface SelectMessages {
+    loading?: string;
+    noOptions?: string;
+    noResults?: string;
+    prompt?: string;
+    searching?: string;
 }
 
 export interface UploadResult {

@@ -1,0 +1,53 @@
+{
+    "state": {
+        "data": {
+            "code": null
+        }
+    },
+    "components": [
+        {
+            "key": "data.code",
+            "type": "text-input",
+            "hidden": false,
+            "path": "data.code",
+            "label": "Code",
+            "hint": null,
+            "placeholder": null,
+            "required": false,
+            "disabled": false,
+            "rules": {
+                "visible": null,
+                "required": null,
+                "disabled": null
+            },
+            "computed": null,
+            "live": null,
+            "span": null,
+            "props": {
+                "inputType": "password",
+                "numeric": false,
+                "integer": false,
+                "min": null,
+                "max": null,
+                "step": null,
+                "maxLength": null,
+                "prefix": null,
+                "suffix": null,
+                "autocomplete": null,
+                "revealable": true,
+                "mask": "99-99",
+                "prefixIcon": "mail",
+                "suffixIcon": "check",
+                "datalist": [
+                    "a"
+                ],
+                "copyable": {
+                    "message": "Copied",
+                    "duration": 2000
+                }
+            },
+            "children": [],
+            "deps": []
+        }
+    ]
+}
