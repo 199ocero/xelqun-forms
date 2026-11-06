@@ -196,3 +196,88 @@
 .xq-fused [class*='border-xq-input']:not(:focus-visible, [aria-invalid='true']) {
     border-color: transparent;
 }
+
+/* Rich text: an app's reset takes away what these elements mean. */
+.xq-rich-content {
+    outline: none;
+}
+
+.xq-rich-content > * + * {
+    margin-top: 0.75em;
+}
+
+.xq-rich-content h1 {
+    font-size: 1.5em;
+    font-weight: 600;
+}
+
+.xq-rich-content h2 {
+    font-size: 1.25em;
+    font-weight: 600;
+}
+
+.xq-rich-content h3 {
+    font-size: 1.1em;
+    font-weight: 600;
+}
+
+.xq-rich-content h4,
+.xq-rich-content h5,
+.xq-rich-content h6 {
+    font-weight: 600;
+}
+
+.xq-rich-content ul {
+    padding-inline-start: 1.25em;
+    list-style: disc;
+}
+
+.xq-rich-content ol {
+    padding-inline-start: 1.25em;
+    list-style: decimal;
+}
+
+.xq-rich-content a {
+    color: var(--xq-primary);
+    text-decoration: underline;
+}
+
+.xq-rich-content blockquote {
+    padding-inline-start: 0.75em;
+    border-inline-start: 2px solid var(--xq-border);
+    color: var(--xq-muted-foreground);
+}
+
+.xq-rich-content pre,
+.xq-rich-content :not(pre) > code {
+    border-radius: var(--radius-xq-sm);
+    background: var(--xq-muted);
+    font-family: ui-monospace, monospace;
+    font-size: 0.9em;
+}
+
+.xq-rich-content pre {
+    overflow-x: auto;
+    padding: 0.75em;
+}
+
+.xq-rich-content :not(pre) > code {
+    padding: 0.1em 0.3em;
+}
+
+.xq-rich-content table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.xq-rich-content td,
+.xq-rich-content th {
+    padding: 0.25em 0.5em;
+    border: 1px solid var(--xq-border);
+    text-align: start;
+}
+
+.xq-rich-content img {
+    max-width: 100%;
+    height: auto;
+}

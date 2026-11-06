@@ -11,6 +11,7 @@ use Xelqun\Forms\Conditions\Condition;
 use Xelqun\Forms\Conditions\ConditionalText;
 use Xelqun\Forms\Contracts\AcceptsUploads;
 use Xelqun\Forms\Contracts\ContainsRows;
+use Xelqun\Forms\Contracts\EmbedsUploads;
 use Xelqun\Forms\Contracts\NeedsServer;
 use Xelqun\Forms\Expressions\Expression;
 use Xelqun\Forms\Support\StatePath;
@@ -803,6 +804,21 @@ abstract class Field extends Component implements NeedsServer
     }
 
     /**
+     * What ties an upload to this field: the form, the path, and anything around
+     * it that a path can't tell apart.
+     */
+    protected function makeUploadScope(): string
+    {
+        $scope = $this->getForm()->getUploadScope().'|'.$this->getStatePathPattern();
+
+        for ($component = $this->getParent(); $component !== null; $component = $component->getParent()) {
+            $scope .= $component->getUploadScopePart();
+        }
+
+        return $scope;
+    }
+
+    /**
      * The rows of the output, before their fields are written into them.
      *
      * @internal
@@ -859,7 +875,7 @@ abstract class Field extends Component implements NeedsServer
             'computed' => $this->computed?->toArray($this->container),
             'live' => $this->getLiveConfig(),
             ...($this instanceof ContainsRows ? ['containsRows' => true] : []),
-            ...($this instanceof AcceptsUploads ? ['acceptsUploads' => true] : []),
+            ...($this instanceof AcceptsUploads && ! $this instanceof EmbedsUploads ? ['acceptsUploads' => true] : []),
             ...($this->canBeReadOnly() ? ['readOnly' => $this->isReadOnly()] : []),
             ...($this->getForm()->hasFrontendValidation() ? ['validation' => $this->getClientValidation()] : []),
             ...$this->evaluateConfigured([

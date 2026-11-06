@@ -3,6 +3,7 @@ import { effectScope, nextTick, reactive, ref, shallowReactive, watch } from 'vu
 import type { Ref } from 'vue';
 import type {
     ActionRequest,
+    ActionResult,
     BlockOption,
     ConditionNode,
     FormSchema,
@@ -732,15 +733,15 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
     }
 
     /**
-     * Run an action and apply what it changed. Say whether it went through, so
-     * a modal knows to stay open and show its errors.
+     * Run an action and apply what it changed. Null means it didn't go through,
+     * so a modal knows to stay open and show its errors.
      */
-    async function runAction(node: SchemaNode, modal?: ActionModal): Promise<boolean> {
+    async function runAction(node: SchemaNode, modal?: ActionModal): Promise<ActionResult | null> {
         await settled();
         await modal?.settled();
 
         if (modal && !modal.validate()) {
-            return false;
+            return null;
         }
 
         const versions = new Map(editVersions);
@@ -752,24 +753,23 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
         }
 
         try {
-            applyPatch(
-                await requests.track(
-                    'action',
-                    [],
-                    node.props?.label ?? null,
-                    postJson<UpdatePatch>(
-                        schema.endpoints.action,
-                        actionBody(node, 'run', modal ? clone(modal.state.data) : undefined),
-                    ),
+            const response = await requests.track(
+                'action',
+                [],
+                node.props?.label ?? null,
+                postJson<ActionResult>(
+                    schema.endpoints.action,
+                    actionBody(node, 'run', modal ? clone(modal.state.data) : undefined),
                 ),
-                versions,
             );
 
-            return true;
+            applyPatch(response, versions);
+
+            return response;
         } catch (error) {
             reportFailure(error, modal);
 
-            return false;
+            return null;
         }
     }
 
@@ -859,9 +859,12 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
             const element = root.value?.querySelector<HTMLElement>(
                 `[data-xq-path="${CSS.escape(path)}"]`,
             );
-            const target = element?.querySelector<HTMLElement>(
-                'input:not([type=hidden]), textarea, button, [tabindex]:not([tabindex="-1"])',
-            );
+            // An editor's text comes after its toolbar, and the text is what needs fixing.
+            const target =
+                element?.querySelector<HTMLElement>('[contenteditable="true"]') ??
+                element?.querySelector<HTMLElement>(
+                    'input:not([type=hidden]), textarea, button, [tabindex]:not([tabindex="-1"])',
+                );
 
             // A closed tab stays mounted, and its panel opens a tick after the tab switches.
             if (target && !target.closest('[hidden]')) {

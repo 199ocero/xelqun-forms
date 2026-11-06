@@ -847,6 +847,34 @@ Limits to keep in mind:
 - `Block::hidden()` applies to the whole builder: a closure can't depend on the row.
 - Frontend errors name a row by the builder's `itemLabel()`, not by its block.
 
+#### Editors
+
+The proof is the "Editors" example. Each editor is a chunk of its own: about 142 KB gzipped for `RichEditor`, 31 KB for `CodeEditor` plus one language, and 2 KB for `MarkdownEditor`.
+
+- **`RichEditor`** uses Tiptap and keeps HTML. `RichTextSanitizer` allows what the toolbar can write and nothing else, on the way in and when loading from a record. `style` is limited to `text-align`, links get `rel="noopener noreferrer"`, and an empty document counts as empty for `required`. `toolbarButtons()`, `disableToolbarButtons()`, `minHeight()` and `sanitizeUsing()` are there.
+- **`MarkdownEditor`** is a textarea with a toolbar, and needs no package. The value is what the user typed. `MarkdownEditor::render()` strips raw HTML and unsafe links, and the preview goes through it on the server as an action. A form with no server has no preview.
+- **`CodeEditor`** uses CodeMirror, with the 13 languages of Filament's `Language` enum. Each loads when a field needs it.
+- **Attachments** are off until `fileAttachments()`, and the upload endpoint refuses them until then. `EmbedsUploads` is a contract for a field that keeps uploads inside its text. The text carries the token until the save, which stores the file and writes its public URL. SVG isn't accepted by default, because it can carry scripts.
+- **`Action::sendsResult()`** lets a renderer read what an action returned, which is how the preview works. It is off by default, so a closure can't leak a value by returning it.
+
+Where this differs from Filament:
+
+- Custom blocks, merge tags and mentions were out of scope. `json()` and text colors aren't built either.
+- `MarkdownEditor` isn't EasyMDE.
+- `fileAttachmentsVisibility()` isn't built, because the saved text needs a public URL. Filament's private images need a rendering step that this package doesn't have.
+
+Changes that can break existing code, for the release notes:
+
+- `symfony/html-sanitizer`, `@tiptap/*` and `@codemirror/*` are new dependencies.
+
+Limits to keep in mind:
+
+- The link button uses a browser prompt.
+- Nothing cleans the HTML before validation, so a live closure reading a `RichEditor` with `$get` sees what the browser posted. Don't put that in an `HtmlString`.
+- An image removed from the text stays on the disk.
+- An image inserted by pasting isn't uploaded. Use the toolbar button.
+- A value saved outside this field isn't clean until it passes through `formatStateFromRecord()`, so print it with care.
+
 ### Where the build differs from the plan
 - **Patches have no `add`/`remove`.** A component hidden by a server closure is sent as a stub (`{ key, type, hidden: true, deps }`) and later patched to a full node, which keeps every key stable.
 - **The update request carries the client's dependency map** (`deps: { nodeKey: [paths] }`). The server uses it only to pick which closures to re-run, then re-records fresh dependencies.

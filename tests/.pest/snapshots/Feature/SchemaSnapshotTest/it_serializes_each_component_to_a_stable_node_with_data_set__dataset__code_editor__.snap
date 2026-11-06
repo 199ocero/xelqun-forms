@@ -1,0 +1,35 @@
+{
+    "state": {
+        "data": {
+            "snippet": "<?php"
+        }
+    },
+    "components": [
+        {
+            "key": "data.snippet",
+            "type": "code-editor",
+            "hidden": false,
+            "path": "data.snippet",
+            "label": "Snippet",
+            "hint": null,
+            "placeholder": null,
+            "required": false,
+            "disabled": false,
+            "rules": {
+                "visible": null,
+                "required": null,
+                "disabled": null
+            },
+            "computed": null,
+            "live": null,
+            "span": null,
+            "props": {
+                "language": "php",
+                "wrap": true,
+                "minHeight": null
+            },
+            "children": [],
+            "deps": []
+        }
+    ]
+}

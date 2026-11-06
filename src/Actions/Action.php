@@ -65,6 +65,8 @@ class Action extends Component implements NeedsServer
 
     protected ?Closure $recordUsing = null;
 
+    protected bool $sendsResult = false;
+
     final public function __construct(protected string $name) {}
 
     public static function make(string $name): static
@@ -249,6 +251,22 @@ class Action extends Component implements NeedsServer
     }
 
     /**
+     * Send what action() returns to the browser, for a renderer that asks for it.
+     * It is off so that a closure can't leak a value by returning it.
+     */
+    public function sendsResult(bool $condition = true): static
+    {
+        $this->sendsResult = $condition;
+
+        return $this;
+    }
+
+    public function hasResult(): bool
+    {
+        return $this->sendsResult;
+    }
+
+    /**
      * The model modal fields read relationships from, and the policy's subject
      * when there is no record.
      *
@@ -366,12 +384,13 @@ class Action extends Component implements NeedsServer
      *
      * @param  array<string, mixed>  $parentData
      * @param  array<string, mixed>  $input  What the browser posted for the modal.
+     * @return mixed What the closure returned, for the browser.
      */
-    public function run(array $parentData, array $input): void
+    public function run(array $parentData, array $input): mixed
     {
         $data = $this->hasModalForm() ? $this->makeForm($parentData)->validate([StatePath::ROOT => $input]) : [];
 
-        $this->evaluate($this->action, ['data' => $data]);
+        return $this->evaluate($this->action, ['data' => $data]);
     }
 
     public function evaluate(mixed $value, array $parameters = []): mixed

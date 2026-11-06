@@ -44,14 +44,17 @@ class ActionController
             return response()->json(['form' => $action->hasModalForm() ? $action->makeForm($state)->toSchema() : null]);
         }
 
-        $form->getConnection()->transaction(fn () => $action->run($state, $validated['data'] ?? []));
+        $result = $form->getConnection()->transaction(fn () => $action->run($state, $validated['data'] ?? []));
 
-        return response()->json($processor->buildPatch(
-            $form,
-            $state,
-            [],
-            array_map(fn (array $paths): array => array_values(array_filter($paths, 'is_string')), $validated['deps']),
-            0,
-        ));
+        return response()->json([
+            ...$processor->buildPatch(
+                $form,
+                $state,
+                [],
+                array_map(fn (array $paths): array => array_values(array_filter($paths, 'is_string')), $validated['deps']),
+                0,
+            ),
+            'result' => $action->hasResult() ? $result : null,
+        ]);
     }
 }

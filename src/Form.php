@@ -16,6 +16,7 @@ use Xelqun\Forms\Components\Component;
 use Xelqun\Forms\Components\Field;
 use Xelqun\Forms\Contracts\AcceptsUploads;
 use Xelqun\Forms\Contracts\ContainsRows;
+use Xelqun\Forms\Contracts\EmbedsUploads;
 use Xelqun\Forms\Contracts\HasSearchResults;
 use Xelqun\Forms\Contracts\NeedsServer;
 use Xelqun\Forms\Eloquent\ModelPersister;
@@ -700,7 +701,7 @@ class Form
     private function ensureStatic(): void
     {
         $this->walk(function (Component $component): void {
-            $needsServer = $component instanceof AcceptsUploads
+            $needsServer = ($component instanceof AcceptsUploads && ! $component instanceof EmbedsUploads)
                 || ($component instanceof HasSearchResults && $component->isAsync())
                 || ($component instanceof NeedsServer && $component->needsServer());
 

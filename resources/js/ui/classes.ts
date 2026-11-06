@@ -40,3 +40,6 @@ export const iconSizeClasses: Record<string, string> = {
     xl: 'size-8',
     '2xl': 'size-10',
 };
+
+export const toolbarButtonClass =
+    'size-7 flex cursor-pointer items-center justify-center rounded-xq-sm text-xq-muted-foreground hover:bg-xq-accent aria-pressed:bg-xq-accent aria-pressed:text-xq-accent-foreground disabled:pointer-events-none disabled:opacity-50';

@@ -303,13 +303,7 @@ trait HandlesUploads
      */
     public function getUploadScope(): string
     {
-        $scope = $this->getForm()->getUploadScope().'|'.$this->getStatePathPattern();
-
-        for ($component = $this->getParent(); $component !== null; $component = $component->getParent()) {
-            $scope .= $component->getUploadScopePart();
-        }
-
-        return $scope;
+        return $this->makeUploadScope();
     }
 
     public function getDiskName(): string

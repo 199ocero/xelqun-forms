@@ -1,0 +1,81 @@
+{
+    "state": {
+        "data": {
+            "notes": null
+        }
+    },
+    "components": [
+        {
+            "key": "data.notes",
+            "type": "markdown-editor",
+            "hidden": false,
+            "path": "data.notes",
+            "label": "Notes",
+            "hint": null,
+            "placeholder": null,
+            "required": false,
+            "disabled": false,
+            "rules": {
+                "visible": null,
+                "required": null,
+                "disabled": null
+            },
+            "computed": null,
+            "live": null,
+            "span": null,
+            "props": {
+                "toolbar": [
+                    [
+                        "bold",
+                        "italic",
+                        "strike",
+                        "link"
+                    ],
+                    [
+                        "heading"
+                    ],
+                    [
+                        "blockquote",
+                        "codeBlock",
+                        "bulletList",
+                        "orderedList"
+                    ],
+                    [
+                        "table"
+                    ]
+                ],
+                "minHeight": "6rem",
+                "maxHeight": "20rem",
+                "accept": "image/png,image/jpeg,image/gif,image/webp"
+            },
+            "children": [
+                {
+                    "key": "data#0.s0",
+                    "type": "action",
+                    "hidden": false,
+                    "path": null,
+                    "label": null,
+                    "rules": {
+                        "visible": null
+                    },
+                    "span": null,
+                    "props": {
+                        "label": "Preview",
+                        "style": "button",
+                        "disabled": false,
+                        "confirmation": false,
+                        "hasForm": false,
+                        "heading": "Preview",
+                        "description": null,
+                        "submitLabel": null,
+                        "cancelLabel": null
+                    },
+                    "children": [],
+                    "slot": "markdownPreview",
+                    "deps": []
+                }
+            ],
+            "deps": []
+        }
+    ]
+}

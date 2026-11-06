@@ -114,7 +114,8 @@ export type FieldSlot =
     | 'belowErrorMessage'
     | 'prefixAction'
     | 'suffixAction'
-    | 'optionAction';
+    | 'optionAction'
+    | 'markdownPreview';
 
 export interface FormEndpoints {
     update: string;
@@ -168,6 +169,10 @@ export interface UpdatePatch {
     set: Record<string, unknown>;
     schema: Record<string, Partial<SchemaNode>>;
     errors: Record<string, string | string[]>;
+}
+
+export interface ActionResult extends UpdatePatch {
+    result?: unknown;
 }
 
 export interface SelectOption {

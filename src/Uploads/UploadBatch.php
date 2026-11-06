@@ -8,6 +8,7 @@ use Illuminate\Validation\ValidationException;
 use Throwable;
 use Xelqun\Forms\Components\Component;
 use Xelqun\Forms\Contracts\AcceptsUploads;
+use Xelqun\Forms\Contracts\EmbedsUploads;
 use Xelqun\Forms\Form;
 use Xelqun\Forms\Support\StatePath;
 
@@ -47,7 +48,12 @@ final class UploadBatch
                 $path = $component->getStatePath();
                 $value = data_get($output, $path);
 
-                if (is_array($value)) {
+                if ($component instanceof EmbedsUploads) {
+                    // A field left out of the output stays out: writing null here would wipe its column.
+                    if (is_string($value)) {
+                        data_set($output, $path, $component->replaceUploads($value, fn (string $token): string => $this->promoteToken($component, $token)));
+                    }
+                } elseif (is_array($value)) {
                     data_set($output, $path, array_map(fn (mixed $file): mixed => $this->promoteToken($component, $file), $value));
                 } elseif ($this->store->isToken($value)) {
                     data_set($output, $path, $this->promoteToken($component, $value));

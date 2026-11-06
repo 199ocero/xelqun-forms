@@ -1,7 +1,14 @@
 {
     "name": "xelqun/forms",
     "description": "PHP-defined, schema-driven forms for Laravel, Inertia and Vue.",
-    "keywords": ["laravel", "inertia", "vue", "forms", "admin", "xelqun"],
+    "keywords": [
+        "laravel",
+        "inertia",
+        "vue",
+        "forms",
+        "admin",
+        "xelqun"
+    ],
     "type": "library",
     "license": "MIT",
     "authors": [
@@ -18,7 +25,8 @@
         "illuminate/http": "^13.0",
         "illuminate/support": "^13.0",
         "illuminate/validation": "^13.0",
-        "inertiajs/inertia-laravel": "^3.0"
+        "inertiajs/inertia-laravel": "^3.0",
+        "symfony/html-sanitizer": "^7.4|^8.0"
     },
     "require-dev": {
         "larastan/larastan": "^3.9",

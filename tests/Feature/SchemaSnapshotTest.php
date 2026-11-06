@@ -6,6 +6,8 @@ use Xelqun\Forms\Components\Builder;
 use Xelqun\Forms\Components\Builder\Block;
 use Xelqun\Forms\Components\Checkbox;
 use Xelqun\Forms\Components\CheckboxList;
+use Xelqun\Forms\Components\CodeEditor;
+use Xelqun\Forms\Components\CodeEditor\Language;
 use Xelqun\Forms\Components\ColorPicker;
 use Xelqun\Forms\Components\CustomField;
 use Xelqun\Forms\Components\DatePicker;
@@ -13,8 +15,10 @@ use Xelqun\Forms\Components\DateTimePicker;
 use Xelqun\Forms\Components\FileUpload;
 use Xelqun\Forms\Components\Hidden;
 use Xelqun\Forms\Components\KeyValue;
+use Xelqun\Forms\Components\MarkdownEditor;
 use Xelqun\Forms\Components\Radio;
 use Xelqun\Forms\Components\Repeater;
+use Xelqun\Forms\Components\RichEditor;
 use Xelqun\Forms\Components\Select;
 use Xelqun\Forms\Components\Slider;
 use Xelqun\Forms\Components\TagsInput;
@@ -114,6 +118,9 @@ it('serializes each component to a stable node', function (object $component) {
         'Text' => [Block::make('heading')->icon('hash')->maxItems(1)->columns(2)->schema([TextInput::make('text')->default('Hello')])],
         Block::make('divider')->label('Line'),
     ])->default([['type' => 'heading', 'data' => ['text' => 'Hi']], ['type' => 'divider']]),
+    'rich editor' => fn () => RichEditor::make('body')->toolbarButtons([['bold', 'attachFiles'], ['link']])->disableToolbarButtons(['link'])->minHeight('8rem'),
+    'markdown editor' => fn () => MarkdownEditor::make('notes')->minHeight('6rem')->maxHeight('20rem'),
+    'code editor' => fn () => CodeEditor::make('snippet')->language(Language::Php)->wrap()->default('<?php'),
     'wizard' => fn () => Wizard::make([
         Step::make('Account')->description('Who you are')->icon('user')->completedIcon('star')->columns(2)->schema([TextInput::make('name')]),
         Step::make('Plan')->schema([TextInput::make('plan')]),
