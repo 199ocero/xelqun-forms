@@ -4,6 +4,7 @@ export type { XelqunFormsOptions, XelqunPlugin, XelqunPluginContext } from './pl
 export { default as XqForm } from './components/XqForm.vue';
 export { default as XqNode } from './components/XqNode.vue';
 export { default as XqAction } from './components/XqAction.vue';
+export { default as XqActionGroup } from './components/XqActionGroup.vue';
 export { default as XqActions } from './components/XqActions.vue';
 export type { ActionRunner } from './components/XqAction.vue';
 export { default as XqFieldWrapper } from './components/XqFieldWrapper.vue';

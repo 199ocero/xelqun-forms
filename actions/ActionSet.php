@@ -30,14 +30,14 @@ abstract class ActionSet extends Form
     private bool $hasFilledInModels = false;
 
     /**
-     * @return array<int, Action>
+     * @return array<int, Action|ActionGroup>
      */
     abstract public function actions(): array;
 
     public function schema(): array
     {
         $actions = $this->actions();
-        $names = array_map(fn (Action $action): string => $action->getName(), $actions);
+        $names = array_map(fn (Action $action): string => $action->getName(), ActionGroup::flatten($actions));
 
         if (count($names) !== count(array_unique($names))) {
             throw new FormDefinitionException('The class ['.static::class.'] has two actions with the same name.');
@@ -66,8 +66,8 @@ abstract class ActionSet extends Form
         if (! $this->hasFilledInModels) {
             $this->hasFilledInModels = true;
 
-            foreach ($components as $action) {
-                if ($action instanceof Action && $action->getModel() === null) {
+            foreach (ActionGroup::flatten($components) as $action) {
+                if ($action->getModel() === null) {
                     $action->model($this->model());
                 }
             }

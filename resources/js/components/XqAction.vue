@@ -5,6 +5,12 @@ import type { FormStore } from '../core/store';
  * What the button needs from whatever holds it. Outside a form, pass your own.
  */
 export type ActionRunner = Pick<FormStore, 'mountAction' | 'runAction' | 'processing' | 't'>;
+
+export const actionVariants: Record<string, 'default' | 'destructive' | 'outline'> = {
+    primary: 'default',
+    danger: 'destructive',
+    gray: 'outline',
+};
 </script>
 
 <script setup lang="ts">
@@ -13,7 +19,7 @@ import { LoaderCircle } from 'lucide-vue-next';
 import { computed, onScopeDispose, ref, shallowRef, watch } from 'vue';
 import { useFormStore } from '../composables/context';
 import { createFormStore, LOADING_INDICATOR_DELAY } from '../core/store';
-import { cn } from '../lib/utils';
+import { cn, isOwnUrl } from '../lib/utils';
 import type { SchemaNode } from '../schema/types';
 import XqButton from '../ui/XqButton.vue';
 import XqConfirmDialog from '../ui/XqConfirmDialog.vue';
@@ -22,7 +28,13 @@ import XqDialogFooter from '../ui/XqDialogFooter.vue';
 import XqIcon from '../ui/XqIcon.vue';
 import XqForm from './XqForm.vue';
 
-const props = defineProps<{ node: SchemaNode; runner?: ActionRunner }>();
+const props = defineProps<{
+    node: SchemaNode;
+    runner?: ActionRunner;
+    /** Keep the dialogs and leave the button out, for a menu that has its own. */
+    headless?: boolean;
+}>();
+const emit = defineEmits<{ spinner: [showsSpinner: boolean] }>();
 const store = props.runner ?? useFormStore();
 const options = computed(() => props.node.props ?? {});
 const running = ref(false);
@@ -31,25 +43,13 @@ const confirming = ref(false);
 const modalOpen = ref(false);
 const modal = shallowRef<FormStore | null>(null);
 
-const variants: Record<string, 'default' | 'destructive' | 'outline'> = {
-    primary: 'default',
-    danger: 'destructive',
-    gray: 'outline',
-};
 const variant = computed(() =>
     options.value.style === 'link'
         ? 'link'
         : options.value.style === 'icon'
           ? 'ghost'
-          : (variants[options.value.color] ?? 'outline'),
+          : (actionVariants[options.value.color] ?? 'outline'),
 );
-
-// Inertia can only visit its own app.
-function isOwnUrl(url: string): boolean {
-    return typeof window === 'undefined'
-        ? url.startsWith('/')
-        : new URL(url, window.location.href).origin === window.location.origin;
-}
 
 // A new tab isn't a visit.
 const isVisit = computed(() => !options.value.openInNewTab && isOwnUrl(options.value.url));
@@ -130,6 +130,10 @@ watch(modalOpen, (isOpen) => {
     }
 });
 
+watch(showsSpinner, (shows) => emit('spinner', shows));
+
+defineExpose({ open });
+
 onScopeDispose(() => {
     clearTimeout(spinnerTimer);
     closeModal();
@@ -138,46 +142,48 @@ onScopeDispose(() => {
 
 <template>
     <div class="inline-flex" data-xq-action>
-        <XqButton
-            v-if="options.url"
-            as-child
-            :variant="variant"
-            :size="options.style === 'icon' ? 'icon-sm' : 'sm'"
-            :title="options.tooltip"
-            :aria-label="options.style === 'icon' ? options.label : undefined"
-        >
-            <component
-                :is="isVisit ? Link : 'a'"
-                :href="options.url"
-                :target="options.openInNewTab ? '_blank' : undefined"
-                :rel="options.openInNewTab ? 'noopener noreferrer' : undefined"
+        <template v-if="!headless">
+            <XqButton
+                v-if="options.url"
+                as-child
+                :variant="variant"
+                :size="options.style === 'icon' ? 'icon-sm' : 'sm'"
+                :title="options.tooltip"
+                :aria-label="options.style === 'icon' ? options.label : undefined"
             >
-                <XqIcon v-if="options.icon" :name="options.icon" />
-                <template v-if="options.style !== 'icon'">{{ options.label }}</template>
-            </component>
-        </XqButton>
-        <XqButton
-            v-else
-            type="button"
-            :variant="variant"
-            :size="options.style === 'icon' ? 'icon-sm' : 'sm'"
-            :class="showsSpinner && 'pointer-events-none'"
-            :disabled="!!options.disabled || store.processing.value"
-            :title="options.tooltip"
-            :aria-label="options.style === 'icon' ? options.label : undefined"
-            :aria-busy="running || undefined"
-            @click="open"
-        >
-            <span :class="cn('gap-1.5 inline-flex items-center', showsSpinner && 'invisible')">
-                <XqIcon v-if="options.icon" :name="options.icon" />
-                <template v-if="options.style !== 'icon'">{{ options.label }}</template>
-            </span>
-            <LoaderCircle
-                v-if="showsSpinner"
-                class="motion-safe:animate-spin absolute"
-                aria-hidden="true"
-            />
-        </XqButton>
+                <component
+                    :is="isVisit ? Link : 'a'"
+                    :href="options.url"
+                    :target="options.openInNewTab ? '_blank' : undefined"
+                    :rel="options.openInNewTab ? 'noopener noreferrer' : undefined"
+                >
+                    <XqIcon v-if="options.icon" :name="options.icon" />
+                    <template v-if="options.style !== 'icon'">{{ options.label }}</template>
+                </component>
+            </XqButton>
+            <XqButton
+                v-else
+                type="button"
+                :variant="variant"
+                :size="options.style === 'icon' ? 'icon-sm' : 'sm'"
+                :class="showsSpinner && 'pointer-events-none'"
+                :disabled="!!options.disabled || store.processing.value"
+                :title="options.tooltip"
+                :aria-label="options.style === 'icon' ? options.label : undefined"
+                :aria-busy="running || undefined"
+                @click="open"
+            >
+                <span :class="cn('gap-1.5 inline-flex items-center', showsSpinner && 'invisible')">
+                    <XqIcon v-if="options.icon" :name="options.icon" />
+                    <template v-if="options.style !== 'icon'">{{ options.label }}</template>
+                </span>
+                <LoaderCircle
+                    v-if="showsSpinner"
+                    class="motion-safe:animate-spin absolute"
+                    aria-hidden="true"
+                />
+            </XqButton>
+        </template>
         <XqConfirmDialog
             v-if="options.confirmation && !options.hasForm"
             v-model:open="confirming"
@@ -189,7 +195,9 @@ onScopeDispose(() => {
             :footer-alignment="options.footerAlignment"
             :confirm-label="options.submitLabel ?? store.t('Confirm')"
             :cancel-label="options.cancelLabel"
-            :confirm-variant="variants[options.color] === 'destructive' ? 'destructive' : 'default'"
+            :confirm-variant="
+                actionVariants[options.color] === 'destructive' ? 'destructive' : 'default'
+            "
             @confirm="run"
         />
         <XqDialog

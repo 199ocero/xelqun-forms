@@ -1,6 +1,7 @@
 import { toComponent } from '../composables/registry';
 import type { ComponentRegistry, ComponentResolver } from '../composables/registry';
 import XqAction from './XqAction.vue';
+import XqActionGroup from './XqActionGroup.vue';
 import XqCheckboxField from './fields/XqCheckboxField.vue';
 import XqRadioField from './fields/XqRadioField.vue';
 import XqRepeaterField from './fields/XqRepeaterField.vue';
@@ -55,6 +56,7 @@ export function defaultComponents(): Record<string, ComponentResolver> {
         fieldset: XqFieldset,
         tabs: XqTabsLayout,
         action: XqAction,
+        'action-group': XqActionGroup,
         actions: XqActions,
         wizard: XqWizard,
         block: XqBlock,

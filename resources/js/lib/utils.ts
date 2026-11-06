@@ -7,6 +7,15 @@ export function cn(...inputs: ClassValue[]): string {
 }
 
 /**
+ * Inertia can only visit its own app.
+ */
+export function isOwnUrl(url: string): boolean {
+    return typeof window === 'undefined'
+        ? url.startsWith('/')
+        : new URL(url, window.location.href).origin === window.location.origin;
+}
+
+/**
  * Keep keyboard users in place: focus the first of these that can take it.
  */
 export function focusFirstEnabled(container: HTMLElement | null, selectors: string[]): void {

@@ -4,6 +4,7 @@ namespace Xelqun\Forms\Layouts;
 
 use Closure;
 use Xelqun\Actions\Action;
+use Xelqun\Actions\ActionGroup;
 
 /**
  * A row of action buttons.
@@ -15,7 +16,7 @@ class Actions extends Layout
     protected string|Closure|null $alignment = null;
 
     /**
-     * @param  array<int, Action>  $actions
+     * @param  array<int, Action|ActionGroup>  $actions
      */
     final public function __construct(array $actions = [])
     {
@@ -23,7 +24,7 @@ class Actions extends Layout
     }
 
     /**
-     * @param  array<int, Action>  $actions
+     * @param  array<int, Action|ActionGroup>  $actions
      */
     public static function make(array $actions = []): static
     {

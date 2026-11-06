@@ -5,6 +5,7 @@ import { computed, onScopeDispose, shallowRef, watch } from 'vue';
 import { createFormStore } from '../core/store';
 import type { FormSchema } from '../schema/types';
 import XqAction from './XqAction.vue';
+import XqActionGroup from './XqActionGroup.vue';
 import type { ActionRunner } from './XqAction.vue';
 
 /**
@@ -65,7 +66,13 @@ onScopeDispose(() => store.value.dispose());
 
 <template>
     <div class="gap-2 flex flex-wrap items-center" data-xq-actions>
-        <XqAction v-for="node in visibleActions" :key="node.key" :node="node" :runner="runner" />
+        <component
+            :is="node.type === 'action-group' ? XqActionGroup : XqAction"
+            v-for="node in visibleActions"
+            :key="node.key"
+            :node="node"
+            :runner="runner"
+        />
         <p
             v-if="failure"
             role="alert"
