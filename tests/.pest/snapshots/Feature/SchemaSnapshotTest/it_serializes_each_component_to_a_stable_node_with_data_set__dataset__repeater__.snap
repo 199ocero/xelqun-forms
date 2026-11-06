@@ -207,7 +207,11 @@
                 "columns": {
                     "default": 1,
                     "md": 2
-                }
+                },
+                "addable": true,
+                "deletable": true,
+                "itemNumbers": true,
+                "draggable": true
             },
             "children": [],
             "deps": []

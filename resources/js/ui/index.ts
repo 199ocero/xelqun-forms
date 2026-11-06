@@ -4,6 +4,7 @@ export { default as XqCalendar } from './XqCalendar.vue';
 export { default as XqCard } from './XqCard.vue';
 export { default as XqCheckbox } from './XqCheckbox.vue';
 export { default as XqCombobox } from './XqCombobox.vue';
+export { default as XqConfirmDialog } from './XqConfirmDialog.vue';
 export { registerIcons, resolveIcon } from './icons';
 export { default as XqIcon } from './XqIcon.vue';
 export { default as XqInput } from './XqInput.vue';

@@ -64,6 +64,8 @@ export interface SchemaNode {
     live?: LiveConfig | null;
     /** Set by fields with rows. They need props.template, rowPlaceholder, rows and newRow. */
     containsRows?: boolean;
+    /** Set by fields that hold a file, which a copied row can't share. */
+    acceptsUploads?: boolean;
     span?: ColumnSpan;
     props?: Record<string, any>;
     children?: SchemaNode[];

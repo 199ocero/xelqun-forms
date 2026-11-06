@@ -9,6 +9,7 @@ use Illuminate\Support\Str;
 use LogicException;
 use stdClass;
 use Xelqun\Forms\Components\Concerns\HasColumns;
+use Xelqun\Forms\Components\Repeater\TableColumn;
 use Xelqun\Forms\Contracts\ContainsRows;
 use Xelqun\Forms\Contracts\PersistsItself;
 use Xelqun\Forms\Eloquent\ModelPersister;
@@ -60,6 +61,32 @@ class Repeater extends Field implements ContainsRows, PersistsItself
     protected ?Closure $afterUpdate = null;
 
     protected ?Closure $afterDelete = null;
+
+    protected bool|Closure $isAddable = true;
+
+    protected bool|Closure $isDeletable = true;
+
+    protected bool|Closure $isCloneable = false;
+
+    protected bool|Closure $isCollapsible = false;
+
+    protected bool|Closure $isCollapsed = false;
+
+    protected bool|Closure $hasItemNumbers = true;
+
+    protected bool $isDraggable = true;
+
+    protected bool|Closure $requiresDeleteConfirmation = false;
+
+    protected string|Closure|null $deleteConfirmationMessage = null;
+
+    /** @var array<string, int>|null */
+    protected ?array $grid = null;
+
+    /** @var array<int, TableColumn>|null */
+    protected ?array $tableColumns = null;
+
+    protected ?Field $simpleField = null;
 
     public function getType(): string
     {
@@ -141,6 +168,110 @@ class Repeater extends Field implements ContainsRows, PersistsItself
         return $this;
     }
 
+    /**
+     * Rows of one field, with a list of values as the state. The field keeps its
+     * rules, and needs no label.
+     */
+    public function simple(Field $field): static
+    {
+        $this->simpleField = $field->hiddenLabel();
+
+        return $this->schema([$field]);
+    }
+
+    /**
+     * Let users add rows. A row they post anyway is dropped on the server.
+     */
+    public function addable(bool|Closure $condition = true): static
+    {
+        $this->isAddable = $condition;
+
+        return $this;
+    }
+
+    /**
+     * Let users delete rows. A row they remove anyway comes back on the server.
+     */
+    public function deletable(bool|Closure $condition = true): static
+    {
+        $this->isDeletable = $condition;
+
+        return $this;
+    }
+
+    /**
+     * Add a button that copies a row. File fields start empty in the copy, so two
+     * rows never own one stored file.
+     */
+    public function cloneable(bool|Closure $condition = true): static
+    {
+        $this->isCloneable = $condition;
+
+        return $this;
+    }
+
+    public function collapsible(bool|Closure $condition = true): static
+    {
+        $this->isCollapsible = $condition;
+
+        return $this;
+    }
+
+    /**
+     * Start with every row collapsed. A row with an error always opens.
+     */
+    public function collapsed(bool|Closure $condition = true): static
+    {
+        $this->isCollapsed = $condition;
+
+        return $this->collapsible();
+    }
+
+    /**
+     * Show each row's number next to its label.
+     */
+    public function itemNumbers(bool|Closure $condition = true): static
+    {
+        $this->hasItemNumbers = $condition;
+
+        return $this;
+    }
+
+    /**
+     * Ask before deleting a row.
+     */
+    public function requiresDeleteConfirmation(bool|Closure $condition = true, string|Closure|null $message = null): static
+    {
+        $this->requiresDeleteConfirmation = $condition;
+        $this->deleteConfirmationMessage = $message;
+
+        return $this;
+    }
+
+    /**
+     * Lay the rows out in columns, like columns() does inside a row.
+     *
+     * @param  int|array<string, int>  $columns
+     */
+    public function grid(int|array $columns): static
+    {
+        $this->grid = $this->normalizeColumns($columns);
+
+        return $this;
+    }
+
+    /**
+     * Show the rows as a table, with one column per field, in order.
+     *
+     * @param  array<int, TableColumn>  $columns
+     */
+    public function table(array $columns): static
+    {
+        $this->tableColumns = $columns;
+
+        return $this;
+    }
+
     public function minItems(int $count): static
     {
         $this->minItems = $count;
@@ -168,6 +299,25 @@ class Repeater extends Field implements ContainsRows, PersistsItself
     public function addActionLabel(string|Closure|null $label): static
     {
         $this->addActionLabel = $label;
+
+        return $this;
+    }
+
+    /**
+     * The same as orderable().
+     */
+    public function reorderable(bool $condition = true): static
+    {
+        return $this->orderable($condition);
+    }
+
+    /**
+     * Turn dragging off. The move buttons stay, because keyboard and touch users
+     * need them.
+     */
+    public function reorderableWithDragAndDrop(bool $condition = true): static
+    {
+        $this->isDraggable = $condition;
 
         return $this;
     }
@@ -386,7 +536,8 @@ class Repeater extends Field implements ContainsRows, PersistsItself
             $rows = [];
 
             foreach ($items as $item) {
-                $rows[$this->filledRowKey($item, $rows)] = is_array($item) ? $item : [];
+                $row = $this->simpleField === null ? $item : [$this->simpleField->getName() => $item];
+                $rows[$this->filledRowKey($item, $rows)] = is_array($row) ? $row : [];
             }
 
             return $rows;
@@ -485,26 +636,15 @@ class Repeater extends Field implements ContainsRows, PersistsItself
 
     public function shouldPersistItself(): bool
     {
-        return $this->relationship !== null || $this->isNested();
-    }
-
-    private function isNested(): bool
-    {
-        return $this->getRowPlaceholder() !== StatePath::ROW_PLACEHOLDER;
+        return $this->relationship !== null;
     }
 
     /**
      * Create, update and delete related rows. Rows keyed "record-{id}" update
      * an existing related model, but only one that belongs to this record.
-     *
-     * shortcut: a repeater inside a row doesn't save its rows, until nested repeaters arrive in M16 with the tests that make it safe.
      */
     public function persist(Model $record, mixed $state): void
     {
-        if ($this->isNested()) {
-            return;
-        }
-
         $relationship = $this->getRelationshipInstance($record);
         $existing = $relationship->get()->keyBy(fn (Model $model): string => (string) $model->getKey());
         $kept = [];
@@ -547,6 +687,53 @@ class Repeater extends Field implements ContainsRows, PersistsItself
             $model->delete();
             $this->evaluate($this->afterDelete, ['record' => $model]);
         });
+    }
+
+    public function toPlainRows(array $rows): array
+    {
+        $rowContainer = $this->getChildContainer().'.';
+        $nested = [];
+
+        Form::eachField($this->childComponents, function (Field $field) use (&$nested, $rowContainer): void {
+            if ($field instanceof ContainsRows) {
+                $nested[Str::after($field->getStatePath(), $rowContainer)] = $field;
+            }
+        });
+
+        $plain = [];
+
+        foreach ($rows as $row) {
+            foreach ($nested as $path => $field) {
+                $inner = data_get($row, $path);
+
+                if (is_array($inner)) {
+                    data_set($row, $path, $field->toPlainRows($inner));
+                }
+            }
+
+            $plain[] = $this->simpleField === null ? $row : data_get($row, $this->simpleField->getName());
+        }
+
+        return $plain;
+    }
+
+    public function enforceRowLimits(): void
+    {
+        $rows = (array) $this->getState();
+        $filled = (array) $this->getForm()->getInitialValue($this->getStatePath());
+        $limited = $rows;
+
+        if (! $this->evaluate($this->isAddable)) {
+            $limited = array_intersect_key($limited, $filled);
+        }
+
+        if (! $this->evaluate($this->isDeletable)) {
+            $limited += array_diff_key($filled, $limited);
+        }
+
+        if ($limited !== $rows) {
+            $this->getForm()->setStateValue($this->getStatePath(), $limited);
+        }
     }
 
     /**
@@ -622,6 +809,21 @@ class Repeater extends Field implements ContainsRows, PersistsItself
             'itemLabel' => $this->getItemLabel(),
             'orderable' => $this->isOrderable,
             'columns' => $this->columns,
+            'addable' => (bool) $this->evaluate($this->isAddable),
+            'deletable' => (bool) $this->evaluate($this->isDeletable),
+            'itemNumbers' => (bool) $this->evaluate($this->hasItemNumbers),
+            'draggable' => $this->isOrderable && $this->isDraggable,
+            ...$this->evaluateConfigured([
+                'cloneable' => $this->isCloneable,
+                'collapsible' => $this->isCollapsible,
+                'collapsed' => $this->isCollapsed,
+                'deleteConfirmation' => $this->requiresDeleteConfirmation === false ? null : fn (): ?string => $this->evaluate($this->requiresDeleteConfirmation)
+                    ? ($this->evaluate($this->deleteConfirmationMessage) ?? __('xelqun-forms::messages.repeater.delete_confirmation'))
+                    : null,
+                'grid' => $this->grid,
+                'simple' => $this->simpleField !== null,
+                'table' => $this->tableColumns === null ? null : array_map(fn (TableColumn $column): array => $column->toArray(), $this->tableColumns),
+            ]),
         ];
     }
 }

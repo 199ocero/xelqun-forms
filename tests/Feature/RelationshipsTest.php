@@ -576,7 +576,7 @@ it('asks any field with rows for its row model, not only a Repeater', function (
     expect($form->getModelInstanceFor($child))->toBeInstanceOf(Tag::class);
 });
 
-it('skips any repeater inside a related row until nested rows are saved', function () {
+it('leaves out a repeater inside a related row when it has saved(false)', function () {
     $form = new class extends OrderForm
     {
         public function schema(): array
@@ -588,7 +588,7 @@ it('skips any repeater inside a related row until nested rows are saved', functi
                     TextInput::make('qty')->numeric()->default(1),
                     TextInput::make('price')->numeric()->default(1),
                     TextInput::make('subtotal')->numeric()->default(1),
-                    Repeater::make('notes')->schema([TextInput::make('text')]),
+                    Repeater::make('notes')->saved(false)->schema([TextInput::make('text')]),
                 ]),
             ];
         }

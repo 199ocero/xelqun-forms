@@ -40,6 +40,7 @@ abstract class TestCase extends Orchestra
             $table->foreignId('region_id')->nullable();
             $table->decimal('total', 12, 2)->default(0);
             $table->nullableMorphs('owner');
+            $table->json('meta')->nullable();
             $table->timestamps();
         });
 

@@ -11,6 +11,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use UnitEnum;
 use Xelqun\Forms\Components\Field;
+use Xelqun\Forms\Contracts\ContainsRows;
 use Xelqun\Forms\Support\StatePath;
 
 /**
@@ -406,6 +407,51 @@ trait HasValidationRules
     public function uuid(bool|Closure $condition = true): static
     {
         return $this->rule('uuid', $condition);
+    }
+
+    /**
+     * In a repeater, no two rows may share a value. Of a true or false field, only
+     * one row may be on. Of a field with several values, each may appear once.
+     * Blank values don't count.
+     */
+    public function distinct(bool|Closure $condition = true): static
+    {
+        return $this->ruleUsing(static fn (Field $field): ?Closure => ! $field->evaluate($condition) ? null : function (string $attribute, mixed $value, Closure $fail) use ($field): void {
+            if ($field->isRepeatedInOtherRows($value)) {
+                $fail($field->getFailureMessage('distinct'));
+            }
+        });
+    }
+
+    /**
+     * @internal
+     */
+    public function isRepeatedInOtherRows(mixed $value): bool
+    {
+        $parent = $this->getParent();
+
+        while ($parent !== null && ! $parent instanceof ContainsRows) {
+            $parent = $parent->getParent();
+        }
+
+        if ($parent === null) {
+            return false;
+        }
+
+        $comparable = static fn (mixed $values): array => array_map(strval(...), array_filter(
+            (array) $values,
+            static fn (mixed $item): bool => is_scalar($item) && $item !== '' && $item !== false,
+        ));
+
+        [$rowKey, $path] = explode('.', Str::after($this->getStatePath(), $parent->getStatePath().'.'), 2);
+
+        foreach ((array) $parent->getState() as $otherKey => $row) {
+            if ((string) $otherKey !== $rowKey && array_intersect($comparable($value), $comparable(data_get($row, $path))) !== []) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

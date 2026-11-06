@@ -104,7 +104,7 @@ final class ModelPersister
         if ($component instanceof Field) {
             if (array_key_exists($component->getName(), $data)) {
                 $value = $data[$component->getName()];
-                $attributes[$component->getName()] = $component instanceof ContainsRows ? array_values((array) $value) : $value;
+                $attributes[$component->getName()] = $component instanceof ContainsRows ? $component->toPlainRows((array) $value) : $value;
             }
 
             return;

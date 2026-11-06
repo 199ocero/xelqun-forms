@@ -1,6 +1,6 @@
 # Xelqun Forms: planning document
 
-> Status: approved plan (2026-10-28), implemented through Milestone 9. Parity work continues in [`parity-plan.md`](parity-plan.md), through Milestone 15. See "Implementation status" at the end.
+> Status: approved plan (2026-10-28), implemented through Milestone 9. Parity work continues in [`parity-plan.md`](parity-plan.md), through Milestone 16. See "Implementation status" at the end.
 
 ## Context
 
@@ -440,7 +440,7 @@ Milestones 0–9 are built and tested. Milestone 9 added failure and loading fee
 | File upload inside a repeater row | browser test, package `UploadTest` |
 | Server errors on the correct nested field | browser tests (`Price (Item 2)`), package `ValidationTest` |
 
-**Test counts:** package Pest 691, package Vitest 276, playground feature and browser 49.
+**Test counts:** package Pest 716, package Vitest 316, playground feature and browser 57.
 
 ### Milestone 10: foundations
 
@@ -467,7 +467,7 @@ Limits to keep in mind:
 The package can now be extended from outside. The proof is `tests/Fixtures/ExamplePlugin`, a separate package with a namespaced type, search, uploads, its own saving, a validation rule and a translation. The playground installs it with `xelqun-forms:plugin`, and a browser test uses it, with no change to package source. Authors start from [`plugins.md`](plugins.md).
 
 - **Contracts.** `HasSearchResults`, `AcceptsUploads`, `ContainsRows`, `PersistsItself` and `NeedsServer` replace every check on a concrete field. Built-in fields use them too, and two tests fail if such a check comes back, in PHP or in the client core.
-- **`Repeater` is a client of its own contracts.** Its HasMany sync moved from `ModelPersister` to `Repeater::persist()`. A plugin field inside a relationship row gets `persist()` with the row's model. A repeater nested in such a row doesn't save its rows until M16.
+- **`Repeater` is a client of its own contracts.** Its HasMany sync moved from `ModelPersister` to `Repeater::persist()`. A plugin field inside a relationship row gets `persist()` with the row's model. M16 made a repeater nested in such a row save its rows.
 - **Uploads fail closed.** `HandlesUploads` holds the rules `FileUpload` used to own, and `UploadBatch` re-checks a token's scope before storing it, so a plugin that leaves the rules out still can't copy another field's upload.
 - **The client reads `containsRows`** on a node instead of its type. It is a new optional key, so `$xq` stays 1.
 - **`createXelqunForms({ plugins })`** registers plugins. A collision throws in development and is logged in production, where the first registration stays. `replaces: [...]` is the explicit flag from decision 18, and it only works on built-in fields. `setup({ app })` gets no access to the registry, so it can't get around these rules.
@@ -486,7 +486,7 @@ Limits to keep in mind:
 
 - The plugin starter is stubs and the example plugin. A public starter repo needs your go-ahead, because it's a new public GitHub repo.
 - `make:xelqun-field` writes into `app/` and `resources/js/forms`, so a plugin author moves the files into the plugin.
-- Plugin limits are listed at the end of [`plugins.md`](plugins.md). The main ones: one file per `AcceptsUploads` field until M17, and no saving of nested rows until M16.
+- Plugin limits are listed at the end of [`plugins.md`](plugins.md). The main ones: one file per `AcceptsUploads` field until M17.
 
 ### Milestone 12: state and field basics
 
@@ -543,7 +543,7 @@ Changes that can break existing code, for the release notes:
 
 Limits to keep in mind:
 
-- Any repeater inside a related row is skipped when saving, with or without a relationship. That arrives in M16.
+- ~~Any repeater inside a related row is skipped when saving.~~ M16 saves them.
 - `pivotData()` applies only when attaching. A record that stays attached keeps its pivot values.
 - A `readOnly()` field in a group doesn't write its default when the form edits a record whose related record doesn't exist yet.
 - A field and a relationship group with the same name both use the same state path, and this isn't detected.
@@ -571,7 +571,7 @@ Limits to keep in mind:
 
 - `rules()` strings still go to Laravel as written, so `same:password` there doesn't work. Use the helper.
 - `unique()` checks the posted value, before `dehydrateStateUsing()`. A field that lowercases on save compares the value as typed.
-- Two rows of one form aren't compared with each other, so both can post the same "unique" value. `distinct()` arrives in M16.
+- Two rows of one form aren't compared with each other, so both can post the same "unique" value. Add `distinct()` to the field for that.
 - `unique()` checks and then saves, so two requests at once can both pass. A unique index on the column is what guarantees it.
 - A rule closure can't ask for `Get`. Filament's wrapped form, a closure that returns the rule, wasn't in scope. A condition on `rule()` can.
 - `after()` and `before()` read a value PHP can parse as a date as a date, like Laravel does. Write `$.today` for a field named like a date.
@@ -594,7 +594,7 @@ Where this differs from the plan and from Filament:
 
 - `maska` wasn't added. Installing it was blocked in this environment, and the mask grammar is only three tokens, so `core/mask.ts` does it in about 30 lines with tests. It doesn't support Filament's dynamic `RawJs` masks, which the plan already ruled out.
 - Icon names come from a fixed set in `resources/js/ui/icons.ts`, and `createXelqunForms({ icons })` adds more. A dynamic import of lucide would pull all of its icons into the main bundle.
-- `reorderable()` moves items with buttons on `Select` and `TagsInput`, not by dragging. Drag and drop arrives with `sortablejs` in M16.
+- `reorderable()` on `Select` and `TagsInput` started with buttons only. M16 added dragging, and the buttons stay.
 
 Changes that can break existing code, for the release notes:
 
@@ -619,6 +619,41 @@ Limits to keep in mind:
 - `TagsInput` has no `color()`. `ColorPicker` has no `hsla()`.
 - `displayFormat()` shows English month and day names unless the browser's locale says otherwise, because no `locale()` option exists yet.
 
+### Milestone 16: repeater upgrade
+
+Repeaters now nest, and they save and reload at every level. The proof is the order example: each line item has extras, a second level of rows in its own table, and a browser test adds one to a saved order and reloads it. The new "Repeaters" example shows the other shapes.
+
+- **Nested repeaters save.** `Repeater::persist()` no longer stops at a row, so relationships work at any depth through `persistScope()`. Each level only sees its own records: a row key naming a record of another parent fails validation as stale. Rows in one JSON column come out as plain lists at every level, because `Field::toPlainRows()` replaces the depth-sorting code in `toPlainData()`, and `save()` and `validate()` now share it.
+- **`simple()`** holds a flat list of values. Inside the form it is still rows of one field, so the field keeps its rules and its error path.
+- **`addable()` and `deletable()` are enforced on the server.** A posted new row is dropped and a removed row comes back. `enforceRowLimits()` runs after locks are applied, so a closure deciding this reads the server's values.
+- **`distinct()`** is a rule on a field inside a repeater. No two rows may share a value, only one row of a true or false field may be on, and each value of a multiple field may appear once. It stays within its own repeater.
+- **`cloneable()`** adds a copy after its original, in the browser. File fields start empty, so two rows never own one stored file, and nested rows get new keys, because the old ones name records of the original.
+- **`collapsible()` and `collapsed()`.** A row with an error always opens.
+- **`table()` with `TableColumn`, `grid()` and `itemNumbers()`.**
+- **`requiresDeleteConfirmation()`** uses `XqConfirmDialog`, built on Reka's alert dialog. M20 can reuse it.
+- **Drag and drop** uses SortableJS, through one `useSortable` composable shared by repeaters, `KeyValue`, `TagsInput` and multiple selects. It loads only when a list can be dragged, as a separate chunk of about 13 KB. After a drop it puts the element back and lets the state move it, because Vue owns the order. Each repeater level has its own handle, so a drag never starts at two levels. `forceFallback` makes mouse and touch work the same way and keeps a drag from dropping text into an input. The move buttons stay for keyboard users. `reorderable()` is the same as `orderable()`, and `reorderableWithDragAndDrop(false)` turns dragging off.
+
+Where this differs from the plan and from Filament:
+
+- Filament confirms a delete through an action. Actions arrive in M20, so `requiresDeleteConfirmation()` is a plain method for now.
+- Item numbers are on by default, because the repeater already showed them. Filament has them off.
+
+Changes that can break existing code, for the release notes:
+
+- A repeater with no relationship inside a related row now saves to a column on that row, like any other field. It used to be skipped. Add the column, or give the repeater `saved(false)`.
+- A nested relationship repeater now saves its rows, and deletes rows the browser removed.
+- An error in a nested row names every level: `Qty (Section 2, Line 2)`.
+- Repeater nodes gain `addable`, `deletable`, `itemNumbers` and `draggable`, and fields that hold a file gain `acceptsUploads`. The client treats a missing key as the old behaviour, so `$xq` stays 1.
+
+Limits to keep in mind:
+
+- Touch dragging comes from SortableJS and hasn't been tried on a real phone. The move buttons work everywhere.
+- A new row doesn't get `defaultItems()` for a repeater nested inside it. It starts with no inner rows.
+- `cloneable()` copies what the browser holds. A hidden or disabled field in the copy takes its default, because a new row has no server value. Options loaded for the original come along, but the server hasn't checked them for the copy until the next update.
+- `table()` lines columns up with the row's direct fields, so a field the server hides shifts the cells after it.
+- `addable(false)` and `deletable(false)` compare with the rows the form was filled with, so a row added by someone else since then counts as new and is dropped when the form is saved.
+- `disableOptionsWhenSelectedInSiblingRepeaterItems()`, `fixIndistinctState()`, `compact()` and `itemLabel()` per row weren't in scope.
+
 ### Where the build differs from the plan
 - **Patches have no `add`/`remove`.** A component hidden by a server closure is sent as a stub (`{ key, type, hidden: true, deps }`) and later patched to a full node, which keeps every key stable.
 - **The update request carries the client's dependency map** (`deps: { nodeKey: [paths] }`). The server uses it only to pick which closures to re-run, then re-records fresh dependencies.
@@ -627,7 +662,7 @@ Limits to keep in mind:
 - **The package uses Vite+ too**: `vite.config.ts` holds its Vitest, lint and format config, and it renders every PHP schema snapshot in Vitest.
 
 ### Known limits (next steps)
-- Nested repeaters, multi-file uploads and drag-to-reorder are not built yet (rows reorder with up/down buttons).
+- Multi-file uploads are not built yet.
 - The Pest browser test server corrupts binary uploads (the PNG header byte `0x89` arrives as `?`), so image uploads are covered by package feature tests instead of browser tests.
 - The `eject` command and a Vite plugin for distribution are still future work.
 - Live validation (`errors` in patches) is supported by the protocol and client, but no field triggers it yet.

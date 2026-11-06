@@ -98,7 +98,8 @@ final class FormValidator
     }
 
     /**
-     * Convert row-keyed repeater state into plain lists, deepest repeaters first.
+     * Convert row-keyed repeater state into plain lists. A repeater takes care of
+     * the rows nested inside it.
      *
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
@@ -106,24 +107,14 @@ final class FormValidator
     public function toPlainData(Form $form, array $data): array
     {
         $state = [StatePath::ROOT => $data];
-        $form->setData($data);
-        $paths = [];
 
-        $form->walk(function (Component $component) use (&$paths): void {
-            if ($component instanceof ContainsRows) {
-                $paths[] = $component->getStatePath();
+        Form::eachField($form->getComponents(), function (Field $field) use (&$state): void {
+            $rows = data_get($state, $field->getStatePath());
+
+            if ($field instanceof ContainsRows && is_array($rows)) {
+                data_set($state, $field->getStatePath(), $field->toPlainRows($rows));
             }
         });
-
-        usort($paths, fn (string $first, string $second): int => substr_count($second, '.') <=> substr_count($first, '.'));
-
-        foreach ($paths as $path) {
-            $rows = data_get($state, $path);
-
-            if (is_array($rows)) {
-                data_set($state, $path, array_values($rows));
-            }
-        }
 
         return $state[StatePath::ROOT];
     }
@@ -232,6 +223,12 @@ final class FormValidator
             $form->setStateValue($path, $field->getServerState());
         }
 
+        $form->walk(function (Component $component): void {
+            if ($component instanceof Field) {
+                $component->enforceRowLimits();
+            }
+        });
+
         $form->recomputeComputedFields();
     }
 
@@ -276,7 +273,9 @@ final class FormValidator
 
                 foreach ($component->getRows() as $rowComponents) {
                     $index++;
-                    $this->collect($rowComponents, true, $component->getItemLabel().' '.$index, $parentIsSaved && $isSaved);
+                    $label = $component->getItemLabel().' '.$index;
+
+                    $this->collect($rowComponents, true, $rowLabel === null ? $label : "{$rowLabel}, {$label}", $parentIsSaved && $isSaved);
                 }
             }
         }

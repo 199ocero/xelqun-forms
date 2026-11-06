@@ -18,10 +18,21 @@ trait HasColumns
      */
     public function columns(int|array $columns): static
     {
-        $this->columns = is_int($columns)
-            ? ($columns > 1 ? ['default' => 1, 'md' => $columns] : ['default' => 1])
-            : $columns;
+        $this->columns = $this->normalizeColumns($columns);
 
         return $this;
+    }
+
+    /**
+     * @param  int|array<string, int>  $columns
+     * @return array<string, int>
+     */
+    protected function normalizeColumns(int|array $columns): array
+    {
+        if (is_array($columns)) {
+            return $columns;
+        }
+
+        return $columns > 1 ? ['default' => 1, 'md' => $columns] : ['default' => 1];
     }
 }

@@ -201,12 +201,12 @@ describe('persistence', function (): void {
         expect(Order::query()->count())->toBe(0);
     });
 
-    it('does not save the rows of a nested relationship repeater yet', function (): void {
+    it('saves the rows of a nested relationship repeater', function (): void {
         $order = NestedRelationshipForm::make()->save(['data' => ['customer' => 'Ada', 'items' => [
             'a' => ['product' => 'Desk', 'qty' => 1, 'price' => 2, 'reviews' => ['x' => ['stars' => '2']]],
         ]]]);
 
-        expect($order->items()->sole()->reviews()->count())->toBe(0);
+        expect($order->items()->sole()->reviews()->count())->toBe(1);
     });
 
     it('persists a repeater itself only when it has a relationship', function (): void {

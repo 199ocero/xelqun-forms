@@ -284,6 +284,79 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
         return key;
     }
 
+    /**
+     * Fit a copied row and its nodes for life on their own: stored files go, and
+     * nested rows get new keys, because theirs name records of the original.
+     */
+    function resetCopiedRow(copy: Record<string, any>, nodes: SchemaNode[], rowPath: string): void {
+        const relative = (path: string) => path.slice(rowPath.length + 1);
+
+        for (const node of nodes) {
+            if (node.acceptsUploads && node.path) {
+                setPath(copy, relative(node.path), null);
+            }
+
+            if (node.containsRows && node.path) {
+                const inner = rowsOf(node);
+                const fresh: Record<string, unknown> = {};
+
+                for (const [key, row] of Object.entries(getPath(copy, relative(node.path)) ?? {})) {
+                    const freshKey = newRowKey();
+                    const freshPath = `${node.path}.${freshKey}`;
+
+                    inner[freshKey] = replaceRow(
+                        inner[key] ?? [],
+                        freshPath,
+                        `${node.path}.${key}`,
+                    );
+                    resetCopiedRow(row as Record<string, any>, inner[freshKey], freshPath);
+                    fresh[freshKey] = row;
+                }
+
+                setPath(copy, relative(node.path), fresh);
+            }
+
+            resetCopiedRow(copy, node.children ?? [], rowPath);
+        }
+    }
+
+    /**
+     * Add a copy of a row right after it, and return the copy's key. Its nodes come
+     * from the original, not the template, which has no options loaded for a row.
+     */
+    function cloneRow(node: SchemaNode, key: string): string {
+        const copyKey = newRowKey();
+        const copyPath = `${node.path}.${copyKey}`;
+        const rows = get(node.path!) ?? {};
+        const copy = clone(rows[key]);
+        const copyNodes = replaceRow(rowsOf(node)[key] ?? [], copyPath, `${node.path}.${key}`);
+
+        resetCopiedRow(copy, copyNodes, copyPath);
+
+        const reordered: Record<string, unknown> = {};
+
+        for (const [rowKey, row] of Object.entries(rows)) {
+            reordered[rowKey] = row;
+
+            if (rowKey === key) {
+                reordered[copyKey] = copy;
+            }
+        }
+
+        setPath(state, node.path!, reordered);
+        rowsOf(node)[copyKey] = copyNodes;
+        index(copyNodes);
+        touchRows(node);
+
+        const rowNodes = rowsOf(node);
+
+        node.props!.rows = Object.fromEntries(
+            Object.keys(reordered).map((rowKey) => [rowKey, rowNodes[rowKey]]),
+        );
+
+        return copyKey;
+    }
+
     function removeRow(node: SchemaNode, key: string): void {
         const prefix = `${node.path}.${key}`;
 
@@ -613,6 +686,7 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
         evaluateCondition: (node: ConditionNode) => evaluateCondition(node, get),
         rowKeys,
         addRow,
+        cloneRow,
         removeRow,
         moveRow,
         applyPatch,

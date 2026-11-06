@@ -8,6 +8,7 @@ use Illuminate\Support\Str;
 use Xelqun\Forms\Components\Concerns\HasValidationRules;
 use Xelqun\Forms\Conditions\Condition;
 use Xelqun\Forms\Conditions\ConditionalText;
+use Xelqun\Forms\Contracts\AcceptsUploads;
 use Xelqun\Forms\Contracts\ContainsRows;
 use Xelqun\Forms\Contracts\NeedsServer;
 use Xelqun\Forms\Expressions\Expression;
@@ -707,6 +708,27 @@ abstract class Field extends Component implements NeedsServer
     }
 
     /**
+     * Rows as they leave the form: a plain list.
+     *
+     * @internal
+     *
+     * @param  array<array-key, mixed>  $rows
+     * @return array<int, mixed>
+     */
+    public function toPlainRows(array $rows): array
+    {
+        return array_values($rows);
+    }
+
+    /**
+     * Put back what the browser had no right to change about a field's rows. It
+     * runs after locks are applied, so a closure can trust what it reads.
+     *
+     * @internal
+     */
+    public function enforceRowLimits(): void {}
+
+    /**
      * @internal Override dehydrateState() instead.
      */
     public function getDehydratedState(mixed $value): mixed
@@ -743,6 +765,7 @@ abstract class Field extends Component implements NeedsServer
             'computed' => $this->computed?->toArray($this->container),
             'live' => $this->getLiveConfig(),
             ...($this instanceof ContainsRows ? ['containsRows' => true] : []),
+            ...($this instanceof AcceptsUploads ? ['acceptsUploads' => true] : []),
             ...($this->canBeReadOnly() ? ['readOnly' => $this->isReadOnly()] : []),
             ...$this->evaluateConfigured([
                 'autofocus' => $this->autofocus,

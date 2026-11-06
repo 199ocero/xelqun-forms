@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ChevronDown, ChevronUp, Plus, X } from 'lucide-vue-next';
+import { ChevronDown, ChevronUp, GripVertical, Plus, X } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 import { useField } from '../../composables/useField';
+import { useSortable } from '../../composables/useSortable';
 import type { SchemaNode } from '../../schema/types';
 import { moveItem } from '../../ui/options';
 import XqButton from '../../ui/XqButton.vue';
@@ -63,6 +64,15 @@ function move(row: Row, offset: number): void {
     rows.value = moveItem(rows.value, row, offset);
     commit();
 }
+
+const rowList = ref<HTMLElement | null>(null);
+
+useSortable(rowList, {
+    draggable: '> [data-xq-row]',
+    handle: '[data-xq-drag]',
+    enabled: () => !!options.value.reorderable && !disabled.value && rows.value.length > 1,
+    onMove: (from, to) => move(rows.value[from], to - from),
+});
 </script>
 
 <template>
@@ -75,55 +85,70 @@ function move(row: Row, offset: number): void {
                 <span>{{ options.keyLabel }}</span>
                 <span>{{ options.valueLabel }}</span>
             </div>
-            <div v-for="(row, index) in rows" :key="row.id" class="gap-2 flex items-center">
-                <XqInput
-                    v-model="row.key"
-                    :aria-label="`${options.keyLabel} ${index + 1}`"
-                    :aria-describedby="describedBy"
-                    :placeholder="options.keyPlaceholder ?? undefined"
-                    :disabled="disabled || !options.editableKeys"
-                    @update:model-value="commit"
-                />
-                <XqInput
-                    v-model="row.value"
-                    :aria-label="`${options.valueLabel} ${index + 1}`"
-                    :placeholder="options.valuePlaceholder ?? undefined"
-                    :disabled="disabled || !options.editableValues"
-                    @update:model-value="commit"
-                />
-                <template v-if="options.reorderable">
-                    <XqButton
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        :aria-label="`Move row ${index + 1} up`"
-                        :disabled="disabled || index === 0"
-                        @click="move(row, -1)"
-                    >
-                        <ChevronUp />
-                    </XqButton>
-                    <XqButton
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        :aria-label="`Move row ${index + 1} down`"
-                        :disabled="disabled || index === rows.length - 1"
-                        @click="move(row, 1)"
-                    >
-                        <ChevronDown />
-                    </XqButton>
-                </template>
-                <XqButton
-                    v-if="options.deletable"
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    :aria-label="`Remove row ${index + 1}`"
-                    :disabled="disabled"
-                    @click="remove(row)"
+            <div ref="rowList" class="gap-2 grid">
+                <div
+                    v-for="(row, index) in rows"
+                    :key="row.id"
+                    data-xq-row
+                    class="gap-2 flex items-center"
                 >
-                    <X />
-                </XqButton>
+                    <span
+                        v-if="options.reorderable && rows.length > 1"
+                        aria-hidden="true"
+                        data-xq-drag
+                        class="cursor-grab touch-none text-xq-muted-foreground"
+                    >
+                        <GripVertical class="size-4" />
+                    </span>
+                    <XqInput
+                        v-model="row.key"
+                        :aria-label="`${options.keyLabel} ${index + 1}`"
+                        :aria-describedby="describedBy"
+                        :placeholder="options.keyPlaceholder ?? undefined"
+                        :disabled="disabled || !options.editableKeys"
+                        @update:model-value="commit"
+                    />
+                    <XqInput
+                        v-model="row.value"
+                        :aria-label="`${options.valueLabel} ${index + 1}`"
+                        :placeholder="options.valuePlaceholder ?? undefined"
+                        :disabled="disabled || !options.editableValues"
+                        @update:model-value="commit"
+                    />
+                    <template v-if="options.reorderable">
+                        <XqButton
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            :aria-label="`Move row ${index + 1} up`"
+                            :disabled="disabled || index === 0"
+                            @click="move(row, -1)"
+                        >
+                            <ChevronUp />
+                        </XqButton>
+                        <XqButton
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            :aria-label="`Move row ${index + 1} down`"
+                            :disabled="disabled || index === rows.length - 1"
+                            @click="move(row, 1)"
+                        >
+                            <ChevronDown />
+                        </XqButton>
+                    </template>
+                    <XqButton
+                        v-if="options.deletable"
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        :aria-label="`Remove row ${index + 1}`"
+                        :disabled="disabled"
+                        @click="remove(row)"
+                    >
+                        <X />
+                    </XqButton>
+                </div>
             </div>
             <XqButton
                 v-if="options.addable"

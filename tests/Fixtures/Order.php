@@ -13,6 +13,8 @@ class Order extends Model
 {
     protected $guarded = [];
 
+    protected $casts = ['meta' => 'array'];
+
     /**
      * @return BelongsTo<Country, $this>
      */

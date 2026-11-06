@@ -16,6 +16,7 @@ import {
 } from 'reka-ui';
 import { computed, reactive, ref, watch } from 'vue';
 import type { HTMLAttributes } from 'vue';
+import { useSortable } from '../composables/useSortable';
 import { cn } from '../lib/utils';
 import type { SelectMessages, SelectOption } from '../schema/types';
 import { controlClass, groupLabelClass, optionClass, popoverClass, spinnerClass } from './classes';
@@ -36,7 +37,6 @@ const props = defineProps<{
     describedBy?: string;
     searchFailed?: boolean;
     messages?: SelectMessages;
-    /** shortcut: moved with buttons, until drag and drop arrives with sortablejs in M16. */
     reorderable?: boolean;
     class?: HTMLAttributes['class'];
 }>();
@@ -78,6 +78,14 @@ function move(value: Value, offset: number): void {
     model.value = moveItem(selectedValues.value, value, offset);
 }
 
+const chipList = ref<HTMLElement | null>(null);
+
+useSortable(chipList, {
+    draggable: '> [data-xq-chip]',
+    enabled: () => !!props.reorderable && !props.disabled && selectedValues.value.length > 1,
+    onMove: (from, to) => move(selectedValues.value[from], to - from),
+});
+
 function clear(): void {
     model.value = props.multiple ? [] : null;
     searchTerm.value = '';
@@ -105,11 +113,17 @@ function clear(): void {
                 )
             "
         >
-            <template v-if="multiple">
+            <span v-if="multiple" ref="chipList" class="gap-1 flex max-w-full flex-wrap">
                 <span
                     v-for="(value, index) in selectedValues"
                     :key="String(value)"
-                    class="gap-1 py-0.5 pr-1 pl-2 text-xs font-medium inline-flex items-center rounded-xq-sm bg-xq-secondary text-xq-secondary-foreground"
+                    data-xq-chip
+                    :class="
+                        cn(
+                            'gap-1 py-0.5 pr-1 pl-2 text-xs font-medium inline-flex items-center rounded-xq-sm bg-xq-secondary text-xq-secondary-foreground',
+                            reorderable && 'cursor-grab touch-none',
+                        )
+                    "
                 >
                     <button
                         v-if="reorderable && index > 0"
@@ -142,7 +156,7 @@ function clear(): void {
                         <X class="size-3" />
                     </button>
                 </span>
-            </template>
+            </span>
             <ComboboxInput
                 :id="id"
                 v-model="searchTerm"

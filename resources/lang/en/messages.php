@@ -18,6 +18,7 @@ return [
     'repeater' => [
         'item' => 'Item',
         'add' => 'Add :item',
+        'delete_confirmation' => 'Delete this item? This takes effect when you save.',
         'stale' => ':attribute changed after you opened this form. Reload the page and try again.',
     ],
     'uploads' => [
