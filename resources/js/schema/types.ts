@@ -135,6 +135,7 @@ export interface FormSchema {
     /** Text in this locale, by its English original. Anything missing stays English. */
     messages?: Record<string, string>;
     unsavedChangesAlert?: boolean;
+    disabled?: boolean;
     state: { data: Record<string, any> };
     components: SchemaNode[];
 }

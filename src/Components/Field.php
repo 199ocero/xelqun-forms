@@ -515,12 +515,12 @@ abstract class Field extends Component implements NeedsServer
 
     public function isDisabled(): bool
     {
-        return (bool) $this->evaluate($this->disabled);
+        return $this->getForm()->isDisabled() || (bool) $this->evaluate($this->disabled);
     }
 
     public function isDisabledStatically(): bool
     {
-        return $this->disabled === true;
+        return $this->disabled === true || $this->getForm()->isDisabled();
     }
 
     /**

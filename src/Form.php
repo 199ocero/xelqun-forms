@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use LogicException;
 use stdClass;
 use Throwable;
 use Xelqun\Forms\Components\Component;
@@ -73,6 +74,7 @@ class Form
      * @param  TModel|null  $record
      * @param  array<string, mixed>  $context  Scalar values that are needed to rebuild the form (kept in the token).
      *                                         Set "operation" for one beyond create and edit, such as "view".
+     *                                         "disabled" is reserved for disabled().
      */
     final public function __construct(
         protected ?Model $record = null,
@@ -179,6 +181,26 @@ class Form
     public function hasFrontendValidation(): bool
     {
         return $this->hasFrontendValidation;
+    }
+
+    /**
+     * Show the form without letting anyone change it, as on a View page. Every
+     * field is disabled, and save() refuses. Actions in an Actions layout still
+     * work, because they answer to their own authorize().
+     *
+     * It lives in the context because that travels in the token. Every later
+     * request rebuilds the form, and a plain property would be gone by then.
+     */
+    public function disabled(bool $condition = true): static
+    {
+        $this->context['disabled'] = $condition;
+
+        return $this;
+    }
+
+    public function isDisabled(): bool
+    {
+        return ($this->context['disabled'] ?? false) === true;
     }
 
     public function getId(): string
@@ -660,6 +682,7 @@ class Form
             'locale' => str_replace('_', '-', app()->getLocale()),
             ...$this->getClientMessages(),
             ...($this->hasUnsavedChangesAlerts ? ['unsavedChangesAlert' => true] : []),
+            ...($this->isDisabled() ? ['disabled' => true] : []),
             'state' => [StatePath::ROOT => $this->getJsonData()],
             'components' => $components,
         ];
@@ -817,6 +840,10 @@ class Form
      */
     public function save(Request|array $input): Model
     {
+        if ($this->isDisabled()) {
+            throw new LogicException('The form ['.static::class.'] is disabled, so it can\'t be saved.');
+        }
+
         $uploads = app(UploadBatch::class);
         $data = $uploads->promote($this, $this->validateInput($input));
 

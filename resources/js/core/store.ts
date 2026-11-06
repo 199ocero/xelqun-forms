@@ -895,7 +895,7 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
     }
 
     async function submit(url: string, submitOptions: SubmitOptions = {}): Promise<void> {
-        if (processing.value) {
+        if (processing.value || schema.disabled) {
             return;
         }
 
@@ -1036,6 +1036,7 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
         isVisible,
         isRequired,
         isDisabled,
+        isFormDisabled: !!schema.disabled,
         text,
         isLoading,
         showsLoadingIndicator,

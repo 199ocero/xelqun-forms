@@ -84,3 +84,22 @@ describe('submitting through the form', () => {
         expect(visit.mock.calls[0]?.[1].preserveState).toBe(false);
     });
 });
+
+describe('a disabled form', () => {
+    afterEach(() => visit.mockReset());
+
+    it('has no save button and does not submit', async () => {
+        const store = createFormStore({
+            ...schema([field('data.name')], { name: 'Peru' }, null),
+            disabled: true,
+        });
+        const wrapper = mount(XqForm, { props: { form: store, action: '/countries' } });
+
+        expect(wrapper.find('button[type="submit"]').exists()).toBe(false);
+
+        await store.submit('/countries');
+
+        expect(visit).not.toHaveBeenCalled();
+        wrapper.unmount();
+    });
+});
