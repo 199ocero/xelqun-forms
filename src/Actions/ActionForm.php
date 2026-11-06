@@ -26,7 +26,7 @@ final class ActionForm extends Form
      */
     public static function for(Action $action, array $parentData): self
     {
-        $form = new self($action->getForm()->getRecordFor($action));
+        $form = new self($action->getRecord());
         $form->action = $action;
         $form->parentData = $parentData;
 

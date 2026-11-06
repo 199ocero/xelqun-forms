@@ -21,6 +21,10 @@ return [
         'delete_confirmation' => 'Delete this item? This takes effect when you save.',
         'stale' => ':attribute changed after you opened this form. Reload the page and try again.',
     ],
+    'select' => [
+        'create_option' => 'Create',
+        'edit_option' => 'Edit',
+    ],
     'uploads' => [
         'expired' => 'The :attribute upload has expired. Please upload the file again.',
         'not_accepted' => 'This field does not accept uploads.',

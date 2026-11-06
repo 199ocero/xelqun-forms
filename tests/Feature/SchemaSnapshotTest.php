@@ -105,6 +105,9 @@ it('serializes each component to a stable node', function (object $component) {
         Action::make('edit')->authorize(true)->label('Change it')->iconButton()->icon('pencil')->schema([TextInput::make('name')]),
         Action::make('secret'),
     ])->alignment('end'),
+    'select with option actions' => fn () => Select::make('status')->options(['a' => 'A'])->createOptionForm([TextInput::make('name')])->createOptionAction(fn (Action $action) => $action->authorize(true)),
+    'text input with affix actions' => fn () => TextInput::make('code')->prefixAction(Action::make('one')->authorize(true))->suffixAction(Action::make('two')->authorize(true)->icon('star')),
+    'repeater with item actions' => fn () => Repeater::make('rows')->default([['a' => 1]])->extraItemActions([Action::make('go')->authorize(true)->icon('star')])->schema([TextInput::make('a')]),
     'wizard' => fn () => Wizard::make([
         Step::make('Account')->description('Who you are')->icon('user')->completedIcon('star')->columns(2)->schema([TextInput::make('name')]),
         Step::make('Plan')->schema([TextInput::make('plan')]),

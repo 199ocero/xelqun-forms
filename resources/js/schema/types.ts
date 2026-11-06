@@ -71,8 +71,8 @@ export interface SchemaNode {
     grow?: boolean;
     /** Rules the browser can check, on forms with frontendValidation(). */
     validation?: FieldValidation | null;
-    /** The place around its field this child renders in. */
-    slot?: FieldSlot;
+    /** The place around its field, or in its repeater row's header, this child renders in. */
+    slot?: FieldSlot | 'itemAction';
     props?: Record<string, any>;
     children?: SchemaNode[];
     deps?: string[];
@@ -100,7 +100,10 @@ export type FieldSlot =
     | 'afterContent'
     | 'belowContent'
     | 'aboveErrorMessage'
-    | 'belowErrorMessage';
+    | 'belowErrorMessage'
+    | 'prefixAction'
+    | 'suffixAction'
+    | 'optionAction';
 
 export interface FormEndpoints {
     update: string;

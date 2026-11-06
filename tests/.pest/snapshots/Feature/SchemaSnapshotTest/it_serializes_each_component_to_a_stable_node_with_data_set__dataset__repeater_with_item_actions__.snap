@@ -1,0 +1,175 @@
+{
+    "state": {
+        "data": {
+            "rows": {
+                "row-0": {
+                    "a": 1
+                }
+            }
+        }
+    },
+    "components": [
+        {
+            "key": "data.rows",
+            "type": "repeater",
+            "hidden": false,
+            "path": "data.rows",
+            "label": "Rows",
+            "hint": null,
+            "placeholder": null,
+            "required": false,
+            "disabled": false,
+            "rules": {
+                "visible": null,
+                "required": null,
+                "disabled": null
+            },
+            "computed": null,
+            "live": null,
+            "containsRows": true,
+            "span": null,
+            "props": {
+                "template": [
+                    {
+                        "key": "data.rows.{row}.a",
+                        "type": "text-input",
+                        "hidden": false,
+                        "path": "data.rows.{row}.a",
+                        "label": "A",
+                        "hint": null,
+                        "placeholder": null,
+                        "required": false,
+                        "disabled": false,
+                        "rules": {
+                            "visible": null,
+                            "required": null,
+                            "disabled": null
+                        },
+                        "computed": null,
+                        "live": null,
+                        "span": null,
+                        "props": {
+                            "inputType": "text",
+                            "numeric": false,
+                            "integer": false,
+                            "min": null,
+                            "max": null,
+                            "step": null,
+                            "maxLength": null,
+                            "prefix": null,
+                            "suffix": null,
+                            "autocomplete": null
+                        },
+                        "children": [],
+                        "deps": []
+                    },
+                    {
+                        "key": "data.rows.{row}#a0",
+                        "type": "action",
+                        "hidden": false,
+                        "path": null,
+                        "label": null,
+                        "rules": {
+                            "visible": null
+                        },
+                        "span": null,
+                        "props": {
+                            "label": "Go",
+                            "style": "button",
+                            "disabled": false,
+                            "confirmation": false,
+                            "hasForm": false,
+                            "heading": "Go",
+                            "description": null,
+                            "submitLabel": null,
+                            "cancelLabel": null,
+                            "icon": "star"
+                        },
+                        "children": [],
+                        "slot": "itemAction",
+                        "deps": []
+                    }
+                ],
+                "rowPlaceholder": "{row}",
+                "rows": {
+                    "row-0": [
+                        {
+                            "key": "data.rows.row-0.a",
+                            "type": "text-input",
+                            "hidden": false,
+                            "path": "data.rows.row-0.a",
+                            "label": "A",
+                            "hint": null,
+                            "placeholder": null,
+                            "required": false,
+                            "disabled": false,
+                            "rules": {
+                                "visible": null,
+                                "required": null,
+                                "disabled": null
+                            },
+                            "computed": null,
+                            "live": null,
+                            "span": null,
+                            "props": {
+                                "inputType": "text",
+                                "numeric": false,
+                                "integer": false,
+                                "min": null,
+                                "max": null,
+                                "step": null,
+                                "maxLength": null,
+                                "prefix": null,
+                                "suffix": null,
+                                "autocomplete": null
+                            },
+                            "children": [],
+                            "deps": []
+                        },
+                        {
+                            "key": "data.rows.row-0#a0",
+                            "type": "action",
+                            "hidden": false,
+                            "path": null,
+                            "label": null,
+                            "rules": {
+                                "visible": null
+                            },
+                            "span": null,
+                            "props": {
+                                "label": "Go",
+                                "style": "button",
+                                "disabled": false,
+                                "confirmation": false,
+                                "hasForm": false,
+                                "heading": "Go",
+                                "description": null,
+                                "submitLabel": null,
+                                "cancelLabel": null,
+                                "icon": "star"
+                            },
+                            "children": [],
+                            "slot": "itemAction",
+                            "deps": []
+                        }
+                    ]
+                },
+                "newRow": {
+                    "a": null
+                },
+                "minItems": 0,
+                "maxItems": null,
+                "addLabel": "Add item",
+                "itemLabel": "Item",
+                "orderable": true,
+                "columns": null,
+                "addable": true,
+                "deletable": true,
+                "itemNumbers": true,
+                "draggable": true
+            },
+            "children": [],
+            "deps": []
+        }
+    ]
+}

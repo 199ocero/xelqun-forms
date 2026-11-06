@@ -53,6 +53,9 @@ class Form
     /** @var array<int, string> */
     private array $setPaths = [];
 
+    /** @var array<int, string> */
+    private array $refreshedKeys = [];
+
     private ?string $formId = null;
 
     private bool $hasUnsavedChangesAlerts = false;
@@ -374,6 +377,25 @@ class Form
         if (! in_array($path, $this->setPaths, true)) {
             $this->setPaths[] = $path;
         }
+    }
+
+    /**
+     * Send this component to the browser again with the next patch, for a change
+     * no state shows, such as a new option in a select.
+     */
+    public function refreshComponent(Component $component): void
+    {
+        $this->refreshedKeys[] = $component->getKey();
+    }
+
+    /**
+     * @internal
+     *
+     * @return array<int, string>
+     */
+    public function getRefreshedKeys(): array
+    {
+        return $this->refreshedKeys;
     }
 
     /**

@@ -24,6 +24,7 @@ const describedBy = computed(() =>
         <XqFieldSlot :node="node" name="aboveContent" />
         <div class="gap-3 flex items-start">
             <XqFieldSlot :node="node" name="beforeContent" />
+            <XqFieldSlot :node="node" name="prefixAction" />
             <XqSwitch
                 :id="id"
                 v-model="value"
@@ -53,7 +54,8 @@ const describedBy = computed(() =>
                     {{ node.props?.description ?? hint }}
                 </p>
             </div>
-            <XqFieldSlot class="ms-auto" :node="node" name="afterContent" />
+            <XqFieldSlot class="ms-auto" :node="node" name="suffixAction" />
+            <XqFieldSlot :node="node" name="afterContent" />
         </div>
         <XqFieldSlot :node="node" name="belowContent" />
         <XqFieldSlot :node="node" name="aboveErrorMessage" />

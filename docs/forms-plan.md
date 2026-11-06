@@ -440,7 +440,7 @@ Milestones 0–9 are built and tested. Milestone 9 added failure and loading fee
 | File upload inside a repeater row | browser test, package `UploadTest` |
 | Server errors on the correct nested field | browser tests (`Price (Item 2)`), package `ValidationTest` |
 
-**Test counts:** package Pest 913, package Vitest 495, playground feature and browser 73.
+**Test counts:** package Pest 943, package Vitest 502, playground feature and browser 75.
 
 ### Milestone 10: foundations
 
@@ -785,6 +785,36 @@ Limits to keep in mind:
 - An action's result can only change the form. To show a message or redirect, set a field or throw a `ValidationException`.
 - `$set` lasts for one request, as everywhere else: a disabled field goes back to its server value on the next one.
 - `Try again` in a modal retries live updates, not the action. Submit the modal again for that.
+
+### Milestone 21: action features
+
+The proof is the order example: the plus beside the country select opens a modal, the new country is saved and selected, and a pencil appears to edit it.
+
+- **`createOptionForm()`, `editOptionForm()` and `manageOptionForm()`** on `Select`, with `createOptionUsing()`, `updateOptionUsing()`, `fillEditOptionActionFormUsing()`, modal headings, and `createOptionAction()`, `editOptionAction()` and `manageOptionActions()` to change the buttons. They are ordinary actions built when the field is placed, so each row gets buttons tied to its own copy of the field.
+- **Neither is allowed by default.** Create needs the related model's `create` policy, and edit its `update` policy for the selected record.
+- **Edit looks the record up through the relationship's query**, so a posted key outside it opens nothing. `Action::record()` makes that the action's `$record`, and a policy never falls back to the model for such an action. Filling uses the modal's fields only, so other attributes never reach the browser.
+- **`Form::refreshComponent()`** sends a component again with the patch, so the new option or label shows at once.
+- **`prefixAction()`, `suffixAction()` and their plural forms** are on every field, as slots beside the control.
+- **`extraItemActions()`** puts buttons in each row's header, and they work on that row. They travel with the row's nodes, and the row lists leave them out, so table columns stay lined up.
+
+Where this differs from Filament:
+
+- Filament leaves option actions allowed unless you authorize them. Here they deny, as decision 10 says.
+- `createAnother`, `getItemState()` and `$arguments` aren't built. An item action already reads its row with `$get`.
+- Edit needs a relationship. Without one there is no way to find the record, so the button stays hidden.
+
+Changes that can break existing code, for the release notes:
+
+- An action on a field disabled by `disabledWhen()` is now refused.
+- The `FieldSlot` type gains `prefixAction`, `suffixAction` and `optionAction`.
+- `Action::model()` also takes a closure, so `getModel()` is evaluated each time.
+
+Limits to keep in mind:
+
+- The default create and update write only columns. A modal with a BelongsToMany field needs `createOptionUsing()` or `updateOptionUsing()`.
+- With static options and `createOptionUsing()`, the new key has to be in `options()` too, or the select's own rule rejects it on submit. Use a closure for `options()`.
+- The button of an action beside a field disabled by `disabledWhen()` stays clickable, and the server refuses it.
+- An action with a label of "Create" or "Edit" reads the same to a screen reader on each select. Set `label()` in the action callback if a form has several.
 
 ### Where the build differs from the plan
 - **Patches have no `add`/`remove`.** A component hidden by a server closure is sent as a stub (`{ key, type, hidden: true, deps }`) and later patched to a full node, which keeps every key stable.

@@ -60,8 +60,10 @@ class Action extends Component implements NeedsServer
 
     protected ?Closure $action = null;
 
-    /** @var class-string<Model>|null */
-    protected ?string $model = null;
+    /** @var class-string<Model>|Closure|null */
+    protected string|Closure|null $model = null;
+
+    protected ?Closure $recordUsing = null;
 
     final public function __construct(protected string $name) {}
 
@@ -149,7 +151,7 @@ class Action extends Component implements NeedsServer
 
     /**
      * Who may use this action: a closure, a boolean, or a policy ability checked
-     * against the row or form record, or against model() when there is none. Only
+     * against the action's record, or against model() when there is none. Only
      * a yes lets it run. It shows only to those it would run for, and the check
      * repeats on every call.
      */
@@ -250,9 +252,9 @@ class Action extends Component implements NeedsServer
      * The model modal fields read relationships from, and the policy's subject
      * when there is no record.
      *
-     * @param  class-string<Model>|null  $model
+     * @param  class-string<Model>|Closure|null  $model
      */
-    public function model(?string $model): static
+    public function model(string|Closure|null $model): static
     {
         $this->model = $model;
 
@@ -264,13 +266,31 @@ class Action extends Component implements NeedsServer
      */
     public function getModel(): ?string
     {
-        return $this->model;
+        return $this->evaluate($this->model);
+    }
+
+    /**
+     * The record this action works on, instead of the row's or the form's. It
+     * becomes $record everywhere, and a policy ability never falls back to the
+     * model, so finding nothing means no. Give it no closure that trusts posted
+     * state: it has to look the record up through a query the user is limited to.
+     */
+    public function record(?Closure $using): static
+    {
+        $this->recordUsing = $using;
+
+        return $this;
+    }
+
+    public function getRecord(): ?Model
+    {
+        return $this->recordUsing === null ? $this->getForm()->getRecordFor($this) : ($this->recordUsing)();
     }
 
     public function isAuthorized(): bool
     {
         if (is_string($this->authorization)) {
-            $subject = $this->getForm()->getRecordFor($this) ?? $this->model;
+            $subject = $this->getRecord() ?? ($this->recordUsing === null ? $this->getModel() : null);
 
             return $subject !== null && Gate::allows($this->authorization, $subject);
         }
@@ -285,7 +305,8 @@ class Action extends Component implements NeedsServer
 
     public function isHiddenDynamically(): bool
     {
-        return ! $this->isAuthorized() || parent::isHiddenDynamically();
+        // In this order, so a policy only sees an action that could show.
+        return parent::isHiddenDynamically() || ! $this->isAuthorized();
     }
 
     /**
@@ -301,7 +322,7 @@ class Action extends Component implements NeedsServer
         }
 
         for ($parent = $this->getParent(); $parent !== null; $parent = $parent->getParent()) {
-            if ($parent instanceof Field && ! $parent->acceptsInput()) {
+            if ($parent instanceof Field && (! $parent->acceptsInput() || $parent->isDisabledInState())) {
                 return false;
             }
         }
@@ -355,7 +376,7 @@ class Action extends Component implements NeedsServer
 
     public function evaluate(mixed $value, array $parameters = []): mixed
     {
-        return parent::evaluate($value, ['record' => $this->getForm()->getRecordFor($this), ...$parameters]);
+        return parent::evaluate($value, ['record' => $this->getRecord(), ...$parameters]);
     }
 
     protected function getProps(): array

@@ -10,10 +10,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use LogicException;
+use Xelqun\Forms\Actions\Action;
 use Xelqun\Forms\Components\Concerns\HasOptions;
+use Xelqun\Forms\Components\Concerns\ManagesOptions;
 use Xelqun\Forms\Contracts\HasSearchResults;
 use Xelqun\Forms\Contracts\PersistsItself;
 use Xelqun\Forms\Exceptions\FormDefinitionException;
+use Xelqun\Forms\Form;
 
 /**
  * @api
@@ -25,6 +28,7 @@ class Select extends Field implements HasSearchResults, PersistsItself
         formatStateFromRecord as formatOptionState;
         getDefaultState as getOptionDefaultState;
     }
+    use ManagesOptions;
 
     protected bool $isSearchable = false;
 
@@ -59,6 +63,16 @@ class Select extends Field implements HasSearchResults, PersistsItself
     public function getType(): string
     {
         return 'select';
+    }
+
+    public function mount(Form $form, ?Component $parent, string $container, string $position, ?string $containerPattern = null): static
+    {
+        $this->slotComponents = [
+            ...array_filter($this->slotComponents, fn (Component $component): bool => $component->getSlot() !== 'optionAction'),
+            ...array_map(fn (Action $action): Action => $action->inSlot('optionAction'), $this->makeOptionActions()),
+        ];
+
+        return parent::mount($form, $parent, $container, $position, $containerPattern);
     }
 
     /**

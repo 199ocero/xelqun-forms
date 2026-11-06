@@ -53,6 +53,86 @@ function submitModal(): void {
         .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
 }
 
+describe('where actions render', () => {
+    function row(key: string): SchemaNode[] {
+        return [
+            field(`data.items.${key}.qty`),
+            { ...action({ label: 'Mail' }), key: `data.items.${key}#a0`, slot: 'itemAction' },
+        ];
+    }
+
+    function repeater(props = {}): SchemaNode {
+        return field('data.items', 'repeater', {
+            containsRows: true,
+            props: {
+                template: [],
+                rows: { r1: row('r1') },
+                itemLabel: 'Item',
+                addable: true,
+                ...props,
+            },
+        });
+    }
+
+    it('puts item actions in the row header, not in the fields', () => {
+        const store = createFormStore(schema([repeater()], { items: { r1: { qty: 1 } } }));
+        const wrapper = mount(XqForm, { props: { form: store }, attachTo: document.body });
+        const header = wrapper.find('[data-xq-row] > div');
+
+        expect(header.find('[data-xq-action]').exists()).toBe(true);
+        expect(header.text()).toContain('Mail');
+        expect(wrapper.findAll('[data-xq-action]')).toHaveLength(1);
+        wrapper.unmount();
+    });
+
+    it('keeps the table columns lined up', () => {
+        const table = [{ label: 'Qty', hiddenLabel: false, required: false, width: null }];
+        const store = createFormStore(schema([repeater({ table })], { items: { r1: { qty: 1 } } }));
+        const wrapper = mount(XqForm, { props: { form: store }, attachTo: document.body });
+
+        expect(wrapper.findAll('tbody tr td')).toHaveLength(2);
+        expect(wrapper.findAll('tbody tr td')[1].text()).toContain('Mail');
+        wrapper.unmount();
+    });
+
+    it.each(['prefixAction', 'suffixAction', 'optionAction'] as const)(
+        'shows %s by the control',
+        (slot) => {
+            const store = createFormStore(
+                schema([field('data.a', 'text-input', { children: [{ ...action(), slot }] })], {
+                    a: null,
+                }),
+            );
+            const wrapper = mount(XqForm, { props: { form: store }, attachTo: document.body });
+
+            expect(wrapper.find('[data-xq-path="data.a"] [data-xq-action]').exists()).toBe(true);
+            wrapper.unmount();
+        },
+    );
+
+    it('puts the input and its buttons in one row, in order', () => {
+        const store = createFormStore(
+            schema(
+                [
+                    field('data.a', 'text-input', {
+                        children: [
+                            { ...action({ label: 'After' }), key: 'after', slot: 'suffixAction' },
+                            { ...action({ label: 'Before' }), key: 'before', slot: 'prefixAction' },
+                        ],
+                    }),
+                ],
+                { a: null },
+            ),
+        );
+        const wrapper = mount(XqForm, { props: { form: store }, attachTo: document.body });
+        const html = wrapper.find('[data-xq-path="data.a"]').html();
+
+        expect(html.indexOf('Before')).toBeLessThan(html.indexOf('<input'));
+        expect(html.indexOf('<input')).toBeLessThan(html.indexOf('After'));
+        wrapper.unmount();
+    });
+});
+
 describe('actions', () => {
     let fetchMock: ReturnType<typeof vi.fn>;
 
@@ -323,6 +403,34 @@ describe('actions', () => {
         await flushPromises();
 
         expect(inModal()!.textContent).toContain('Too much.');
+        wrapper.unmount();
+    });
+
+    it('shows a new option straight away', async () => {
+        const select = field('data.country', 'select', {
+            props: { options: [], searchable: false, multiple: false },
+            children: [{ ...action(), slot: 'optionAction' }],
+        });
+
+        fetchMock.mockImplementation(() =>
+            respond(
+                patch({
+                    set: { 'data.country': 7 },
+                    schema: {
+                        'data.country': { props: { options: [{ value: 7, label: 'Norway' }] } },
+                    },
+                }),
+            ),
+        );
+
+        const store = createFormStore(schema([select], { country: null }));
+        const wrapper = mount(XqForm, { props: { form: store }, attachTo: document.body });
+
+        await wrapper.find('[data-xq-action] button').trigger('click');
+        await flushPromises();
+
+        expect(store.get('data.country')).toBe(7);
+        expect(wrapper.text()).toContain('Norway');
         wrapper.unmount();
     });
 

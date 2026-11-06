@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 use LogicException;
 use stdClass;
+use Xelqun\Forms\Actions\Action;
 use Xelqun\Forms\Components\Concerns\HasColumns;
 use Xelqun\Forms\Components\Repeater\TableColumn;
 use Xelqun\Forms\Contracts\ContainsRows;
@@ -33,6 +34,9 @@ class Repeater extends Field implements ContainsRows, PersistsItself
     private const string STORED_ROW_KEY_PREFIX = 'stored-';
 
     private const string STARTER_ROW_KEY_PREFIX = 'row-';
+
+    /** @var array<int, Action> */
+    protected array $itemActions = [];
 
     protected ?string $relationship = null;
 
@@ -371,6 +375,43 @@ class Repeater extends Field implements ContainsRows, PersistsItself
         return StatePath::rowPlaceholder($depth);
     }
 
+    /**
+     * Buttons in each row's header. $get, $set and $record work on that row.
+     *
+     * @param  array<int, Action>  $actions
+     */
+    public function extraItemActions(array $actions): static
+    {
+        $this->itemActions = array_map(fn (Action $action): Action => $action->inSlot('itemAction'), $actions);
+
+        return $this;
+    }
+
+    public function needsServer(): bool
+    {
+        return $this->itemActions !== [] || parent::needsServer();
+    }
+
+    public function mount(Form $form, ?Component $parent, string $container, string $position, ?string $containerPattern = null): static
+    {
+        parent::mount($form, $parent, $container, $position, $containerPattern);
+
+        foreach ($this->itemActions as $index => $action) {
+            $action->mount($form, $this, $this->getChildContainer(), "a{$index}", $this->getChildContainerPattern());
+        }
+
+        return $this;
+    }
+
+    public function __clone()
+    {
+        parent::__clone();
+
+        foreach ($this->itemActions as $index => $action) {
+            $this->itemActions[$index] = clone $action;
+        }
+    }
+
     protected function getChildContainer(): string
     {
         return $this->getStatePath().'.'.$this->getRowPlaceholder();
@@ -421,13 +462,13 @@ class Repeater extends Field implements ContainsRows, PersistsItself
     {
         $components = [];
 
-        foreach ($this->childComponents as $index => $template) {
+        foreach ([...$this->childComponents, ...array_values($this->itemActions)] as $index => $template) {
             $component = clone $template;
             $component->mount(
                 $this->getForm(),
                 $this,
                 $this->getStatePath().'.'.$rowKey,
-                (string) $index,
+                $index < count($this->childComponents) ? (string) $index : 'a'.($index - count($this->childComponents)),
                 $this->getStatePathPattern().'.*',
             );
             $components[] = $component;
@@ -780,7 +821,7 @@ class Repeater extends Field implements ContainsRows, PersistsItself
     {
         $template = [];
 
-        foreach ($this->childComponents as $component) {
+        foreach ([...$this->childComponents, ...$this->itemActions] as $component) {
             if (($node = $component->toNode()) !== null) {
                 $template[] = $node;
             }

@@ -23,6 +23,7 @@ defineEmits<{ move: [direction: -1 | 1]; clone: []; remove: []; toggle: [] }>();
 
 <template>
     <div class="gap-0.5 flex items-center">
+        <slot />
         <template v-if="orderable && count > 1">
             <XqButton
                 type="button"

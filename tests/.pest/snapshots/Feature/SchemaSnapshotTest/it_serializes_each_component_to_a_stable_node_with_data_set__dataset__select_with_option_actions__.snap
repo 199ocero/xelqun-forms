@@ -1,0 +1,69 @@
+{
+    "state": {
+        "data": {
+            "status": null
+        }
+    },
+    "components": [
+        {
+            "key": "data.status",
+            "type": "select",
+            "hidden": false,
+            "path": "data.status",
+            "label": "Status",
+            "hint": null,
+            "placeholder": null,
+            "required": false,
+            "disabled": false,
+            "rules": {
+                "visible": null,
+                "required": null,
+                "disabled": null
+            },
+            "computed": null,
+            "live": null,
+            "span": null,
+            "props": {
+                "options": [
+                    {
+                        "value": "a",
+                        "label": "A"
+                    }
+                ],
+                "searchable": false,
+                "multiple": false,
+                "async": false,
+                "searchDebounce": 250
+            },
+            "children": [
+                {
+                    "key": "data#0.s0",
+                    "type": "action",
+                    "hidden": false,
+                    "path": null,
+                    "label": null,
+                    "rules": {
+                        "visible": null
+                    },
+                    "span": null,
+                    "props": {
+                        "label": "Create",
+                        "style": "icon",
+                        "disabled": false,
+                        "confirmation": false,
+                        "hasForm": true,
+                        "heading": "Create",
+                        "description": null,
+                        "submitLabel": null,
+                        "cancelLabel": null,
+                        "icon": "plus"
+                    },
+                    "children": [],
+                    "slot": "optionAction",
+                    "deps": []
+                }
+            ],
+            "deps": []
+        }
+    ]
+}

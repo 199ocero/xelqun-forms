@@ -37,7 +37,9 @@ const hasLabelSlots = computed(() => hasSlot('beforeLabel') || hasSlot('afterLab
 const hasStackedLabel = computed(
     () => hasLabelSlots.value || hasSlot('aboveLabel') || hasSlot('belowLabel'),
 );
-const hasContentSlots = computed(() => hasSlot('beforeContent') || hasSlot('afterContent'));
+const hasContentSlots = computed(() =>
+    ['beforeContent', 'afterContent', 'prefixAction', 'suffixAction', 'optionAction'].some(hasSlot),
+);
 </script>
 
 <template>
@@ -74,9 +76,12 @@ const hasContentSlots = computed(() => hasSlot('beforeContent') || hasSlot('afte
             <XqFieldSlot :node="node" name="aboveContent" />
             <div :class="hasContentSlots ? 'gap-2 flex items-center' : 'contents'">
                 <XqFieldSlot :node="node" name="beforeContent" />
+                <XqFieldSlot :node="node" name="prefixAction" />
                 <div :class="hasContentSlots ? 'min-w-0 flex-1' : 'contents'">
                     <slot />
                 </div>
+                <XqFieldSlot :node="node" name="optionAction" />
+                <XqFieldSlot :node="node" name="suffixAction" />
                 <XqFieldSlot :node="node" name="afterContent" />
             </div>
             <XqFieldSlot :node="node" name="belowContent" />

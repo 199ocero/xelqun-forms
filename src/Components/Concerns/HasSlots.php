@@ -3,6 +3,7 @@
 namespace Xelqun\Forms\Components\Concerns;
 
 use Closure;
+use Xelqun\Forms\Actions\Action;
 use Xelqun\Forms\Components\Component;
 use Xelqun\Forms\Components\Field;
 use Xelqun\Forms\Exceptions\FormDefinitionException;
@@ -95,6 +96,38 @@ trait HasSlots
     public function belowErrorMessage(string|Closure|Component|array $content): static
     {
         return $this->fillSlot('belowErrorMessage', $content);
+    }
+
+    /**
+     * An action right before the control.
+     */
+    public function prefixAction(Action $action): static
+    {
+        return $this->fillSlot('prefixAction', $action);
+    }
+
+    /**
+     * @param  array<int, Action>  $actions
+     */
+    public function prefixActions(array $actions): static
+    {
+        return $this->fillSlot('prefixAction', $actions);
+    }
+
+    /**
+     * An action right after the control.
+     */
+    public function suffixAction(Action $action): static
+    {
+        return $this->fillSlot('suffixAction', $action);
+    }
+
+    /**
+     * @param  array<int, Action>  $actions
+     */
+    public function suffixActions(array $actions): static
+    {
+        return $this->fillSlot('suffixAction', $actions);
     }
 
     /**

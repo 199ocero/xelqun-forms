@@ -68,7 +68,7 @@ final class UpdateProcessor
         $schema = [];
         $revealed = [];
 
-        foreach ($this->affectedKeys($form, $triggers, $setPaths, $dependencies) as $key) {
+        foreach (array_unique([...$this->affectedKeys($form, $triggers, $setPaths, $dependencies), ...$form->getRefreshedKeys()]) as $key) {
             $component = $form->findComponent($key);
 
             // The browser names these keys, and its parent's patch brings a child back.

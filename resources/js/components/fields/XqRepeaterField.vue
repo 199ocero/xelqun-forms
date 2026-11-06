@@ -19,7 +19,20 @@ const props = defineProps<{ node: SchemaNode }>();
 const { store, path, error, required, disabled, id } = useField(props.node);
 const options = computed(() => props.node.props ?? {});
 const keys = computed(() => store.rowKeys(props.node));
-const rows = computed<Record<string, SchemaNode[]>>(() => options.value.rows ?? {});
+const allRows = computed<Record<string, SchemaNode[]>>(() => options.value.rows ?? {});
+const rows = computed(() =>
+    Object.fromEntries(
+        Object.entries(allRows.value).map(([key, nodes]) => [
+            key,
+            nodes.filter((child) => child.slot !== 'itemAction'),
+        ]),
+    ),
+);
+
+function itemActions(key: string): SchemaNode[] {
+    return (allRows.value[key] ?? []).filter((child) => child.slot === 'itemAction');
+}
+
 const container = ref<HTMLElement | null>(null);
 const rowList = ref<HTMLElement | null>(null);
 const isTable = computed(() => !!options.value.table);
@@ -218,7 +231,13 @@ useSortable(rowList, {
                                         @move="move(key, $event)"
                                         @clone="clone(key)"
                                         @remove="requestRemove(key, index)"
-                                    />
+                                    >
+                                        <XqNode
+                                            v-for="action in itemActions(key)"
+                                            :key="action.key"
+                                            :node="action"
+                                        />
+                                    </XqRepeaterRowActions>
                                 </div>
                             </td>
                         </tr>
@@ -262,7 +281,13 @@ useSortable(rowList, {
                             @move="move(key, $event)"
                             @clone="clone(key)"
                             @remove="requestRemove(key, index)"
-                        />
+                        >
+                            <XqNode
+                                v-for="action in itemActions(key)"
+                                :key="action.key"
+                                :node="action"
+                            />
+                        </XqRepeaterRowActions>
                     </template>
                     <template v-else>
                         <div
@@ -294,7 +319,13 @@ useSortable(rowList, {
                                 @clone="clone(key)"
                                 @remove="requestRemove(key, index)"
                                 @toggle="toggle(key)"
-                            />
+                            >
+                                <XqNode
+                                    v-for="action in itemActions(key)"
+                                    :key="action.key"
+                                    :node="action"
+                                />
+                            </XqRepeaterRowActions>
                         </div>
                         <div
                             v-show="!isCollapsed(key)"
