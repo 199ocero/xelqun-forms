@@ -2,6 +2,23 @@
 
 Xelqun Forms is pre-alpha. Until 1.0, a minor version can break existing code, and each break is listed here.
 
+## 0.5.0 - 2026-11-06
+
+This release adds what `xelqun/panels` will build on. The schema version (`$xq`) stays 1.
+
+### Upgrading
+
+Update both halves together: `composer update xelqun/forms` and `npm install @xelqun/forms@0.5.0`. Plugins that require `^0.4.0` need a new release, because a caret range on 0.x stops at the next minor version. That includes `xelqun/tables`, which needs 0.3.
+
+- **The context key `disabled` is now reserved.** `Form::make($record, ['disabled' => true])` now locks the form, so rename a key of your own that has this name.
+
+### Added
+
+- **Notifications.** `Notification::make()->title('Saved')->success()->send()` works from an action, a hook or a controller, and survives a redirect. `createXelqunForms` puts the toaster on the page, so there's nothing to mount. A rolled-back action shows nothing. Title and body always render as text. Use `notify()` from Vue, and the `notificationsLabel` option to translate what screen readers call the region.
+- **`Action::successNotificationTitle()`** sends a success notification once the action has returned.
+- **`ActionGroup`** puts actions behind one button that opens a menu. It works in an `Actions` layout and in an `ActionSet`. With no `label()`, the button is just an icon. Each action keeps its own `authorize()` and modal, and the group hides itself when the viewer can use none of them.
+- **`Form::disabled()`** shows a form nobody can change, as on a View page. It is kept in the token, so requests after the page loads are refused too. Fields can't be changed, `save()` throws, and `XqForm` leaves out its `actions` slot. Actions in an `Actions` layout still work.
+
 ## 0.4.0 - 2026-11-06
 
 This release puts actions on a page with no form or table around them, and redesigns their modals. The schema version (`$xq`) stays 1.

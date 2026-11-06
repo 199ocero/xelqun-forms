@@ -88,6 +88,20 @@ describe('submitting through the form', () => {
 describe('a disabled form', () => {
     afterEach(() => visit.mockReset());
 
+    it('leaves out a save button the app put in the actions slot', () => {
+        const store = createFormStore({
+            ...schema([field('data.name')], {}, null),
+            disabled: true,
+        });
+        const wrapper = mount(XqForm, {
+            props: { form: store },
+            slots: { actions: '<button type="submit">Save it</button>' },
+        });
+
+        expect(wrapper.text()).not.toContain('Save it');
+        wrapper.unmount();
+    });
+
     it('has no save button and does not submit', async () => {
         const store = createFormStore({
             ...schema([field('data.name')], { name: 'Peru' }, null),

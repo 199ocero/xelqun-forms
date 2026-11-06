@@ -135,6 +135,7 @@ function submit(): void {
             </XqButton>
         </div>
         <slot
+            v-if="!store.isFormDisabled"
             name="actions"
             :store="store"
             :processing="processing"
@@ -142,10 +143,7 @@ function submit(): void {
             :submit="submit"
             :has-next-step="!!unfinishedStepper"
         >
-            <div
-                v-if="action && !unfinishedStepper && !store.isFormDisabled"
-                class="gap-3 flex items-center justify-end"
-            >
+            <div v-if="action && !unfinishedStepper" class="gap-3 flex items-center justify-end">
                 <span v-if="uploading" class="text-xs text-xq-muted-foreground">{{
                     store.t('Waiting for uploads…')
                 }}</span>
