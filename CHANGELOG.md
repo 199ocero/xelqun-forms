@@ -2,6 +2,13 @@
 
 Xelqun Forms is pre-alpha. Until 1.0, a minor version can break existing code, and each break is listed here.
 
+## 0.3.1 - 2026-11-06
+
+### Fixed
+
+- **Placeholders that start the same no longer collide.** `:to` could replace part of `:total`, and `:item` part of `:items`, leaving text like "of 10tal".
+- **A value holding a placeholder name is no longer filled in twice.** A file named `:name.png` stays as it is.
+
 ## 0.3.0 - 2026-11-06
 
 This release adds what `xelqun/tables` builds on. The schema version (`$xq`) stays 1.
