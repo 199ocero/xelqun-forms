@@ -179,7 +179,7 @@ class Receipt extends Field implements AcceptsUploads
 
 The trait adds `disk()`, `directory()`, `maxSize()`, `acceptedFileTypes()` and `image()`, along with the rules for the state. Those rules matter: without them, a posted value could name any path, and it would be saved as the field's file. To add your own rules or props, spread `getUploadStateRules()` and `getUploadProps()` instead of replacing them.
 
-The field's state holds one token or one stored path. On save the token becomes the stored path, and a failed save keeps the upload so the user can submit again.
+The field's state holds a token or a stored path, or a list of them with `multiple()`. On save each token becomes its stored path, and a failed save keeps the uploads so the user can submit again. If your Vue field adds files to a queue of its own, pass that work to `store.trackUpload()`, so a submit waits for files that haven't started yet.
 
 ### Saving somewhere else
 
@@ -294,7 +294,6 @@ On the browser side, the public API is what `@xelqun/forms` and `@xelqun/forms/t
 
 ## Current limits
 
-- **`AcceptsUploads` holds one file.** Tokens in an array are not stored. Multi-file state arrives in M17.
 - **A repeater with no relationship has no row model**, so `persist()` isn't called in its rows and the value stays in the row's data.
 - **Icons come from a fixed set.** Add your own with `icons` on your plugin, as `{ name: component }`.
 - **Debounce depends on the type.** A text-like field that another field depends on sends every change, because the browser only debounces built-in text types. Call `live(debounce: 400)` on your field to set it.

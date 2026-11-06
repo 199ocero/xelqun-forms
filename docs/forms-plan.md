@@ -1,6 +1,6 @@
 # Xelqun Forms: planning document
 
-> Status: approved plan (2026-10-28), implemented through Milestone 9. Parity work continues in [`parity-plan.md`](parity-plan.md), through Milestone 16. See "Implementation status" at the end.
+> Status: approved plan (2026-10-28), implemented through Milestone 9. Parity work continues in [`parity-plan.md`](parity-plan.md), through Milestone 17. See "Implementation status" at the end.
 
 ## Context
 
@@ -440,7 +440,7 @@ Milestones 0–9 are built and tested. Milestone 9 added failure and loading fee
 | File upload inside a repeater row | browser test, package `UploadTest` |
 | Server errors on the correct nested field | browser tests (`Price (Item 2)`), package `ValidationTest` |
 
-**Test counts:** package Pest 716, package Vitest 316, playground feature and browser 57.
+**Test counts:** package Pest 751, package Vitest 342, playground feature and browser 59.
 
 ### Milestone 10: foundations
 
@@ -486,7 +486,7 @@ Limits to keep in mind:
 
 - The plugin starter is stubs and the example plugin. A public starter repo needs your go-ahead, because it's a new public GitHub repo.
 - `make:xelqun-field` writes into `app/` and `resources/js/forms`, so a plugin author moves the files into the plugin.
-- Plugin limits are listed at the end of [`plugins.md`](plugins.md). The main ones: one file per `AcceptsUploads` field until M17.
+- Plugin limits are listed at the end of [`plugins.md`](plugins.md). The main ones are in that list.
 
 ### Milestone 12: state and field basics
 
@@ -625,7 +625,7 @@ Repeaters now nest, and they save and reload at every level. The proof is the or
 
 - **Nested repeaters save.** `Repeater::persist()` no longer stops at a row, so relationships work at any depth through `persistScope()`. Each level only sees its own records: a row key naming a record of another parent fails validation as stale. Rows in one JSON column come out as plain lists at every level, because `Field::toPlainRows()` replaces the depth-sorting code in `toPlainData()`, and `save()` and `validate()` now share it.
 - **`simple()`** holds a flat list of values. Inside the form it is still rows of one field, so the field keeps its rules and its error path.
-- **`addable()` and `deletable()` are enforced on the server.** A posted new row is dropped and a removed row comes back. `enforceRowLimits()` runs after locks are applied, so a closure deciding this reads the server's values.
+- **`addable()` and `deletable()` are enforced on the server.** A posted new row is dropped and a removed row comes back. `enforceStateLimits()` runs after locks are applied, so a closure deciding this reads the server's values.
 - **`distinct()`** is a rule on a field inside a repeater. No two rows may share a value, only one row of a true or false field may be on, and each value of a multiple field may appear once. It stays within its own repeater.
 - **`cloneable()`** adds a copy after its original, in the browser. File fields start empty, so two rows never own one stored file, and nested rows get new keys, because the old ones name records of the original.
 - **`collapsible()` and `collapsed()`.** A row with an error always opens.
@@ -654,6 +654,37 @@ Limits to keep in mind:
 - `addable(false)` and `deletable(false)` compare with the rows the form was filled with, so a row added by someone else since then counts as new and is dropped when the form is saved.
 - `disableOptionsWhenSelectedInSiblingRepeaterItems()`, `fixIndistinctState()`, `compact()` and `itemLabel()` per row weren't in scope.
 
+### Milestone 17: files
+
+A file field can now hold a list. The proof is the order example: each line item has a photo gallery saved to its own table, inside a repeater row.
+
+- **`multiple()`, `minFiles()`, `maxFiles()` and `minSize()`.** The state is a list of tokens and stored paths, which can be mixed. Each entry goes through the same check as a single file: an upload made for this field, or a path the record already had. `promote()` reads the shape of the value, so `AcceptsUploads` didn't change and plugins get this through `HandlesUploads`.
+- **`relationship()` on `FileUpload`** keeps each file as a row of a HasMany or MorphMany. Rows of files that stay are kept, so other columns on them survive. Only a path the record already had is accepted, so a form can't claim another record's file.
+- **`reorderable()`** uses `useSortable`, with move buttons for keyboard users.
+- **`pasteable()`** is on by default and works while the field has focus, not anywhere on the page, so two file fields don't fight over a paste.
+- **`downloadable()`, `openable()` and `avatar()`.** A private file gets a temporary link, or no link if the disk can't sign one, and never a public URL.
+- **Every on-or-off file option takes a closure.** `deletable(false)` is enforced on the server, the same way as on the repeater: a stored file that was removed or replaced comes back.
+- **`maxParallelUploads()`** defaults to 1, because on SQLite two uploads at once fail with "database is locked" in the rate limiter, and SQLite is what a new Laravel app runs on. Raise it on MySQL, PostgreSQL or Redis. Files keep the order they were picked in, whichever finishes first. `store.trackUpload()` lets a submit wait for files still in the queue, which have no request yet.
+
+Changes that can break existing code, for the release notes:
+
+- A file name is no longer a link. Add `openable()` for that. This keeps a file from being linked unless the form asks for it.
+- `HandlesUploads` now defines `formatStateFromRecord()`, `getDefaultState()` and `normalizeState()`. A field that uses the trait and overrides them keeps its own.
+- `FileUpload` now implements `PersistsItself`. It only takes over saving with `relationship()`.
+
+Limits to keep in mind:
+
+- Removing a file doesn't delete it from the disk, with or without a relationship. That matches single uploads before this. A cleanup job can find unused files.
+- `maxParallelUploads()` is per field, so two fields started at the same moment can still hit the SQLite lock. Only that file fails, and it can be picked again.
+- A private file's link lasts 5 minutes, so it fails on a page left open longer.
+- The upload route allows 30 requests a minute by default (`routes.throttle.upload`), so a large gallery can hit it. Raise it in the config.
+- `multiple()` needs an array cast on the column, unless the files use `relationship()`.
+- `minSize()` and `maxSize()` check new files, not stored ones.
+- A pasted file needs the field to have focus. Clicking the dropzone opens the file picker, so tabbing to it is the reliable way.
+- `appendFiles()` differs from Filament, where it works around FilePond sometimes adding files at the start. New files here go last unless the form sets `appendFiles(false)`, which puts the newest file first, so two files picked together end up in reverse order.
+- `deletable(false)` protects a stored file, not the row around it: removing a repeater row still removes that row's files.
+- `storeFiles(false)` and deleting removed files from the disk aren't built. They're listed under M22.
+
 ### Where the build differs from the plan
 - **Patches have no `add`/`remove`.** A component hidden by a server closure is sent as a stub (`{ key, type, hidden: true, deps }`) and later patched to a full node, which keeps every key stable.
 - **The update request carries the client's dependency map** (`deps: { nodeKey: [paths] }`). The server uses it only to pick which closures to re-run, then re-records fresh dependencies.
@@ -662,7 +693,6 @@ Limits to keep in mind:
 - **The package uses Vite+ too**: `vite.config.ts` holds its Vitest, lint and format config, and it renders every PHP schema snapshot in Vitest.
 
 ### Known limits (next steps)
-- Multi-file uploads are not built yet.
 - The Pest browser test server corrupts binary uploads (the PNG header byte `0x89` arrives as `?`), so image uploads are covered by package feature tests instead of browser tests.
 - The `eject` command and a Vite plugin for distribution are still future work.
 - Live validation (`errors` in patches) is supported by the protocol and client, but no field triggers it yet.

@@ -5,7 +5,7 @@ import { gridStyle } from '../../composables/layout';
 import { useField } from '../../composables/useField';
 import { useSortable } from '../../composables/useSortable';
 import { startsWithPath } from '../../core/paths';
-import { cn } from '../../lib/utils';
+import { cn, focusFirstEnabled } from '../../lib/utils';
 import type { SchemaNode } from '../../schema/types';
 import XqButton from '../../ui/XqButton.vue';
 import XqConfirmDialog from '../../ui/XqConfirmDialog.vue';
@@ -56,21 +56,6 @@ function titleOf(index: number): string {
         : `${options.value.itemLabel} ${index + 1}`;
 }
 
-/**
- * Keep keyboard users in place: focus the first of these that can take it.
- */
-function focusFirstEnabled(selectors: string[]): void {
-    for (const selector of selectors) {
-        const button = container.value?.querySelector<HTMLButtonElement>(selector);
-
-        if (button && !button.disabled) {
-            button.focus();
-
-            return;
-        }
-    }
-}
-
 function rowSelector(key: string): string {
     return `[data-xq-row="${CSS.escape(key)}"]`;
 }
@@ -91,7 +76,7 @@ async function remove(key: string, index: number): Promise<void> {
 
     const next = keys.value[Math.min(index, keys.value.length - 1)];
 
-    focusFirstEnabled([
+    focusFirstEnabled(container.value, [
         ...(next ? [`${rowSelector(next)} [data-xq-remove]`] : []),
         '[data-xq-add]',
     ]);
@@ -123,7 +108,7 @@ async function move(key: string, direction: -1 | 1): Promise<void> {
 
     const row = rowSelector(key);
 
-    focusFirstEnabled([
+    focusFirstEnabled(container.value, [
         `${row} [data-xq-move="${direction}"]`,
         `${row} [data-xq-move="${-direction}"]`,
     ]);

@@ -6,6 +6,21 @@ export function cn(...inputs: ClassValue[]): string {
     return twMerge(clsx(inputs));
 }
 
+/**
+ * Keep keyboard users in place: focus the first of these that can take it.
+ */
+export function focusFirstEnabled(container: HTMLElement | null, selectors: string[]): void {
+    for (const selector of selectors) {
+        const control = container?.querySelector<HTMLButtonElement>(selector);
+
+        if (control && !control.disabled) {
+            control.focus();
+
+            return;
+        }
+    }
+}
+
 export function formatBytes(bytes: number | null | undefined): string {
     if (!bytes) {
         return '';

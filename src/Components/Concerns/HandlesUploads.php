@@ -3,6 +3,7 @@
 namespace Xelqun\Forms\Components\Concerns;
 
 use Closure;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use stdClass;
@@ -42,6 +43,32 @@ trait HandlesUploads
     protected array $acceptedFileTypes = [];
 
     protected bool $isImage = false;
+
+    protected bool|Closure $isMultiple = false;
+
+    protected ?int $minFiles = null;
+
+    protected ?int $maxFiles = null;
+
+    protected ?int $minSize = null;
+
+    protected bool|Closure $isFileReorderable = false;
+
+    protected bool|Closure $isPasteable = true;
+
+    protected bool|Closure $isDownloadable = false;
+
+    protected bool|Closure $isOpenable = false;
+
+    protected bool|Closure $isAvatar = false;
+
+    protected ?int $maxParallelUploads = null;
+
+    protected bool|Closure $isDeletable = true;
+
+    protected bool|Closure $isPreviewable = true;
+
+    protected bool|Closure $shouldAppendFiles = true;
 
     public function disk(string $disk): static
     {
@@ -92,6 +119,186 @@ trait HandlesUploads
     }
 
     /**
+     * Take several files. The state is a list of them, so a model needs an array
+     * cast on the column, unless the files live on a relationship.
+     */
+    public function multiple(bool|Closure $condition = true): static
+    {
+        $this->isMultiple = $condition;
+
+        return $this;
+    }
+
+    public function minFiles(?int $count): static
+    {
+        $this->minFiles = $count;
+
+        return $this;
+    }
+
+    public function maxFiles(?int $count): static
+    {
+        $this->maxFiles = $count;
+
+        return $this;
+    }
+
+    /**
+     * Minimum file size in kilobytes. Stored files aren't checked again.
+     */
+    public function minSize(?int $kilobytes): static
+    {
+        $this->minSize = $kilobytes;
+
+        return $this;
+    }
+
+    /**
+     * Let users change the order of several files.
+     */
+    public function reorderable(bool|Closure $condition = true): static
+    {
+        $this->isFileReorderable = $condition;
+
+        return $this;
+    }
+
+    /**
+     * Take files pasted while the field has focus. On by default.
+     */
+    public function pasteable(bool|Closure $condition = true): static
+    {
+        $this->isPasteable = $condition;
+
+        return $this;
+    }
+
+    /**
+     * Add a button that downloads a stored file.
+     */
+    public function downloadable(bool|Closure $condition = true): static
+    {
+        $this->isDownloadable = $condition;
+
+        return $this;
+    }
+
+    /**
+     * Add a button that opens a stored file in a new tab.
+     */
+    public function openable(bool|Closure $condition = true): static
+    {
+        $this->isOpenable = $condition;
+
+        return $this;
+    }
+
+    /**
+     * One image, shown as a compact circle.
+     */
+    public function avatar(bool|Closure $condition = true): static
+    {
+        $this->isAvatar = $condition;
+
+        return $this;
+    }
+
+    /**
+     * How many files upload at once. The default is 1, because SQLite can't take
+     * two at a time: the rate limiter fails with "database is locked".
+     */
+    public function maxParallelUploads(?int $count): static
+    {
+        $this->maxParallelUploads = $count;
+
+        return $this;
+    }
+
+    /**
+     * Let users remove stored files. One they remove anyway comes back on the
+     * server, and so does one they replace. New uploads can always be removed.
+     */
+    public function deletable(bool|Closure $condition = true): static
+    {
+        $this->isDeletable = $condition;
+
+        return $this;
+    }
+
+    /**
+     * Show images as thumbnails. Without this, every file gets the file icon.
+     */
+    public function previewable(bool|Closure $condition = true): static
+    {
+        $this->isPreviewable = $condition;
+
+        return $this;
+    }
+
+    /**
+     * Add new files at the end of the list, which is the default. With false the
+     * newest file goes first.
+     */
+    public function appendFiles(bool|Closure $condition = true): static
+    {
+        $this->shouldAppendFiles = $condition;
+
+        return $this;
+    }
+
+    public function isMultiple(): bool
+    {
+        return (bool) $this->evaluate($this->isMultiple);
+    }
+
+    private function takesImagesOnly(): bool
+    {
+        return $this->isImage || $this->evaluate($this->isAvatar);
+    }
+
+    public function formatStateFromRecord(mixed $value): mixed
+    {
+        $value = parent::formatStateFromRecord($value);
+
+        return $this->isMultiple() ? array_values((array) ($value ?? [])) : $value;
+    }
+
+    public function getDefaultState(): mixed
+    {
+        $default = parent::getDefaultState();
+
+        return $this->isMultiple() ? array_values((array) ($default ?? [])) : $default;
+    }
+
+    /**
+     * A list can come back from the browser with gaps, or with a file twice, and
+     * saving it twice would give two rows or paths for one file.
+     */
+    public function normalizeState(mixed $state): mixed
+    {
+        if (! $this->isMultiple()) {
+            return $state;
+        }
+
+        return array_values(array_unique(array_filter((array) $state, fn (mixed $file): bool => $file !== null && $file !== ''), SORT_REGULAR));
+    }
+
+    public function enforceStateLimits(): void
+    {
+        if ($this->evaluate($this->isDeletable)) {
+            return;
+        }
+
+        $state = Arr::wrap($this->getState());
+        $stored = Arr::wrap($this->getForm()->getInitialValue($this->getStatePath()));
+        $removed = array_filter($stored, fn (mixed $file): bool => ! in_array($file, $state, true));
+
+        if ($removed !== []) {
+            $this->getForm()->setStateValue($this->getStatePath(), $this->isMultiple() ? [...$state, ...$removed] : reset($stored));
+        }
+    }
+
+    /**
      * Identifies this field across requests, for every row of a repeater.
      */
     public function getUploadScope(): string
@@ -133,12 +340,16 @@ trait HandlesUploads
             };
         }
 
-        if ($this->isImage) {
+        if ($this->takesImagesOnly()) {
             $rules[] = 'image';
         }
 
         if ($this->acceptedFileTypes !== []) {
             $rules[] = 'mimetypes:'.implode(',', $this->acceptedFileTypes);
+        }
+
+        if ($this->minSize !== null) {
+            $rules[] = 'min:'.$this->minSize;
         }
 
         $rules[] = 'max:'.($this->maxSize ?? (int) config('xelqun-forms.uploads.max_size', 10240));
@@ -147,34 +358,46 @@ trait HandlesUploads
     }
 
     /**
-     * The state must be an upload made for this field, or a path the record
+     * Each file must be an upload made for this field, or a path the record
      * already had.
      *
      * @return array<int, mixed>
      */
     protected function getUploadStateRules(): array
     {
-        return [
-            'string',
-            function (string $attribute, mixed $value, Closure $fail): void {
-                if (! is_string($value)) {
+        $checkFiles = function (string $attribute, mixed $value, Closure $fail): void {
+            $store = app(TemporaryUploadStore::class);
+
+            foreach (Arr::wrap($value) as $file) {
+                if (! is_string($file)) {
+                    $fail($this->getFailureMessage('in'));
+
                     return;
                 }
 
-                $store = app(TemporaryUploadStore::class);
-
-                if ($store->isToken($value)) {
-                    if (! $store->isUsable($store->idFromToken($value), $this->getUploadScope())) {
+                if ($store->isToken($file)) {
+                    if (! $store->isUsable($store->idFromToken($file), $this->getUploadScope())) {
                         $fail(__('xelqun-forms::messages.uploads.expired', ['attribute' => $this->getValidationAttribute()]));
                     }
 
-                    return;
+                    continue;
                 }
 
-                if (! in_array($value, $this->getForm()->getInitialValues($this->getStatePathPattern()), true)) {
+                if (! in_array($file, Arr::flatten($this->getForm()->getInitialValues($this->getStatePathPattern())), true)) {
                     $fail($this->getFailureMessage('in'));
                 }
-            },
+            }
+        };
+
+        if (! $this->isMultiple()) {
+            return ['string', $checkFiles];
+        }
+
+        return [
+            'array',
+            ...($this->minFiles === null ? [] : ['min:'.$this->minFiles]),
+            ...($this->maxFiles === null ? [] : ['max:'.$this->maxFiles]),
+            $checkFiles,
         ];
     }
 
@@ -183,23 +406,55 @@ trait HandlesUploads
      */
     protected function getUploadProps(): array
     {
-        $accept = $this->isImage ? ['image/*'] : $this->acceptedFileTypes;
+        $accept = $this->takesImagesOnly() ? ['image/*'] : $this->acceptedFileTypes;
         $files = [];
-        $state = $this->getState();
         $store = app(TemporaryUploadStore::class);
 
-        if (is_string($state) && $state !== '') {
-            $files[$state] = $store->isToken($state)
-                ? $store->describe($store->idFromToken($state))
-                : ['name' => basename($state), 'url' => $this->getFileUrl($state), 'size' => null];
+        foreach (Arr::wrap($this->getState()) as $file) {
+            if (is_string($file) && $file !== '') {
+                $files[$file] = $store->isToken($file)
+                    ? $store->describe($store->idFromToken($file))
+                    : ['name' => basename($file), 'url' => $this->getFileUrl($file), 'size' => null];
+            }
         }
 
         return [
             'accept' => $accept === [] ? null : implode(',', $accept),
             'maxSize' => $this->maxSize ?? (int) config('xelqun-forms.uploads.max_size', 10240),
-            'image' => $this->isImage,
+            'image' => $this->takesImagesOnly(),
             'files' => $files === [] ? new stdClass : $files,
+            ...$this->evaluateConfigured([
+                'multiple' => $this->isMultiple,
+                'minFiles' => $this->minFiles,
+                'maxFiles' => $this->maxFiles,
+                'minSize' => $this->minSize,
+                'reorderable' => $this->isFileReorderable,
+                'downloadable' => $this->isDownloadable,
+                'openable' => $this->isOpenable,
+                'avatar' => $this->isAvatar,
+                'maxParallelUploads' => $this->maxParallelUploads,
+            ]),
+            ...$this->getFlagsThatChanged(),
         ];
+    }
+
+    /**
+     * Options that are on unless told otherwise. A closure is always sent, so it
+     * can turn the option back on in the browser.
+     *
+     * @return array<string, bool>
+     */
+    private function getFlagsThatChanged(): array
+    {
+        return array_map(
+            fn (bool|Closure $flag): bool => (bool) $this->evaluate($flag),
+            array_filter([
+                'pasteable' => $this->isPasteable,
+                'deletable' => $this->isDeletable,
+                'previewable' => $this->isPreviewable,
+                'appendFiles' => $this->shouldAppendFiles,
+            ], fn (bool|Closure $flag): bool => $flag !== true),
+        );
     }
 
     /**
@@ -218,7 +473,10 @@ trait HandlesUploads
     private function getFileUrl(string $path): ?string
     {
         try {
-            return Storage::disk($this->getDiskName())->url($path);
+            $disk = Storage::disk($this->getDiskName());
+
+            // shortcut: a private link dies after 5 minutes on an open page, sign on click if users complain
+            return $this->visibility === 'private' ? $disk->temporaryUrl($path, now()->addMinutes(5)) : $disk->url($path);
         } catch (Throwable) {
             return null;
         }

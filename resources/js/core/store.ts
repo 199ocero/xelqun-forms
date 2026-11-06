@@ -640,15 +640,26 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
             ),
             signal,
         );
-        const tracked = request.finally(() => {
-            uploads.delete(tracked);
-            uploading.value = uploads.size;
-        });
+
+        trackUpload(request);
+
+        return request;
+    }
+
+    /**
+     * Make submitting wait for this, as well as for uploads already running. A
+     * field with files still queued has no request for them yet.
+     */
+    function trackUpload(work: Promise<unknown>): void {
+        const tracked = work
+            .catch(() => {})
+            .finally(() => {
+                uploads.delete(tracked);
+                uploading.value = uploads.size;
+            });
 
         uploads.add(tracked);
         uploading.value = uploads.size;
-
-        return request;
     }
 
     function dispose(): void {
@@ -697,6 +708,7 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
         submit,
         search,
         upload,
+        trackUpload,
         dispose,
     };
 }

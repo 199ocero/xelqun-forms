@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class Order extends Model
@@ -40,6 +41,14 @@ class Order extends Model
     }
 
     /**
+     * @return HasMany<OrderFile, $this>
+     */
+    public function files(): HasMany
+    {
+        return $this->hasMany(OrderFile::class);
+    }
+
+    /**
      * @return HasOne<OrderItem, $this>
      */
     public function firstItem(): HasOne
@@ -53,6 +62,14 @@ class Order extends Model
     public function note(): HasOne
     {
         return $this->hasOne(OrderNote::class);
+    }
+
+    /**
+     * @return MorphMany<OrderFile, $this>
+     */
+    public function attachments(): MorphMany
+    {
+        return $this->morphMany(OrderFile::class, 'attachable');
     }
 
     /**

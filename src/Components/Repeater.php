@@ -717,7 +717,7 @@ class Repeater extends Field implements ContainsRows, PersistsItself
         return $plain;
     }
 
-    public function enforceRowLimits(): void
+    public function enforceStateLimits(): void
     {
         $rows = (array) $this->getState();
         $filled = (array) $this->getForm()->getInitialValue($this->getStatePath());

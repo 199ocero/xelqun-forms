@@ -1,0 +1,38 @@
+{
+    "state": {
+        "data": {
+            "photo": null
+        }
+    },
+    "components": [
+        {
+            "key": "data.photo",
+            "type": "file-upload",
+            "hidden": false,
+            "path": "data.photo",
+            "label": "Photo",
+            "hint": null,
+            "placeholder": null,
+            "required": false,
+            "disabled": false,
+            "rules": {
+                "visible": null,
+                "required": null,
+                "disabled": null
+            },
+            "computed": null,
+            "live": null,
+            "acceptsUploads": true,
+            "span": null,
+            "props": {
+                "accept": "image/*",
+                "maxSize": 10240,
+                "image": true,
+                "files": {},
+                "avatar": true
+            },
+            "children": [],
+            "deps": []
+        }
+    ]
+}

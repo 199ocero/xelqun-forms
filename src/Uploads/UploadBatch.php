@@ -47,8 +47,10 @@ final class UploadBatch
                 $path = $component->getStatePath();
                 $value = data_get($output, $path);
 
-                if ($this->store->isToken($value)) {
-                    data_set($output, $path, $this->promoteFile($component, $this->store->idFromToken($value)));
+                if (is_array($value)) {
+                    data_set($output, $path, array_map(fn (mixed $file): mixed => $this->promoteToken($component, $file), $value));
+                } elseif ($this->store->isToken($value)) {
+                    data_set($output, $path, $this->promoteToken($component, $value));
                 }
             });
         } catch (Throwable $exception) {
@@ -98,6 +100,14 @@ final class UploadBatch
         foreach ($this->stored as $file) {
             Storage::disk($file['disk'])->delete($file['path']);
         }
+    }
+
+    /**
+     * A stored path passes through, because a list can mix old files and new ones.
+     */
+    private function promoteToken(AcceptsUploads $field, mixed $file): mixed
+    {
+        return $this->store->isToken($file) ? $this->promoteFile($field, $this->store->idFromToken($file)) : $file;
     }
 
     /**

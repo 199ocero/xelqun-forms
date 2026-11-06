@@ -19,6 +19,14 @@ class OrderItem extends Model
     }
 
     /**
+     * @return HasMany<OrderFile, $this>
+     */
+    public function files(): HasMany
+    {
+        return $this->hasMany(OrderFile::class);
+    }
+
+    /**
      * @return HasMany<Review, $this>
      */
     public function reviews(): HasMany

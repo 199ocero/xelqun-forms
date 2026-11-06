@@ -225,7 +225,7 @@ final class FormValidator
 
         $form->walk(function (Component $component): void {
             if ($component instanceof Field) {
-                $component->enforceRowLimits();
+                $component->enforceStateLimits();
             }
         });
 

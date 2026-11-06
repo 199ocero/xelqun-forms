@@ -721,12 +721,12 @@ abstract class Field extends Component implements NeedsServer
     }
 
     /**
-     * Put back what the browser had no right to change about a field's rows. It
-     * runs after locks are applied, so a closure can trust what it reads.
+     * Put back what the browser had no right to change, such as a row or a stored
+     * file. It runs after locks are applied, so a closure can trust what it reads.
      *
      * @internal
      */
-    public function enforceRowLimits(): void {}
+    public function enforceStateLimits(): void {}
 
     /**
      * @internal Override dehydrateState() instead.

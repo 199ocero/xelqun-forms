@@ -9,8 +9,8 @@ use Xelqun\Forms\Components\Field;
  * unless you have a reason not to: it implements this contract and validates
  * the state, so a posted path can't point at a file the record never had.
  *
- * The field's state holds one token or one stored path. On save, the token is
- * replaced by the stored path before the field's value is written anywhere.
+ * The field's state holds a token or a stored path, or a list of them. On save,
+ * each token is replaced by its stored path before the value is written anywhere.
  *
  * @api
  *

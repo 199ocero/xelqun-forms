@@ -56,6 +56,17 @@ abstract class TestCase extends Orchestra
             $table->string('added_by')->nullable();
         });
 
+        Schema::create('order_files', function (Blueprint $table): void {
+            $table->id();
+            $table->foreignId('order_id')->nullable();
+            $table->foreignId('order_item_id')->nullable();
+            $table->nullableMorphs('attachable');
+            $table->string('path');
+            $table->string('caption')->nullable();
+            $table->unsignedInteger('sort')->default(0);
+            $table->timestamps();
+        });
+
         Schema::create('order_notes', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('order_id');

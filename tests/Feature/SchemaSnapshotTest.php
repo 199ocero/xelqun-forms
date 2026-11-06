@@ -65,6 +65,8 @@ it('serializes each component to a stable node', function (object $component) {
     'slider' => fn () => Slider::make('volume')->range(0, 10)->step(2)->tooltips()->default([2, 6]),
     'key value' => fn () => KeyValue::make('meta')->default(['a' => '1'])->reorderable(),
     'color picker' => fn () => ColorPicker::make('tint')->rgba()->default('rgba(1, 2, 3, 0.5)'),
+    'multiple file upload' => fn () => FileUpload::make('gallery')->multiple()->maxFiles(4)->reorderable()->downloadable()->openable(),
+    'avatar' => fn () => FileUpload::make('photo')->avatar(),
     'group' => fn () => Group::make([TextInput::make('name')])->columns(2),
     'display options' => fn () => TextInput::make('code')->readOnly()->autofocus()->hiddenLabel()->inlineLabel()->extraAttributes(['data-kind' => 'code']),
     'textarea' => fn () => Textarea::make('bio')->rows(5)->maxLength(500),

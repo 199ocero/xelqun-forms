@@ -1,0 +1,42 @@
+{
+    "state": {
+        "data": {
+            "gallery": []
+        }
+    },
+    "components": [
+        {
+            "key": "data.gallery",
+            "type": "file-upload",
+            "hidden": false,
+            "path": "data.gallery",
+            "label": "Gallery",
+            "hint": null,
+            "placeholder": null,
+            "required": false,
+            "disabled": false,
+            "rules": {
+                "visible": null,
+                "required": null,
+                "disabled": null
+            },
+            "computed": null,
+            "live": null,
+            "acceptsUploads": true,
+            "span": null,
+            "props": {
+                "accept": null,
+                "maxSize": 10240,
+                "image": false,
+                "files": {},
+                "multiple": true,
+                "maxFiles": 4,
+                "reorderable": true,
+                "downloadable": true,
+                "openable": true
+            },
+            "children": [],
+            "deps": []
+        }
+    ]
+}
