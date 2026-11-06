@@ -9,6 +9,7 @@ import XqTextareaField from './fields/XqTextareaField.vue';
 import XqTextInputField from './fields/XqTextInputField.vue';
 import XqToggleField from './fields/XqToggleField.vue';
 import XqActions from './layouts/XqActions.vue';
+import XqBlock from './layouts/XqBlock.vue';
 import XqCallout from './layouts/XqCallout.vue';
 import XqEmptyState from './layouts/XqEmptyState.vue';
 import XqFieldset from './layouts/XqFieldset.vue';
@@ -45,6 +46,7 @@ export function defaultComponents(): Record<string, ComponentResolver> {
         'key-value': () => import('./fields/XqKeyValueField.vue'),
         'color-picker': () => import('./fields/XqColorPickerField.vue'),
         repeater: XqRepeaterField,
+        builder: XqRepeaterField,
         section: XqSection,
         grid: XqGrid,
         fieldset: XqFieldset,
@@ -52,6 +54,7 @@ export function defaultComponents(): Record<string, ComponentResolver> {
         action: XqAction,
         actions: XqActions,
         wizard: XqWizard,
+        block: XqBlock,
         flex: XqFlex,
         'fused-group': XqFusedGroup,
         callout: XqCallout,

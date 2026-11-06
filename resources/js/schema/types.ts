@@ -78,6 +78,17 @@ export interface SchemaNode {
     deps?: string[];
 }
 
+/** One kind of row in a builder. */
+export interface BlockOption {
+    name: string;
+    label: string;
+    icon: string | null;
+    group: string | null;
+    maxItems: number | null;
+    template: SchemaNode[];
+    newRow: Record<string, unknown>;
+}
+
 export interface ClientRule {
     rule: 'required' | 'accepted' | 'email' | 'numeric' | 'integer' | 'min' | 'max' | 'size';
     type?: 'string' | 'numeric';

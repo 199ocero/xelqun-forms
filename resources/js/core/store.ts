@@ -3,6 +3,7 @@ import { effectScope, nextTick, reactive, ref, shallowReactive, watch } from 'vu
 import type { Ref } from 'vue';
 import type {
     ActionRequest,
+    BlockOption,
     ConditionNode,
     FormSchema,
     LiveConfig,
@@ -277,6 +278,19 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
         return node.props.rows;
     }
 
+    function blockOf(node: SchemaNode, name: unknown): BlockOption | undefined {
+        return node.props?.blocks?.find((block: BlockOption) => block.name === name);
+    }
+
+    /**
+     * A builder's row is built from its block, a repeater's from one template.
+     */
+    function rowTemplate(node: SchemaNode, key: string): SchemaNode[] {
+        return (
+            blockOf(node, get(`${node.path}.${key}.type`))?.template ?? node.props?.template ?? []
+        );
+    }
+
     /**
      * Make the repeater's row nodes match the row keys in state.
      */
@@ -285,7 +299,7 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
 
         for (const key of keys) {
             if (!rows[key]) {
-                rows[key] = replaceRow(node.props?.template ?? [], key, node.props?.rowPlaceholder);
+                rows[key] = replaceRow(rowTemplate(node, key), key, node.props?.rowPlaceholder);
                 index(rows[key]);
             }
         }
@@ -311,14 +325,18 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
         notify(path, 'user');
     }
 
-    function addRow(node: SchemaNode): string {
+    function addRow(node: SchemaNode, block?: string): string {
         const key = newRowKey();
 
         if (!isPlainObject(get(node.path!))) {
             setPath(state, node.path!, {});
         }
 
-        setPath(state, `${node.path}.${key}`, clone(node.props?.newRow ?? {}));
+        setPath(
+            state,
+            `${node.path}.${key}`,
+            clone(blockOf(node, block)?.newRow ?? node.props?.newRow ?? {}),
+        );
         touchRows(node);
 
         return key;
@@ -937,7 +955,7 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
             file.name,
             uploadFile(
                 schema.endpoints.upload,
-                { token: schema.token ?? '', path, file },
+                { token: schema.token ?? '', path, file, state: JSON.stringify(state.data) },
                 onProgress,
                 signal,
             ),

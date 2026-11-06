@@ -6,11 +6,12 @@ import { useField } from '../../composables/useField';
 import { useSortable } from '../../composables/useSortable';
 import { startsWithPath } from '../../core/paths';
 import { cn, focusFirstEnabled } from '../../lib/utils';
-import type { SchemaNode } from '../../schema/types';
+import type { BlockOption, SchemaNode } from '../../schema/types';
 import XqButton from '../../ui/XqButton.vue';
 import XqConfirmDialog from '../../ui/XqConfirmDialog.vue';
 import XqFieldWrapper from '../XqFieldWrapper.vue';
 import XqNode from '../XqNode.vue';
+import XqBlockPicker from './XqBlockPicker.vue';
 import XqRepeaterRowActions from './XqRepeaterRowActions.vue';
 import { useTranslator } from '../../composables/context';
 
@@ -65,10 +66,26 @@ function actions(index: number) {
     };
 }
 
+const blocks = computed<BlockOption[] | null>(() => options.value.blocks ?? null);
+
+const usedBlocks = computed(() => {
+    const counts: Record<string, number> = {};
+
+    for (const key of keys.value) {
+        const type = store.get(`${path}.${key}.type`);
+
+        counts[type] = (counts[type] ?? 0) + 1;
+    }
+
+    return counts;
+});
+
 function titleOf(index: number): string {
-    return options.value.itemNumbers === false
-        ? options.value.itemLabel
-        : `${options.value.itemLabel} ${index + 1}`;
+    const type = store.get(`${path}.${keys.value[index]}.type`);
+    const title =
+        blocks.value?.find((block) => block.name === type)?.label ?? options.value.itemLabel;
+
+    return options.value.itemNumbers === false ? title : `${title} ${index + 1}`;
 }
 
 function rowSelector(key: string): string {
@@ -129,8 +146,8 @@ async function move(key: string, direction: -1 | 1): Promise<void> {
     ]);
 }
 
-function add(): void {
-    void focusRow(store.addRow(props.node));
+function add(block?: string): void {
+    void focusRow(store.addRow(props.node, block));
 }
 
 function clone(key: string): void {
@@ -345,16 +362,29 @@ useSortable(rowList, {
                 v-if="keys.length === 0"
                 class="px-4 py-6 text-sm rounded-xq-lg border border-dashed border-xq-border text-center text-xq-muted-foreground"
             >
-                No {{ String(options.itemLabel ?? 'item').toLowerCase() }}s yet.
+                {{
+                    t('No :items yet.', {
+                        items: `${String(options.itemLabel ?? 'item').toLowerCase()}s`,
+                    })
+                }}
             </div>
             <div v-if="options.addable !== false">
+                <XqBlockPicker
+                    v-if="blocks"
+                    :blocks="blocks"
+                    :label="options.addLabel"
+                    :disabled="!canAdd"
+                    :used="usedBlocks"
+                    @pick="add"
+                />
                 <XqButton
+                    v-else
                     type="button"
                     variant="outline"
                     size="sm"
                     :disabled="!canAdd"
                     data-xq-add
-                    @click="add"
+                    @click="add()"
                 >
                     <Plus />
                     {{ options.addLabel }}
@@ -363,7 +393,7 @@ useSortable(rowList, {
         </div>
         <XqConfirmDialog
             v-model:open="isConfirming"
-            :title="`Remove ${String(options.itemLabel).toLowerCase()}`"
+            :title="t('Remove :item', { item: String(options.itemLabel).toLowerCase() })"
             :message="options.deleteConfirmation ?? ''"
             @confirm="confirmRemove"
         />

@@ -340,7 +340,7 @@ final class FormValidator
             $path = $field->getStatePath();
 
             if ($field instanceof ContainsRows) {
-                data_set($output, $path, array_fill_keys($field->getRowKeys(), []));
+                data_set($output, $path, $field->getOutputRows());
 
                 continue;
             }

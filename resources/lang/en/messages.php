@@ -5,6 +5,10 @@ return [
         'true' => 'Yes',
         'false' => 'No',
     ],
+    'builder' => [
+        'invalid_block' => ':attribute has a block that is not available.',
+        'too_many' => ':block can only be used :max time(s).',
+    ],
     'copied' => 'Copied',
     'key_value' => [
         'key' => 'Key',

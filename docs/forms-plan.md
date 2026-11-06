@@ -440,7 +440,7 @@ Milestones 0–9 are built and tested. Milestone 9 added failure and loading fee
 | File upload inside a repeater row | browser test, package `UploadTest` |
 | Server errors on the correct nested field | browser tests (`Price (Item 2)`), package `ValidationTest` |
 
-**Test counts:** package Pest 943, package Vitest 502, playground feature and browser 75.
+**Test counts:** package Pest 985, package Vitest 511, playground feature and browser 77.
 
 ### Milestone 10: foundations
 
@@ -815,6 +815,37 @@ Limits to keep in mind:
 - With static options and `createOptionUsing()`, the new key has to be in `options()` too, or the select's own rule rejects it on submit. Use a closure for `options()`.
 - The button of an action beside a field disabled by `disabledWhen()` stays clickable, and the server refuses it.
 - An action with a label of "Create" or "Edit" reads the same to a screen reader on each select. Set `label()` in the action callback if a form has several.
+
+### Milestone 22: heavy fields
+
+#### Builder
+
+The proof is the "Page editor" example. Each block has its own fields and rules, and a page lands in one JSON column as a list of `{type, data}`.
+
+- **`Builder` extends `Repeater`**, so `cloneable()`, `collapsible()`, `minItems()`, `extraItemActions()` and dragging work with no new code. A row is built from the block its `type` names, with a hidden `type` field beside it, so the output keeps the type like any other field.
+- **`Block`** has `label()`, `icon()`, `maxItems()`, `columns()` and `preview()`. A string key in `blocks()` groups blocks in the picker.
+- **`type` is never trusted.** A row of a block that isn't declared, or that the server hides, fails validation, and no field or closure of that block runs for it.
+- **A stored row of a hidden block is kept.** Its values never reach the browser, and it goes back out exactly as the server holds it, whatever is posted for it. Otherwise a non-admin could not save a page with an admin block on it, or would wipe it.
+- **`blockPreviews()`** renders each block on the server, from a Blade view or a closure. A preview gets only the fields the block declares, and tracks its row, so it updates as the row changes.
+- **Uploads post the state**, because only the row's `type` says which block's field a path means. The scope includes the block, so a file uploaded for one block can't be used in another with the same field name.
+
+Where this differs from Filament:
+
+- `blockPickerColumns()`, `blockPickerSearch()`, `blockIcons()`, `collapsible` per block and `reorderableWithButtons()` aren't built. The move buttons are always there.
+- A preview shows an Edit button under the block, instead of opening a modal.
+- `itemLabel()` per row isn't built. A row is titled by its block.
+
+Changes that can break existing code, for the release notes:
+
+- `POST upload` now runs `prepare()` when the browser sends state, so a field's `acceptsInput()` sees what the user has typed, not only what the form was filled with.
+- `Repeater::getRowComponents()` now builds from `getRowTemplates()`, and `toPlainRows()` from `toPlainRow()`. A subclass that overrode them should override those.
+
+Limits to keep in mind:
+
+- A stored row of a block that was removed from the code fails validation, so nothing is lost silently. The user has to delete the row to save.
+- A user can still delete or move a stored row of a block hidden from them.
+- `Block::hidden()` applies to the whole builder: a closure can't depend on the row.
+- Frontend errors name a row by the builder's `itemLabel()`, not by its block.
 
 ### Where the build differs from the plan
 - **Patches have no `add`/`remove`.** A component hidden by a server closure is sent as a stub (`{ key, type, hidden: true, deps }`) and later patched to a full node, which keeps every key stable.

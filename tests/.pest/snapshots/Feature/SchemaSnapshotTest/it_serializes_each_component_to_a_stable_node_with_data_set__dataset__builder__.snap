@@ -1,0 +1,324 @@
+{
+    "state": {
+        "data": {
+            "content": {
+                "row-0": {
+                    "type": "heading",
+                    "data": {
+                        "text": "Hi"
+                    }
+                },
+                "row-1": {
+                    "type": "divider",
+                    "data": []
+                }
+            }
+        }
+    },
+    "components": [
+        {
+            "key": "data.content",
+            "type": "builder",
+            "hidden": false,
+            "path": "data.content",
+            "label": "Content",
+            "hint": null,
+            "placeholder": null,
+            "required": false,
+            "disabled": false,
+            "rules": {
+                "visible": null,
+                "required": null,
+                "disabled": null
+            },
+            "computed": null,
+            "live": null,
+            "containsRows": true,
+            "span": null,
+            "props": {
+                "template": [],
+                "rowPlaceholder": "{row}",
+                "rows": {
+                    "row-0": [
+                        {
+                            "key": "data.content.row-0.type",
+                            "type": "hidden",
+                            "hidden": false,
+                            "path": "data.content.row-0.type",
+                            "label": "Type",
+                            "hint": null,
+                            "placeholder": null,
+                            "required": false,
+                            "disabled": false,
+                            "rules": {
+                                "visible": null,
+                                "required": null,
+                                "disabled": null
+                            },
+                            "computed": null,
+                            "live": null,
+                            "span": null,
+                            "props": {},
+                            "children": [],
+                            "deps": []
+                        },
+                        {
+                            "key": "data.content.row-0#1",
+                            "type": "block",
+                            "hidden": false,
+                            "path": null,
+                            "label": null,
+                            "rules": {
+                                "visible": null
+                            },
+                            "span": null,
+                            "props": {
+                                "columns": {
+                                    "default": 1,
+                                    "md": 2
+                                },
+                                "preview": null
+                            },
+                            "children": [
+                                {
+                                    "key": "data.content.row-0.data.text",
+                                    "type": "text-input",
+                                    "hidden": false,
+                                    "path": "data.content.row-0.data.text",
+                                    "label": "Text",
+                                    "hint": null,
+                                    "placeholder": null,
+                                    "required": false,
+                                    "disabled": false,
+                                    "rules": {
+                                        "visible": null,
+                                        "required": null,
+                                        "disabled": null
+                                    },
+                                    "computed": null,
+                                    "live": null,
+                                    "span": null,
+                                    "props": {
+                                        "inputType": "text",
+                                        "numeric": false,
+                                        "integer": false,
+                                        "min": null,
+                                        "max": null,
+                                        "step": null,
+                                        "maxLength": null,
+                                        "prefix": null,
+                                        "suffix": null,
+                                        "autocomplete": null
+                                    },
+                                    "children": [],
+                                    "deps": []
+                                }
+                            ],
+                            "deps": []
+                        }
+                    ],
+                    "row-1": [
+                        {
+                            "key": "data.content.row-1.type",
+                            "type": "hidden",
+                            "hidden": false,
+                            "path": "data.content.row-1.type",
+                            "label": "Type",
+                            "hint": null,
+                            "placeholder": null,
+                            "required": false,
+                            "disabled": false,
+                            "rules": {
+                                "visible": null,
+                                "required": null,
+                                "disabled": null
+                            },
+                            "computed": null,
+                            "live": null,
+                            "span": null,
+                            "props": {},
+                            "children": [],
+                            "deps": []
+                        },
+                        {
+                            "key": "data.content.row-1#2",
+                            "type": "block",
+                            "hidden": false,
+                            "path": null,
+                            "label": null,
+                            "rules": {
+                                "visible": null
+                            },
+                            "span": null,
+                            "props": {
+                                "columns": null,
+                                "preview": null
+                            },
+                            "children": [],
+                            "deps": []
+                        }
+                    ]
+                },
+                "newRow": {},
+                "minItems": 0,
+                "maxItems": null,
+                "addLabel": "Add item",
+                "itemLabel": "Item",
+                "orderable": true,
+                "columns": null,
+                "addable": true,
+                "deletable": true,
+                "itemNumbers": true,
+                "draggable": true,
+                "blocks": [
+                    {
+                        "name": "heading",
+                        "label": "Heading",
+                        "icon": "hash",
+                        "group": "Text",
+                        "maxItems": 1,
+                        "template": [
+                            {
+                                "key": "data.content.{row}.type",
+                                "type": "hidden",
+                                "hidden": false,
+                                "path": "data.content.{row}.type",
+                                "label": "Type",
+                                "hint": null,
+                                "placeholder": null,
+                                "required": false,
+                                "disabled": false,
+                                "rules": {
+                                    "visible": null,
+                                    "required": null,
+                                    "disabled": null
+                                },
+                                "computed": null,
+                                "live": null,
+                                "span": null,
+                                "props": {},
+                                "children": [],
+                                "deps": []
+                            },
+                            {
+                                "key": "data.content.{row}#1",
+                                "type": "block",
+                                "hidden": false,
+                                "path": null,
+                                "label": null,
+                                "rules": {
+                                    "visible": null
+                                },
+                                "span": null,
+                                "props": {
+                                    "columns": {
+                                        "default": 1,
+                                        "md": 2
+                                    },
+                                    "preview": null
+                                },
+                                "children": [
+                                    {
+                                        "key": "data.content.{row}.data.text",
+                                        "type": "text-input",
+                                        "hidden": false,
+                                        "path": "data.content.{row}.data.text",
+                                        "label": "Text",
+                                        "hint": null,
+                                        "placeholder": null,
+                                        "required": false,
+                                        "disabled": false,
+                                        "rules": {
+                                            "visible": null,
+                                            "required": null,
+                                            "disabled": null
+                                        },
+                                        "computed": null,
+                                        "live": null,
+                                        "span": null,
+                                        "props": {
+                                            "inputType": "text",
+                                            "numeric": false,
+                                            "integer": false,
+                                            "min": null,
+                                            "max": null,
+                                            "step": null,
+                                            "maxLength": null,
+                                            "prefix": null,
+                                            "suffix": null,
+                                            "autocomplete": null
+                                        },
+                                        "children": [],
+                                        "deps": []
+                                    }
+                                ],
+                                "deps": []
+                            }
+                        ],
+                        "newRow": {
+                            "type": "heading",
+                            "data": {
+                                "text": "Hello"
+                            }
+                        }
+                    },
+                    {
+                        "name": "divider",
+                        "label": "Line",
+                        "icon": null,
+                        "group": null,
+                        "maxItems": null,
+                        "template": [
+                            {
+                                "key": "data.content.{row}.type",
+                                "type": "hidden",
+                                "hidden": false,
+                                "path": "data.content.{row}.type",
+                                "label": "Type",
+                                "hint": null,
+                                "placeholder": null,
+                                "required": false,
+                                "disabled": false,
+                                "rules": {
+                                    "visible": null,
+                                    "required": null,
+                                    "disabled": null
+                                },
+                                "computed": null,
+                                "live": null,
+                                "span": null,
+                                "props": {},
+                                "children": [],
+                                "deps": []
+                            },
+                            {
+                                "key": "data.content.{row}#2",
+                                "type": "block",
+                                "hidden": false,
+                                "path": null,
+                                "label": null,
+                                "rules": {
+                                    "visible": null
+                                },
+                                "span": null,
+                                "props": {
+                                    "columns": null,
+                                    "preview": null
+                                },
+                                "children": [],
+                                "deps": []
+                            }
+                        ],
+                        "newRow": {
+                            "type": "divider",
+                            "data": {}
+                        }
+                    }
+                ],
+                "previews": false
+            },
+            "children": [],
+            "deps": []
+        }
+    ]
+}

@@ -462,19 +462,35 @@ class Repeater extends Field implements ContainsRows, PersistsItself
     {
         $components = [];
 
-        foreach ([...$this->childComponents, ...array_values($this->itemActions)] as $index => $template) {
+        $templates = $this->getRowTemplates($rowKey);
+
+        foreach ($this->itemActions as $index => $action) {
+            $templates["a{$index}"] = $action;
+        }
+
+        foreach ($templates as $position => $template) {
             $component = clone $template;
             $component->mount(
                 $this->getForm(),
                 $this,
                 $this->getStatePath().'.'.$rowKey,
-                $index < count($this->childComponents) ? (string) $index : 'a'.($index - count($this->childComponents)),
+                (string) $position,
                 $this->getStatePathPattern().'.*',
             );
             $components[] = $component;
         }
 
         return $components;
+    }
+
+    /**
+     * What a row is built from, by position in its node key.
+     *
+     * @return array<int|string, Component>
+     */
+    protected function getRowTemplates(string $rowKey): array
+    {
+        return $this->childComponents;
     }
 
     /**
@@ -543,10 +559,20 @@ class Repeater extends Field implements ContainsRows, PersistsItself
         $form->setStateValue($this->getStatePath(), []);
 
         foreach ($this->getSourceRows($source) as $rowKey => $rowSource) {
-            $form->setStateValue($this->getStatePath().'.'.$rowKey, []);
+            $form->setStateValue($this->getStatePath().'.'.$rowKey, $this->makeEmptyRow($rowSource));
 
             Form::fillFields($this->getRowComponents($rowKey), $rowSource);
         }
+    }
+
+    /**
+     * A row before its fields are filled.
+     *
+     * @return array<string, mixed>
+     */
+    protected function makeEmptyRow(mixed $rowSource): array
+    {
+        return [];
     }
 
     /**
@@ -732,30 +758,35 @@ class Repeater extends Field implements ContainsRows, PersistsItself
 
     public function toPlainRows(array $rows): array
     {
-        $rowContainer = $this->getChildContainer().'.';
-        $nested = [];
-
-        Form::eachField($this->childComponents, function (Field $field) use (&$nested, $rowContainer): void {
-            if ($field instanceof ContainsRows) {
-                $nested[Str::after($field->getStatePath(), $rowContainer)] = $field;
-            }
-        });
-
         $plain = [];
 
         foreach ($rows as $row) {
-            foreach ($nested as $path => $field) {
-                $inner = data_get($row, $path);
-
-                if (is_array($inner)) {
-                    data_set($row, $path, $field->toPlainRows($inner));
-                }
-            }
-
+            $row = $this->toPlainRow($row, $this->childComponents);
             $plain[] = $this->simpleField === null ? $row : data_get($row, $this->simpleField->getName());
         }
 
         return $plain;
+    }
+
+    /**
+     * Turn the rows nested in this row into lists too.
+     *
+     * @param  array<int, Component>  $templates
+     */
+    protected function toPlainRow(mixed $row, array $templates): mixed
+    {
+        $rowContainer = $this->getChildContainer().'.';
+
+        Form::eachField($templates, function (Field $field) use (&$row, $rowContainer): void {
+            $path = Str::after($field->getStatePath(), $rowContainer);
+            $inner = data_get($row, $path);
+
+            if ($field instanceof ContainsRows && is_array($inner)) {
+                data_set($row, $path, $field->toPlainRows($inner));
+            }
+        });
+
+        return $row;
     }
 
     public function enforceStateLimits(): void
@@ -784,10 +815,19 @@ class Repeater extends Field implements ContainsRows, PersistsItself
      */
     public function getNewRowState(): array
     {
+        return $this->getNewStateOf($this->childComponents);
+    }
+
+    /**
+     * @param  array<int, Component>  $templates
+     * @return array<string, mixed>
+     */
+    protected function getNewStateOf(array $templates): array
+    {
         $state = [];
         $rowContainer = $this->getChildContainer().'.';
 
-        Form::eachField($this->childComponents, function (Field $field) use (&$state, $rowContainer): void {
+        Form::eachField($templates, function (Field $field) use (&$state, $rowContainer): void {
             if (! $field->isHiddenOnServer()) {
                 data_set($state, Str::after($field->getStatePath(), $rowContainer), $field instanceof ContainsRows ? new stdClass : $field->getDefaultState());
             }

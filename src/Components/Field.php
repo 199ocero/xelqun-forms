@@ -803,6 +803,18 @@ abstract class Field extends Component implements NeedsServer
     }
 
     /**
+     * The rows of the output, before their fields are written into them.
+     *
+     * @internal
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    public function getOutputRows(): array
+    {
+        return $this instanceof ContainsRows ? array_fill_keys($this->getRowKeys(), []) : [];
+    }
+
+    /**
      * Put back what the browser had no right to change, such as a row or a stored
      * file. It runs after locks are applied, so a closure can trust what it reads.
      *

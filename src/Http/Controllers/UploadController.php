@@ -8,10 +8,11 @@ use Illuminate\Validation\ValidationException;
 use Xelqun\Forms\Contracts\AcceptsUploads;
 use Xelqun\Forms\Security\FormTokenEncrypter;
 use Xelqun\Forms\Uploads\TemporaryUploadStore;
+use Xelqun\Forms\Validation\FormValidator;
 
 class UploadController
 {
-    public function __invoke(Request $request, FormTokenEncrypter $tokens, TemporaryUploadStore $store): JsonResponse
+    public function __invoke(Request $request, FormTokenEncrypter $tokens, TemporaryUploadStore $store, FormValidator $validator): JsonResponse
     {
         $request->validate([
             'token' => ['required', 'string'],
@@ -19,6 +20,13 @@ class UploadController
         ]);
 
         $form = $tokens->resolveForm($request->string('token')->value());
+        $state = json_decode($request->string('state')->value(), true);
+
+        // A row of a builder needs its posted type to know which block's field this is.
+        if (is_array($state)) {
+            $validator->prepare($form, $state);
+        }
+
         $field = $form->findComponent($request->string('path')->value());
 
         if (! $field instanceof AcceptsUploads || ! $field->acceptsInput()) {

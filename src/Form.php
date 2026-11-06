@@ -294,9 +294,11 @@ class Form
      * State, validation, live patches and the browser all address a field by
      * its path, so two fields on one path would silently overwrite each other.
      *
+     * @internal
+     *
      * @param  array<int, Component>  $components
      */
-    private function ensureUniqueStatePaths(array $components): void
+    public function ensureUniqueStatePaths(array $components): void
     {
         $paths = [];
 

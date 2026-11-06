@@ -321,6 +321,15 @@ abstract class Component
     }
 
     /**
+     * What this component adds to the scope of the uploads inside it, for one
+     * that can't tell them apart by state path. See AcceptsUploads.
+     */
+    public function getUploadScopePart(): string
+    {
+        return '';
+    }
+
+    /**
      * The key with every repeater row key replaced by "*".
      */
     public function getKeyPattern(): string
