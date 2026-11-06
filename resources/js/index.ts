@@ -20,6 +20,7 @@ export { createFormStore, defaultLiveConfig, reportRequestFailure } from './core
 export type { ActionModal, FormStore, FormStoreOptions, SubmitOptions } from './core/store';
 export type { RequestKind, RequestLogEntry } from './core/log';
 export { HttpError, postJson } from './core/http';
+export { notify } from './core/notifications';
 export { translate } from './core/translate';
 export { evaluateCondition } from './core/conditions';
 export { evaluateExpression } from './core/expressions';

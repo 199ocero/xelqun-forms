@@ -109,7 +109,9 @@ describe('createXelqunForms', () => {
     });
 
     it('keeps working without plugins', () => {
-        expect(() => createXelqunForms().install!({ provide: vi.fn() } as never)).not.toThrow();
+        expect(() =>
+            createXelqunForms().install!({ provide: vi.fn(), onUnmount: vi.fn() } as never),
+        ).not.toThrow();
     });
 });
 

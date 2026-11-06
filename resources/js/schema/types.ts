@@ -169,6 +169,19 @@ export interface UpdatePatch {
     set: Record<string, unknown>;
     schema: Record<string, Partial<SchemaNode>>;
     errors: Record<string, string | string[]>;
+    /** Left out when there are none. */
+    notifications?: XqNotification[];
+}
+
+export interface XqNotification {
+    title?: string | null;
+    body?: string | null;
+    status?: 'success' | 'danger' | 'warning' | 'info' | null;
+    icon?: string | null;
+    /** In milliseconds. */
+    duration?: number | null;
+    persistent?: boolean;
+    closeLabel?: string;
 }
 
 export interface ActionResult extends UpdatePatch {

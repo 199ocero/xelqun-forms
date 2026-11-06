@@ -23,6 +23,7 @@ import { HttpError, postJson, uploadFile } from './http';
 import { eachNode, mergeNode } from './patch';
 import { clone, deletePath, getPath, overlaps, replaceRow, setPath, startsWithPath } from './paths';
 import { RequestLog } from './log';
+import { notify as showNotification } from './notifications';
 import { RequestQueue } from './queue';
 import { newRowKey } from './rows';
 import { translate } from './translate';
@@ -470,6 +471,8 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
     }
 
     function applyPatch(patch: UpdatePatch, versions: Map<string, number>): void {
+        patch.notifications?.forEach(showNotification);
+
         for (const [key, partial] of Object.entries(patch.schema ?? {})) {
             const node = nodes.get(key);
 

@@ -8,6 +8,7 @@ use Xelqun\Forms\Commands\InstallPluginCommand;
 use Xelqun\Forms\Commands\MakeFieldCommand;
 use Xelqun\Forms\Commands\PruneTemporaryUploadsCommand;
 use Xelqun\Forms\Uploads\TemporaryUploadStore;
+use Xelqun\Notifications\NotificationQueue;
 
 class FormsServiceProvider extends ServiceProvider
 {
@@ -16,6 +17,7 @@ class FormsServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__.'/../config/xelqun-forms.php', 'xelqun-forms');
 
         $this->app->singleton(TemporaryUploadStore::class);
+        $this->app->scoped(NotificationQueue::class);
     }
 
     public function boot(): void

@@ -11,6 +11,7 @@ use Xelqun\Forms\Form;
 use Xelqun\Forms\Schema\SchemaVersion;
 use Xelqun\Forms\Support\StatePath;
 use Xelqun\Forms\Validation\FormValidator;
+use Xelqun\Notifications\NotificationQueue;
 
 /**
  * Handles one live round-trip: run hooks for the changed paths, re-run only
@@ -18,7 +19,10 @@ use Xelqun\Forms\Validation\FormValidator;
  */
 final class UpdateProcessor
 {
-    public function __construct(private readonly FormValidator $validator) {}
+    public function __construct(
+        private readonly FormValidator $validator,
+        private readonly NotificationQueue $notifications,
+    ) {}
 
     /**
      * @param  array<string, mixed>  $data  The browser's current form data.
@@ -97,12 +101,15 @@ final class UpdateProcessor
             $set[$path] = $value === [] && $component instanceof ContainsRows ? new stdClass : $value;
         }
 
+        $notifications = $this->notifications->pull();
+
         return [
             '$xq' => SchemaVersion::CURRENT,
             'seq' => $sequence,
             'set' => $set === [] ? new stdClass : $set,
             'schema' => $schema === [] ? new stdClass : $schema,
             'errors' => $errors === [] ? new stdClass : $errors,
+            ...($notifications === [] ? [] : ['notifications' => $notifications]),
         ];
     }
 

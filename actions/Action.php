@@ -12,6 +12,7 @@ use Xelqun\Forms\Components\Field;
 use Xelqun\Forms\Contracts\NeedsServer;
 use Xelqun\Forms\Support\SafeUrl;
 use Xelqun\Forms\Support\StatePath;
+use Xelqun\Notifications\Notification;
 
 /**
  * A button that runs a closure on the server, optionally through a modal with
@@ -74,6 +75,8 @@ class Action extends Component implements NeedsServer
     protected ?Closure $action = null;
 
     protected string|Closure|null $successRedirectUrl = null;
+
+    protected string|Closure|null $successNotificationTitle = null;
 
     /** @var class-string<Model>|Closure|null */
     protected string|Closure|null $model = null;
@@ -387,6 +390,17 @@ class Action extends Component implements NeedsServer
     }
 
     /**
+     * Tell the user it worked, once action() has returned. For anything more,
+     * send a Notification from the closure.
+     */
+    public function successNotificationTitle(string|Closure|null $title): static
+    {
+        $this->successNotificationTitle = $title;
+
+        return $this;
+    }
+
+    /**
      * The model modal fields read relationships from, and the policy's subject
      * when there is no record.
      *
@@ -512,7 +526,14 @@ class Action extends Component implements NeedsServer
     {
         $data = $this->hasModalForm() ? $this->makeForm($parentData)->validate([StatePath::ROOT => $input]) : [];
 
-        return $this->evaluate($this->action, ['data' => $data]);
+        $result = $this->evaluate($this->action, ['data' => $data]);
+        $notificationTitle = $this->evaluate($this->successNotificationTitle, ['data' => $data]);
+
+        if ($notificationTitle !== null) {
+            Notification::make()->title($notificationTitle)->success()->send();
+        }
+
+        return $result;
     }
 
     public function evaluate(mixed $value, array $parameters = []): mixed

@@ -15,6 +15,7 @@
     <source>
         <include>
             <directory>actions</directory>
+            <directory>notifications</directory>
             <directory>src</directory>
         </include>
     </source>

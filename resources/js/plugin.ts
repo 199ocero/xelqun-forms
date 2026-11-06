@@ -1,8 +1,13 @@
+import { router } from '@inertiajs/vue3';
+import { createApp } from 'vue';
 import type { App, Component, Plugin } from 'vue';
 import { createRegistry, defaultComponents } from './components/defaults';
 import { REGISTRY, toComponent } from './composables/registry';
 import type { ComponentRegistry, ComponentResolver } from './composables/registry';
+import { FLASH_KEY, notify } from './core/notifications';
+import type { XqNotification } from './schema/types';
 import { registerIcons } from './ui/icons';
+import XqNotifications from './ui/XqNotifications.vue';
 
 export interface XelqunPluginContext {
     app: App;
@@ -30,6 +35,8 @@ export interface XelqunFormsOptions {
     components?: Record<string, ComponentResolver>;
     /** Icons PHP can name, as { name: component }, on top of the built-in set. */
     icons?: Record<string, Component>;
+    /** What screen readers call the notifications region. {hotkey} is the key that jumps to it. */
+    notificationsLabel?: string;
 }
 
 const VENDOR_PREFIXED_TYPE = /^[a-z0-9-]+\/[a-z0-9-]+$/;
@@ -93,6 +100,27 @@ export function registerPlugins(
     }
 }
 
+/**
+ * Put the toaster on the page and listen for flash data. Returns how to undo both.
+ */
+function mountNotifications(label?: string): () => void {
+    const host = document.body.appendChild(document.createElement('div'));
+    const toaster = createApp(XqNotifications, { label });
+    const stopListening = router.on('flash', (event) => {
+        const { [FLASH_KEY]: notifications } = event.detail.flash;
+
+        (notifications as XqNotification[] | undefined)?.forEach(notify);
+    });
+
+    toaster.mount(host);
+
+    return () => {
+        stopListening();
+        toaster.unmount();
+        host.remove();
+    };
+}
+
 export function createXelqunForms(options: XelqunFormsOptions = {}): Plugin {
     return {
         install(app) {
@@ -109,6 +137,10 @@ export function createXelqunForms(options: XelqunFormsOptions = {}): Plugin {
 
             plugins.forEach((plugin) => plugin.setup?.({ app }));
             app.provide(REGISTRY, registry);
+
+            if (typeof document !== 'undefined') {
+                app.onUnmount(mountNotifications(options.notificationsLabel));
+            }
         },
     };
 }
