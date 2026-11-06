@@ -199,22 +199,24 @@ class Form
     }
 
     /**
-     * The model a component reads relationships from: the row model of the
-     * closest field with rows that has one, or the form's model.
+     * The model a component reads relationships from: the closest ancestor's
+     * child model, or the form's model.
      */
     public function getModelInstanceFor(Component $component): Model
     {
-        $parent = $component->getParent();
+        $ancestors = [];
 
-        while ($parent !== null) {
-            if ($parent instanceof ContainsRows && ($model = $parent->getRowModel($this->getModelInstanceFor($parent))) !== null) {
-                return $model;
-            }
-
-            $parent = $parent->getParent();
+        for ($parent = $component->getParent(); $parent !== null; $parent = $parent->getParent()) {
+            array_unshift($ancestors, $parent);
         }
 
-        return $this->getModelInstance();
+        $model = $this->getModelInstance();
+
+        foreach ($ancestors as $ancestor) {
+            $model = $ancestor->getChildModel($model) ?? $model;
+        }
+
+        return $model;
     }
 
     /**
@@ -376,7 +378,7 @@ class Form
     {
         $this->state = [StatePath::ROOT => []];
 
-        self::eachField($this->getComponents(), fn (Field $field) => $field->fillState($this->record));
+        self::fillFields($this->getComponents(), $this->record);
 
         $this->walk(function (Component $component): void {
             if ($component instanceof Field) {
@@ -389,6 +391,24 @@ class Form
         $this->setPaths = [];
 
         return $this;
+    }
+
+    /**
+     * Fill every field in the components, looking through layouts but not into
+     * repeater rows. A component can give its children another source.
+     *
+     * @param  array<int, Component>  $components
+     * @param  Model|array<string, mixed>|null  $source
+     */
+    public static function fillFields(array $components, Model|array|null $source): void
+    {
+        foreach ($components as $component) {
+            if ($component instanceof Field) {
+                $component->fillState($source);
+            }
+
+            self::fillFields($component->getChildComponents(), $component->getChildSource($source));
+        }
     }
 
     /**
@@ -552,6 +572,11 @@ class Form
             if ($component->isHiddenOnServer()) {
                 Arr::forget($state, $component->getStatePath());
 
+                // An empty array becomes "[]" in JSON, and the browser can't add keys to that.
+                if ($component->getContainer() !== StatePath::ROOT && data_get($state, $component->getContainer()) === []) {
+                    data_set($state, $component->getContainer(), new stdClass);
+                }
+
                 return;
             }
 
@@ -660,6 +685,34 @@ class Form
 
         return $this->record;
     }
+
+    /**
+     * Runs inside save()'s transaction, before anything is written. Throwing
+     * rolls the save back.
+     *
+     * @param  array<string, mixed>  $data  Validated data. Repeater rows keep their keys.
+     */
+    public function beforeSave(array $data): void {}
+
+    /**
+     * Runs inside save()'s transaction, after the record and its relationships
+     * are written. Throwing rolls the save back.
+     *
+     * @param  TModel  $record
+     * @param  array<string, mixed>  $data  Validated data. Repeater rows keep their keys.
+     */
+    public function afterSave(Model $record, array $data): void {}
+
+    /**
+     * Runs once the outermost transaction has committed, so it is the place for
+     * emails and queued jobs. A save that rolls back never gets here. Nothing can
+     * undo the save now, so an exception here is reported, not thrown: save()
+     * still returns the record.
+     *
+     * @param  TModel  $record
+     * @param  array<string, mixed>  $data  Validated data. Repeater rows keep their keys.
+     */
+    public function afterCommit(Model $record, array $data): void {}
 
     /**
      * Adjust attributes before save() writes them to the model.

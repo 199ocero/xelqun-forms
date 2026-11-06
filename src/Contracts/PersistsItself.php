@@ -3,18 +3,24 @@
 namespace Xelqun\Forms\Contracts;
 
 use Illuminate\Database\Eloquent\Model;
-use Xelqun\Forms\Components\Field;
+use Xelqun\Forms\Components\Component;
 
 /**
- * A field that writes its own value instead of setting a column on the record,
- * for example to a related table. To read it back, override Field::fillState().
+ * A component that writes its own value instead of setting a column on the
+ * record, for example to a related table. To read it back, override
+ * Field::fillState().
  *
  * @api
  *
- * @phpstan-require-extends Field
+ * @phpstan-require-extends Component
  */
 interface PersistsItself
 {
+    /**
+     * The key of this component's value in the submitted data.
+     */
+    public function getName(): string;
+
     /**
      * Whether this field writes its own value. When false it is saved like any
      * other field, as a column named after the field.

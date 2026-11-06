@@ -1,6 +1,6 @@
 # Xelqun Forms: planning document
 
-> Status: approved plan (2026-10-28), implemented through Milestone 9. Parity work continues in [`parity-plan.md`](parity-plan.md), through Milestone 12. See "Implementation status" at the end.
+> Status: approved plan (2026-10-28), implemented through Milestone 9. Parity work continues in [`parity-plan.md`](parity-plan.md), through Milestone 13. See "Implementation status" at the end.
 
 ## Context
 
@@ -440,7 +440,7 @@ Milestones 0–9 are built and tested. Milestone 9 added failure and loading fee
 | File upload inside a repeater row | browser test, package `UploadTest` |
 | Server errors on the correct nested field | browser tests (`Price (Item 2)`), package `ValidationTest` |
 
-**Test counts:** package Pest 431, package Vitest 219, playground feature and browser 43.
+**Test counts:** package Pest 477, package Vitest 219, playground feature and browser 44.
 
 ### Milestone 10: foundations
 
@@ -486,7 +486,7 @@ Limits to keep in mind:
 
 - The plugin starter is stubs and the example plugin. A public starter repo needs your go-ahead, because it's a new public GitHub repo.
 - `make:xelqun-field` writes into `app/` and `resources/js/forms`, so a plugin author moves the files into the plugin.
-- Plugin limits are listed at the end of [`plugins.md`](plugins.md). The main ones: one file per `AcceptsUploads` field until M17, no stage before the record is saved until M13, and no saving of nested relationship rows until M16.
+- Plugin limits are listed at the end of [`plugins.md`](plugins.md). The main ones: one file per `AcceptsUploads` field until M17, and no saving of nested rows until M16.
 
 ### Milestone 12: state and field basics
 
@@ -515,6 +515,39 @@ Limits to keep in mind:
 - `dehydrateStateUsing()` is ignored on a field with rows, and it runs before uploads are moved, so on a file field it sees the token.
 - `extraAttributes()` values are bound as given, so never put user input in an attribute name. Filament's `merge` option and `extraInputAttributes()` were not in scope.
 - `inlineLabel()` is per field. Filament also sets it on a layout or a whole form. Checkboxes and toggles already have the label beside them, so it does nothing there.
+
+### Milestone 13: relationships and hooks
+
+A form now saves a record and everything around it in one transaction. The proof is the order example in the playground: tags, a morph owner and a gift recipient all save, reload and survive a tampered edit.
+
+- **One save path.** `ModelPersister::persistScope()` saves a record and everything below it, depth-first. The form, every relationship row and every related group go through it, so `collectTopLevel`, `Repeater::isColumn()` and `persistRowFields()` are gone. A missing key still never means "clear this".
+- **Form hooks.** `beforeSave()`, `afterSave()` and `afterCommit()` are methods to override on the form. The first two run inside the transaction and can roll it back. `afterCommit()` waits for the outermost transaction and never runs after a rollback, so it's the place for emails and jobs. If it throws, the exception is reported and `save()` still returns the record, because an error page would invite a second save.
+- **A stage before the save.** `PersistsBeforeSave` adds `persistBeforeSave()`, which runs before the record is saved, so a component can set a foreign key on it. `PersistsItself` now applies to any component and declares `getName()`.
+- **Many-to-many selects.** `Select::relationship()` accepts a BelongsToMany with `multiple()`, and the name defaults to the field's. It attaches and detaches by difference, never `sync()`, so a record outside the field's query stays attached. `pivotData()` applies to records it attaches.
+- **`getOptionLabelFromRecordUsing()`** builds labels from the record for options, search results and selected values. Search still looks at the title attribute.
+- **`MorphToSelect`** is two ordinary selects in a fieldset, so it needed no new Vue. Its values are the relationship's two columns. A posted type must be one of `types()`, and a record must be in that type's query, including `modifyOptionsQueryUsing()`.
+- **`Group`** is a layout with no markup. With `relationship()` it edits one HasOne or BelongsTo record. A BelongsTo is saved first so its key can go on the parent. Its fields keep their state under the relationship's name, such as `data.note.body`, so errors and uploads work as they do anywhere else.
+- **Repeater hooks.** `mutateRelationshipDataBeforeFillUsing()`, `mutateRelationshipDataBeforeCreateUsing()`, `mutateRelationshipDataBeforeSaveUsing()`, `afterCreate()`, `afterUpdate()` and `afterDelete()`. Returning null from a create or save mutator skips that row. A row skipped on save is kept, not deleted.
+
+Where this differs from the plan and from Filament:
+
+- Relationships save in schema order, not the plan's fixed BelongsToMany, HasOne, HasMany order. Nothing depends on the order between them, and sorting would add code with no effect.
+- A group's missing record is only created when a field has a value, and a switched-off toggle isn't one. A field with a non-empty default counts as a value. Filament always creates the record and offers a `condition:` argument instead. Without this, leaving an optional group blank fails on any `NOT NULL` column.
+
+Changes that can break existing code, for the release notes:
+
+- `Select::getRelationshipInstance()` can now return a `BelongsToMany`, so a subclass that overrides it must widen its return type.
+- `PersistsItself` declares `getName()`. A class extending `Field` already has it.
+- `Component::getChildModel()` and `getChildSource()` are new. Any field with rows that overrides `getRowModel()` keeps working.
+- A `BelongsToMany` select fills its state with the keys as the database gives them, not as strings.
+
+Limits to keep in mind:
+
+- Any repeater inside a related row is skipped when saving, with or without a relationship. That arrives in M16.
+- `pivotData()` applies only when attaching. A record that stays attached keeps its pivot values.
+- A `readOnly()` field in a group doesn't write its default when the form edits a record whose related record doesn't exist yet.
+- A field and a relationship group with the same name both use the same state path, and this isn't detected.
+- Not built: `MorphOne` groups, `modifyKeySelectUsing()`, `modifyTypeSelectUsing()`, `saveRelationshipsWhenHidden()`, `saveRelationshipsUsing()`, and `condition:` on a group.
 
 ### Where the build differs from the plan
 - **Patches have no `add`/`remove`.** A component hidden by a server closure is sent as a stub (`{ key, type, hidden: true, deps }`) and later patched to a full node, which keeps every key stable.

@@ -136,6 +136,7 @@ Implement a contract from `Xelqun\Forms\Contracts` and the matching endpoint sta
 | `AcceptsUploads` | The upload endpoint and storage on save | `store.upload(path, file, onProgress, signal)` |
 | `ContainsRows` | Rows with their own components | `store.addRow`, `removeRow`, `moveRow` |
 | `PersistsItself` | Saving somewhere other than a column | None |
+| `PersistsBeforeSave` | Also doing something before the record is saved, such as setting a foreign key | None |
 | `NeedsServer` | A clear error on forms the server can't rebuild | None |
 
 `store` comes from `useField()`.
@@ -197,6 +198,15 @@ public function persist(Model $record, mixed $state): void
 ```
 
 `persist()` runs inside the transaction, after the record is saved. Throwing rolls the whole save back. It only runs for a submitted value, so a hidden field is skipped. **Never treat a missing value as "clear this".** `$state` can still be null if the field was submitted empty.
+
+To set something on the record itself, implement `PersistsBeforeSave` as well. `persistBeforeSave()` runs before the record is saved, so a new record has no key yet, and anything you set on it is saved with it:
+
+```php
+public function persistBeforeSave(Model $record, mixed $state): void
+{
+    $record->setAttribute('reviewer_id', $state);
+}
+```
 
 Inside a relationship repeater, `$record` is the row's model.
 
@@ -285,8 +295,7 @@ On the browser side, the public API is what `@xelqun/forms` and `@xelqun/forms/t
 ## Current limits
 
 - **`AcceptsUploads` holds one file.** Tokens in an array are not stored. Multi-file state arrives in M17.
-- **`persist()` runs after the record is saved.** There is no stage before the save yet, so a field can't set a foreign key on its own record this way. That arrives in M13.
 - **A repeater with no relationship has no row model**, so `persist()` isn't called in its rows and the value stays in the row's data.
-- **Nested relationship repeaters don't save their rows yet.** That arrives in M16 with nested repeaters.
+- **A repeater inside a related row doesn't save its rows yet.** That arrives in M16 with nested repeaters.
 - **Debounce depends on the type.** A text-like field that another field depends on sends every change, because the browser only debounces built-in text types. Call `live(debounce: 400)` on your field to set it.
 - **Action modals don't exist yet.** They arrive in M20.

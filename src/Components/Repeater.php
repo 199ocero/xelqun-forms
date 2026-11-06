@@ -10,6 +10,7 @@ use LogicException;
 use stdClass;
 use Xelqun\Forms\Contracts\ContainsRows;
 use Xelqun\Forms\Contracts\PersistsItself;
+use Xelqun\Forms\Eloquent\ModelPersister;
 use Xelqun\Forms\Form;
 use Xelqun\Forms\Support\StatePath;
 
@@ -48,6 +49,18 @@ class Repeater extends Field implements ContainsRows, PersistsItself
     /** @var array<string, int>|null */
     protected ?array $columns = null;
 
+    protected ?Closure $mutateBeforeFill = null;
+
+    protected ?Closure $mutateBeforeCreate = null;
+
+    protected ?Closure $mutateBeforeSave = null;
+
+    protected ?Closure $afterCreate = null;
+
+    protected ?Closure $afterUpdate = null;
+
+    protected ?Closure $afterDelete = null;
+
     public function getType(): string
     {
         return 'repeater';
@@ -60,6 +73,70 @@ class Repeater extends Field implements ContainsRows, PersistsItself
     {
         $this->relationship = $name ?? $this->name;
         $this->orderColumn = $orderColumn;
+
+        return $this;
+    }
+
+    /**
+     * Adjust a related row's attributes before they fill the form. Gets $data
+     * and returns it. The record itself is not saved.
+     */
+    public function mutateRelationshipDataBeforeFillUsing(Closure $callback): static
+    {
+        $this->mutateBeforeFill = $callback;
+
+        return $this;
+    }
+
+    /**
+     * Adjust a new related row's attributes. Gets $data and returns it, or null
+     * to skip creating the row.
+     */
+    public function mutateRelationshipDataBeforeCreateUsing(Closure $callback): static
+    {
+        $this->mutateBeforeCreate = $callback;
+
+        return $this;
+    }
+
+    /**
+     * Adjust an existing related row's attributes. Gets $data and returns it, or
+     * null to leave the row as it is.
+     */
+    public function mutateRelationshipDataBeforeSaveUsing(Closure $callback): static
+    {
+        $this->mutateBeforeSave = $callback;
+
+        return $this;
+    }
+
+    /**
+     * Run after a related row is created. Gets $data and $record.
+     */
+    public function afterCreate(Closure $callback): static
+    {
+        $this->afterCreate = $callback;
+
+        return $this;
+    }
+
+    /**
+     * Run after a related row is updated. Gets $data and $record.
+     */
+    public function afterUpdate(Closure $callback): static
+    {
+        $this->afterUpdate = $callback;
+
+        return $this;
+    }
+
+    /**
+     * Run after a related row is deleted. Gets $record, which is gone from the
+     * database but keeps its attributes.
+     */
+    public function afterDelete(Closure $callback): static
+    {
+        $this->afterDelete = $callback;
 
         return $this;
     }
@@ -292,7 +369,7 @@ class Repeater extends Field implements ContainsRows, PersistsItself
         foreach ($this->getSourceRows($source) as $rowKey => $rowSource) {
             $form->setStateValue($this->getStatePath().'.'.$rowKey, []);
 
-            Form::eachField($this->getRowComponents($rowKey), fn (Field $field) => $field->fillState($rowSource));
+            Form::fillFields($this->getRowComponents($rowKey), $rowSource);
         }
     }
 
@@ -310,7 +387,7 @@ class Repeater extends Field implements ContainsRows, PersistsItself
             }
 
             return $related
-                ->mapWithKeys(fn (Model $model): array => [self::RECORD_KEY_PREFIX.$model->getKey() => $model])
+                ->mapWithKeys(fn (Model $model): array => [self::RECORD_KEY_PREFIX.$model->getKey() => $this->mutateRowBeforeFill($model)])
                 ->all();
         }
 
@@ -337,6 +414,13 @@ class Repeater extends Field implements ContainsRows, PersistsItself
         }
 
         return $rows;
+    }
+
+    private function mutateRowBeforeFill(Model $model): Model
+    {
+        return $this->mutateBeforeFill === null
+            ? $model
+            : $model->forceFill($this->evaluate($this->mutateBeforeFill, ['data' => $model->attributesToArray(), 'record' => $model]));
     }
 
     /**
@@ -416,15 +500,26 @@ class Repeater extends Field implements ContainsRows, PersistsItself
 
     public function shouldPersistItself(): bool
     {
-        return $this->relationship !== null;
+        return $this->relationship !== null || $this->isNested();
+    }
+
+    private function isNested(): bool
+    {
+        return $this->getRowPlaceholder() !== StatePath::ROW_PLACEHOLDER;
     }
 
     /**
      * Create, update and delete related rows. Rows keyed "record-{id}" update
      * an existing related model, but only one that belongs to this record.
+     *
+     * shortcut: a repeater inside a row doesn't save its rows, until nested repeaters arrive in M16 with the tests that make it safe.
      */
     public function persist(Model $record, mixed $state): void
     {
+        if ($this->isNested()) {
+            return;
+        }
+
         $relationship = $this->getRelationshipInstance($record);
         $existing = $relationship->get()->keyBy(fn (Model $model): string => (string) $model->getKey());
         $kept = [];
@@ -432,65 +527,41 @@ class Repeater extends Field implements ContainsRows, PersistsItself
 
         foreach ((array) $state as $rowKey => $row) {
             $row = (array) $row;
-            $attributes = array_filter($row, $this->isColumn(...), ARRAY_FILTER_USE_KEY);
-
-            if ($this->orderColumn !== null) {
-                $attributes[$this->orderColumn] = $order++;
-            }
-
+            $position = $order++;
             $recordKey = str_starts_with((string) $rowKey, self::RECORD_KEY_PREFIX)
                 ? substr((string) $rowKey, strlen(self::RECORD_KEY_PREFIX))
                 : null;
+            $isExisting = $recordKey !== null && $existing->has($recordKey);
 
-            if ($recordKey !== null && $existing->has($recordKey)) {
-                $model = $existing->get($recordKey);
+            if ($isExisting) {
                 $kept[] = $recordKey;
-            } else {
-                $model = $relationship->make();
             }
 
-            $model->forceFill($attributes)->save();
+            $model = $isExisting ? $existing->get($recordKey) : $relationship->make();
+            $mutate = $isExisting ? $this->mutateBeforeSave : $this->mutateBeforeCreate;
 
-            $this->persistRowFields($model, (string) $rowKey, $row);
+            $isSaved = app(ModelPersister::class)->persistScope(
+                $model,
+                $row,
+                $this->getRowComponents((string) $rowKey),
+                function (array $attributes) use ($mutate, $position): ?array {
+                    if ($this->orderColumn !== null) {
+                        $attributes[$this->orderColumn] = $position;
+                    }
+
+                    return $mutate === null ? $attributes : $this->evaluate($mutate, ['data' => $attributes]);
+                },
+            );
+
+            if ($isSaved) {
+                $this->evaluate($isExisting ? $this->afterUpdate : $this->afterCreate, ['data' => $row, 'record' => $model]);
+            }
         }
 
-        $existing->except($kept)->each(fn (Model $model) => $model->delete());
-    }
-
-    /**
-     * Fields of a row that write their own value do it now that the row is saved.
-     * Nested repeaters don't save their rows yet: that arrives with nested
-     * repeaters as a feature, along with the tests that make it safe.
-     *
-     * @param  array<string, mixed>  $row
-     */
-    private function persistRowFields(Model $model, string $rowKey, array $row): void
-    {
-        Form::eachField($this->getRowComponents($rowKey), function (Field $field) use ($model, $row): void {
-            if ($field instanceof ContainsRows || ! $field instanceof PersistsItself) {
-                return;
-            }
-
-            if ($field->shouldPersistItself() && array_key_exists($field->getName(), $row)) {
-                $field->persist($model, $row[$field->getName()]);
-            }
+        $existing->except($kept)->each(function (Model $model): void {
+            $model->delete();
+            $this->evaluate($this->afterDelete, ['record' => $model]);
         });
-    }
-
-    private function isColumn(string $name): bool
-    {
-        $isColumn = false;
-
-        Form::eachField($this->childComponents, function (Field $field) use ($name, &$isColumn): void {
-            $writesItself = $field instanceof ContainsRows
-                || ($field instanceof PersistsItself && $field->shouldPersistItself());
-
-            if ($field->getName() === $name && ! $writesItself) {
-                $isColumn = true;
-            }
-        });
-
-        return $isColumn;
     }
 
     /**
@@ -501,10 +572,11 @@ class Repeater extends Field implements ContainsRows, PersistsItself
     public function getNewRowState(): array
     {
         $state = [];
+        $rowContainer = $this->getChildContainer().'.';
 
-        Form::eachField($this->childComponents, function (Field $field) use (&$state): void {
+        Form::eachField($this->childComponents, function (Field $field) use (&$state, $rowContainer): void {
             if (! $field->isHiddenOnServer()) {
-                $state[$field->getName()] = $field instanceof ContainsRows ? new stdClass : $field->getDefaultState();
+                data_set($state, Str::after($field->getStatePath(), $rowContainer), $field instanceof ContainsRows ? new stdClass : $field->getDefaultState());
             }
         });
 

@@ -500,6 +500,11 @@ abstract class Field extends Component implements NeedsServer
         return false;
     }
 
+    public function getChildModel(Model $parent): ?Model
+    {
+        return $this instanceof ContainsRows ? $this->getRowModel($parent) : null;
+    }
+
     /**
      * Whether a read-only field's value goes out with the saved data. A new
      * record or row needs its default. A stored value stays where it is, because

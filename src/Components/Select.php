@@ -7,16 +7,19 @@ use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Validation\Rule;
 use LogicException;
 use Xelqun\Forms\Components\Concerns\HasOptions;
 use Xelqun\Forms\Contracts\HasSearchResults;
+use Xelqun\Forms\Contracts\PersistsItself;
+use Xelqun\Forms\Exceptions\FormDefinitionException;
 
 /**
  * @api
  */
-class Select extends Field implements HasSearchResults
+class Select extends Field implements HasSearchResults, PersistsItself
 {
     use HasOptions {
         getOptions as getStaticOptions;
@@ -37,6 +40,11 @@ class Select extends Field implements HasSearchResults
     protected ?string $titleAttribute = null;
 
     protected ?Closure $modifyRelationshipQueryUsing = null;
+
+    protected ?Closure $optionLabelFromRecordUsing = null;
+
+    /** @var array<string, mixed>|Closure */
+    protected array|Closure $pivotData = [];
 
     protected int $searchLimit = 50;
 
@@ -88,15 +96,107 @@ class Select extends Field implements HasSearchResults
     }
 
     /**
-     * Load options from a BelongsTo relationship of the form's model.
+     * Load options from a relationship (defaults to the field name). A BelongsTo
+     * stores the key in this field's column. A BelongsToMany needs multiple() and
+     * attaches and detaches records.
+     *
+     * The query decides what can be chosen, and a BelongsToMany never detaches
+     * a record outside it.
      */
-    public function relationship(string $name, string $titleAttribute, ?Closure $modifyQueryUsing = null): static
+    public function relationship(?string $name = null, ?string $titleAttribute = null, ?Closure $modifyQueryUsing = null): static
     {
-        $this->relationship = $name;
-        $this->titleAttribute = $titleAttribute;
+        $this->relationship = $name ?? $this->name;
+        $this->titleAttribute = $titleAttribute ?? throw new FormDefinitionException("The select [{$this->name}] needs a titleAttribute.");
         $this->modifyRelationshipQueryUsing = $modifyQueryUsing;
 
         return $this;
+    }
+
+    /**
+     * Build each option's label from its record, for labels that need more than
+     * one column. Searching still looks at the title attribute.
+     */
+    public function getOptionLabelFromRecordUsing(Closure $callback): static
+    {
+        $this->optionLabelFromRecordUsing = $callback;
+
+        return $this;
+    }
+
+    /**
+     * Extra pivot columns for records this field attaches. Records that are
+     * already attached keep the values they have.
+     *
+     * @param  array<string, mixed>|Closure  $data
+     */
+    public function pivotData(array|Closure $data): static
+    {
+        $this->pivotData = $data;
+
+        return $this;
+    }
+
+    public function shouldPersistItself(): bool
+    {
+        return $this->relationship !== null && $this->getRelationshipInstance() instanceof BelongsToMany;
+    }
+
+    /**
+     * Attach and detach by difference rather than with sync(), which would also
+     * detach records outside this field's query.
+     */
+    public function persist(Model $record, mixed $state): void
+    {
+        /** @var BelongsToMany<Model, Model> $relationship */
+        $relationship = $record->{$this->relationship}();
+        $selected = array_unique((array) $state);
+
+        $relationship->detach(array_values(array_diff($this->getAttachedKeys($record), $selected)));
+        $relationship->attach(
+            array_values(array_diff($selected, $this->getAllAttachedKeys($record))),
+            $this->evaluate($this->pivotData, ['record' => $record]),
+        );
+    }
+
+    /**
+     * @param  Model|array<string, mixed>|null  $source
+     */
+    public function fillState(Model|array|null $source): void
+    {
+        if ($source instanceof Model && $source->exists && $this->shouldPersistItself()) {
+            $this->getForm()->setStateValue($this->getStatePath(), $this->getAttachedKeys($source));
+
+            return;
+        }
+
+        parent::fillState($source);
+    }
+
+    /**
+     * @return array<int, int|string>
+     */
+    private function getAllAttachedKeys(Model $record): array
+    {
+        /** @var BelongsToMany<Model, Model> $relationship */
+        $relationship = $record->{$this->relationship}();
+
+        return $relationship->pluck($relationship->getRelated()->qualifyColumn($this->getRelatedKeyName()))->all();
+    }
+
+    /**
+     * The attached keys this field can see, as the database gives them, because
+     * the browser matches them against option values by type.
+     *
+     * @return array<int, int|string>
+     */
+    private function getAttachedKeys(Model $record): array
+    {
+        $keyName = $this->getRelatedKeyName();
+
+        return $this->getRelationshipQuery()
+            ->whereIn($keyName, $this->getAllAttachedKeys($record))
+            ->pluck($keyName)
+            ->all();
     }
 
     /**
@@ -142,10 +242,7 @@ class Select extends Field implements HasSearchResults
     public function getOptions(): array
     {
         if ($this->relationship !== null && $this->options === null) {
-            return $this->getRelationshipQuery()
-                ->pluck($this->titleAttribute, $this->getRelatedKeyName())
-                ->map(fn (mixed $label): string => (string) $label)
-                ->all();
+            return $this->getRelationshipLabels($this->getRelationshipQuery());
         }
 
         return $this->getStaticOptions();
@@ -167,12 +264,7 @@ class Select extends Field implements HasSearchResults
             $query = $this->getRelationshipQuery();
             $query->where($this->titleAttribute, 'like', '%'.str_replace(['%', '_'], ['\%', '\_'], $search).'%');
 
-            return $this->toOptionList(
-                $query->limit($this->searchLimit)
-                    ->pluck($this->titleAttribute, $this->getRelatedKeyName())
-                    ->map(fn (mixed $label): string => (string) $label)
-                    ->all(),
-            );
+            return $this->toOptionList($this->getRelationshipLabels($query->limit($this->searchLimit)));
         }
 
         $needle = mb_strtolower($search);
@@ -214,14 +306,29 @@ class Select extends Field implements HasSearchResults
         }
 
         if ($this->relationship !== null) {
-            return $this->getRelationshipQuery()
-                ->whereIn($this->getRelatedKeyName(), $values)
-                ->pluck($this->titleAttribute, $this->getRelatedKeyName())
-                ->map(fn (mixed $label): string => (string) $label)
-                ->all();
+            return $this->getRelationshipLabels($this->getRelationshipQuery()->whereIn($this->getRelatedKeyName(), $values));
         }
 
         return array_intersect_key($this->getOptions(), array_flip(array_map('strval', $values)));
+    }
+
+    /**
+     * @param  Builder<Model>  $query
+     * @return array<array-key, string>
+     */
+    private function getRelationshipLabels(Builder $query): array
+    {
+        $keyName = $this->getRelatedKeyName();
+
+        if ($this->optionLabelFromRecordUsing === null) {
+            return $query->pluck($this->titleAttribute, $keyName)->map(fn (mixed $label): string => (string) $label)->all();
+        }
+
+        return $query->get()
+            ->mapWithKeys(fn (Model $record): array => [
+                $record->getAttribute($keyName) => (string) $this->evaluate($this->optionLabelFromRecordUsing, ['record' => $record]),
+            ])
+            ->all();
     }
 
     /**
@@ -240,15 +347,19 @@ class Select extends Field implements HasSearchResults
     }
 
     /**
-     * @return BelongsTo<Model, Model>
+     * @return BelongsTo<Model, Model>|BelongsToMany<Model, Model>
      */
-    protected function getRelationshipInstance(): BelongsTo
+    protected function getRelationshipInstance(): BelongsTo|BelongsToMany
     {
         $model = $this->getForm()->getModelInstanceFor($this);
         $relationship = $model->{$this->relationship}();
 
-        if (! $relationship instanceof BelongsTo || $relationship instanceof MorphTo) {
-            throw new LogicException("Select relationship [{$this->relationship}] must be a BelongsTo relationship.");
+        if (! ($relationship instanceof BelongsTo || $relationship instanceof BelongsToMany) || $relationship instanceof MorphTo) {
+            throw new LogicException("Select relationship [{$this->relationship}] must be a BelongsTo or BelongsToMany relationship.");
+        }
+
+        if ($relationship instanceof BelongsToMany && ! $this->isMultiple) {
+            throw new LogicException("Select [{$this->name}] needs multiple() to use the BelongsToMany relationship [{$this->relationship}].");
         }
 
         return $relationship;
@@ -256,7 +367,9 @@ class Select extends Field implements HasSearchResults
 
     protected function getRelatedKeyName(): string
     {
-        return $this->getRelationshipInstance()->getOwnerKeyName();
+        $relationship = $this->getRelationshipInstance();
+
+        return $relationship instanceof BelongsToMany ? $relationship->getRelatedKeyName() : $relationship->getOwnerKeyName();
     }
 
     protected function getTypeRules(): array

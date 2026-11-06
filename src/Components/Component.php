@@ -3,6 +3,7 @@
 namespace Xelqun\Forms\Components;
 
 use Closure;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Traits\Macroable;
 use LogicException;
 use Xelqun\Forms\Conditions\Condition;
@@ -274,6 +275,26 @@ abstract class Component
     public function getParent(): ?Component
     {
         return $this->parent;
+    }
+
+    /**
+     * The model this component's children read relationships from, or null
+     * when they use the same model as this component. Gets the model above.
+     */
+    public function getChildModel(Model $parent): ?Model
+    {
+        return null;
+    }
+
+    /**
+     * What this component's children fill their state from.
+     *
+     * @param  Model|array<string, mixed>|null  $source
+     * @return Model|array<string, mixed>|null
+     */
+    public function getChildSource(Model|array|null $source): Model|array|null
+    {
+        return $source;
     }
 
     /**

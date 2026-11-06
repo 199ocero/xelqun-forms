@@ -1,6 +1,10 @@
 <?php
 
 return [
+    'morph' => [
+        'type' => 'Type',
+        'record' => 'Record',
+    ],
     'repeater' => [
         'item' => 'Item',
         'add' => 'Add :item',

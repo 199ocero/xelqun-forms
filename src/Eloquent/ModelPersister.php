@@ -2,10 +2,12 @@
 
 namespace Xelqun\Forms\Eloquent;
 
+use Closure;
 use Illuminate\Database\Eloquent\Model;
 use Xelqun\Forms\Components\Component;
 use Xelqun\Forms\Components\Field;
 use Xelqun\Forms\Contracts\ContainsRows;
+use Xelqun\Forms\Contracts\PersistsBeforeSave;
 use Xelqun\Forms\Contracts\PersistsItself;
 use Xelqun\Forms\Form;
 use Xelqun\Forms\Uploads\UploadBatch;
@@ -33,21 +35,55 @@ final class ModelPersister
             $connection->afterRollBack(fn () => $form->setRecord($recordBeforeSave));
 
             $record = $form->getRecord() ?? $form->getModelInstance();
-            $selfPersisting = [];
-            $attributes = [];
 
-            foreach ($form->getComponents() as $component) {
-                $this->collectTopLevel($component, $data, $attributes, $selfPersisting);
-            }
+            $form->beforeSave($data);
+            $this->persistScope($record, $data, $form->getComponents(), $form->mutateBeforeSave(...));
+            $form->afterSave($record, $data);
 
-            $record->forceFill($form->mutateBeforeSave($attributes))->save();
-
-            foreach ($selfPersisting as $field) {
-                $field->persist($record, $data[$field->getName()]);
-            }
+            // The save stands, so a failure here must not look like a failed save and invite a second one.
+            $connection->afterCommit(fn () => rescue(fn () => $form->afterCommit($record, $data)));
 
             return $record;
         });
+    }
+
+    /**
+     * Save one record and everything below it, depth-first. Nothing here treats
+     * a missing key as "clear this": a hidden component has no key in $data.
+     *
+     * @param  array<string, mixed>  $data  The validated data of this record.
+     * @param  array<int, Component>  $components
+     * @param  (Closure(array<string, mixed>): (array<string, mixed>|null))|null  $mutate  Adjusts the attributes. Returning null leaves the record unsaved.
+     * @return bool Whether the record was saved.
+     */
+    public function persistScope(Model $record, array $data, array $components, ?Closure $mutate = null): bool
+    {
+        $selfPersisting = [];
+        $attributes = [];
+
+        foreach ($components as $component) {
+            $this->collect($component, $data, $attributes, $selfPersisting);
+        }
+
+        $attributes = $mutate === null ? $attributes : $mutate($attributes);
+
+        if ($attributes === null) {
+            return false;
+        }
+
+        foreach ($selfPersisting as $component) {
+            if ($component instanceof PersistsBeforeSave) {
+                $component->persistBeforeSave($record, $data[$component->getName()]);
+            }
+        }
+
+        $record->forceFill($attributes)->save();
+
+        foreach ($selfPersisting as $component) {
+            $component->persist($record, $data[$component->getName()]);
+        }
+
+        return true;
     }
 
     /**
@@ -55,7 +91,7 @@ final class ModelPersister
      * @param  array<string, mixed>  $attributes
      * @param  array<int, PersistsItself>  $selfPersisting
      */
-    private function collectTopLevel(Component $component, array $data, array &$attributes, array &$selfPersisting): void
+    private function collect(Component $component, array $data, array &$attributes, array &$selfPersisting): void
     {
         if ($component instanceof PersistsItself && $component->shouldPersistItself()) {
             if (array_key_exists($component->getName(), $data)) {
@@ -75,7 +111,7 @@ final class ModelPersister
         }
 
         foreach ($component->getChildComponents() as $child) {
-            $this->collectTopLevel($child, $data, $attributes, $selfPersisting);
+            $this->collect($child, $data, $attributes, $selfPersisting);
         }
     }
 }

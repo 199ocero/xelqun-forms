@@ -15,6 +15,7 @@ use Xelqun\Forms\Conditions\When;
 use Xelqun\Forms\Form;
 use Xelqun\Forms\Layouts\Fieldset;
 use Xelqun\Forms\Layouts\Grid;
+use Xelqun\Forms\Layouts\Group;
 use Xelqun\Forms\Layouts\Section;
 use Xelqun\Forms\Layouts\Tab;
 use Xelqun\Forms\Layouts\Tabs;
@@ -46,6 +47,7 @@ it('serializes each component to a stable node', function (object $component) {
 })->with([
     'text input' => fn () => TextInput::make('budget')->numeric()->prefix('$')->minValue(0)->required()->hint('Yearly'),
     'email input' => fn () => TextInput::make('email')->email()->placeholder('you@example.com'),
+    'group' => fn () => Group::make([TextInput::make('name')])->columns(2),
     'display options' => fn () => TextInput::make('code')->readOnly()->autofocus()->hiddenLabel()->inlineLabel()->extraAttributes(['data-kind' => 'code']),
     'textarea' => fn () => Textarea::make('bio')->rows(5)->maxLength(500),
     'select' => fn () => Select::make('plan')->options(['hobby' => 'Hobby', 'pro' => 'Pro'])->default('pro'),

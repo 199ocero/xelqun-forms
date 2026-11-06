@@ -39,6 +39,27 @@ abstract class TestCase extends Orchestra
             $table->foreignId('country_id')->nullable();
             $table->foreignId('region_id')->nullable();
             $table->decimal('total', 12, 2)->default(0);
+            $table->nullableMorphs('owner');
+            $table->timestamps();
+        });
+
+        Schema::create('tags', function (Blueprint $table): void {
+            $table->id();
+            $table->string('name');
+            $table->string('group')->default('public');
+        });
+
+        Schema::create('order_tag', function (Blueprint $table): void {
+            $table->foreignId('order_id');
+            $table->foreignId('tag_id');
+            $table->string('added_by')->nullable();
+        });
+
+        Schema::create('order_notes', function (Blueprint $table): void {
+            $table->id();
+            $table->foreignId('order_id');
+            $table->string('body');
+            $table->string('stamp')->nullable();
             $table->timestamps();
         });
 
