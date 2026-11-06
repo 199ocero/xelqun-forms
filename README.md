@@ -97,6 +97,10 @@ Other packages can add fields, with the same search, uploads, rows and saving as
 - **Give each action its own `authorize()`.** An action does nothing without one, and the form's `authorize()` doesn't count.
 - **Schedule `php artisan xelqun-forms:prune-uploads`.** Temporary uploads stay on disk until it runs.
 
+## Inspiration
+
+Xelqun Forms is heavily inspired by [Filament](https://filamentphp.com). I'm a big fan of Filament and have built several packages for it, and this project brings its PHP-first way of building forms to Inertia and Vue.
+
 ## License
 
 MIT
