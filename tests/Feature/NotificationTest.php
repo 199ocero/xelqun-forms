@@ -7,8 +7,10 @@ use Inertia\Inertia;
 use Xelqun\Actions\Action;
 use Xelqun\Actions\ActionSet;
 use Xelqun\Forms\Components\TextInput;
+use Xelqun\Forms\Exceptions\FormDefinitionException;
 use Xelqun\Forms\Form;
 use Xelqun\Notifications\Notification;
+use Xelqun\Notifications\NotificationAction;
 use Xelqun\Notifications\NotificationQueue;
 
 class NotifyingTestActions extends ActionSet
@@ -95,6 +97,7 @@ it('sends everything set on a notification', function () {
         'icon' => null,
         'duration' => 9000,
         'persistent' => false,
+        'actions' => [],
         'closeLabel' => 'Close',
     ]]);
 });
@@ -133,4 +136,96 @@ it('keeps every notification sent before a redirect', function () {
     $sent = visitAfterNotifying(2)->json('flash.'.NotificationQueue::FLASH_KEY);
 
     expect(array_column($sent, 'title'))->toBe(['Sent 1', 'Sent 2']);
+});
+
+class UndoTestActions extends ActionSet
+{
+    public static int $restored = 0;
+
+    public static bool $isAllowed = true;
+
+    public function actions(): array
+    {
+        return [
+            Action::make('restore')
+                ->authorize(fn (): bool => self::$isAllowed)
+                ->successNotificationTitle('Restored')
+                ->action(function (): void {
+                    self::$restored++;
+                }),
+            Action::make('confirmed')->authorize(true)->requiresConfirmation(),
+            Action::make('modal')->authorize(true)->schema([TextInput::make('reason')]),
+        ];
+    }
+}
+
+describe('notification actions', function () {
+    beforeEach(function () {
+        UndoTestActions::$restored = 0;
+        UndoTestActions::$isAllowed = true;
+    });
+
+    it('runs an action through the usual endpoint, and reports back', function () {
+        $button = NotificationAction::make('undo')->run(UndoTestActions::make(), 'restore')->toArray();
+
+        test()->postJson($button['run']['endpoint'], [
+            'token' => $button['run']['token'],
+            'action' => $button['run']['action'],
+            'phase' => 'run',
+            'state' => ['data' => []],
+            'deps' => (object) [],
+        ])->assertOk()->assertJsonPath('notifications.0.title', 'Restored');
+
+        expect(UndoTestActions::$restored)->toBe(1)
+            ->and($button['close'])->toBeTrue();
+    });
+
+    it('still checks the action when the button is pressed, with a 403', function () {
+        $button = NotificationAction::make('undo')->run(UndoTestActions::make(), 'restore')->toArray();
+
+        UndoTestActions::$isAllowed = false;
+
+        test()->postJson($button['run']['endpoint'], [
+            'token' => $button['run']['token'],
+            'action' => $button['run']['action'],
+            'phase' => 'run',
+            'state' => ['data' => []],
+            'deps' => (object) [],
+        ])->assertForbidden();
+
+        expect(UndoTestActions::$restored)->toBe(0);
+    });
+
+    it('leaves out a button the viewer could not use', function () {
+        UndoTestActions::$isAllowed = false;
+
+        $notification = Notification::make()->actions([
+            NotificationAction::make('undo')->run(UndoTestActions::make(), 'restore'),
+        ]);
+
+        expect($notification->toArray()['actions'])->toBe([]);
+    });
+
+    it('refuses an action that needs a modal or a confirmation', function (string $action) {
+        NotificationAction::make('undo')->run(UndoTestActions::make(), $action)->toArray();
+    })->with(['confirmed', 'modal'])->throws(FormDefinitionException::class, 'a modal or a confirmation');
+
+    it('refuses an action the set does not have', function () {
+        NotificationAction::make('undo')->run(UndoTestActions::make(), 'missing')->toArray();
+    })->throws(FormDefinitionException::class, 'no action named [missing]');
+
+    it('leaves out a link that is not safe', function () {
+        $notification = Notification::make()->actions([
+            NotificationAction::make('evil')->url('javascript:alert(1)'),
+            NotificationAction::make('view')->url('/orders/1'),
+        ]);
+
+        expect(array_column($notification->toArray()['actions'], 'label'))->toBe(['View']);
+    });
+
+    it('closes the notification only when told to, or when there is nothing else to do', function () {
+        expect(NotificationAction::make('view')->url('/orders')->toArray()['close'])->toBeFalse()
+            ->and(NotificationAction::make('view')->url('/orders')->close()->toArray()['close'])->toBeTrue()
+            ->and(NotificationAction::make('dismiss')->toArray()['close'])->toBeTrue();
+    });
 });

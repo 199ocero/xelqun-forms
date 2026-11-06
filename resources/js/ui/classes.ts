@@ -5,6 +5,13 @@
 export const controlClass =
     'w-full min-w-0 rounded-xq-md border border-xq-input bg-xq-background text-sm text-xq-foreground shadow-xs transition-[color,box-shadow,border-color] outline-none placeholder:text-xq-muted-foreground focus-visible:border-xq-ring focus-visible:ring-[3px] focus-visible:ring-xq-ring/25 disabled:cursor-not-allowed disabled:opacity-60 aria-invalid:border-xq-destructive aria-invalid:ring-xq-destructive/20';
 
+/** How an action's color looks on a button. */
+export const actionVariants: Record<string, 'default' | 'destructive' | 'outline'> = {
+    primary: 'default',
+    danger: 'destructive',
+    gray: 'outline',
+};
+
 export const spinnerClass = 'size-4 shrink-0 motion-safe:animate-spin text-xq-muted-foreground';
 
 export const popoverClass =

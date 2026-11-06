@@ -15,6 +15,7 @@ Update both halves together: `composer update xelqun/forms` and `npm install @xe
 ### Added
 
 - **Notifications.** `Notification::make()->title('Saved')->success()->send()` works from an action, a hook or a controller, and survives a redirect. `createXelqunForms` puts the toaster on the page, so there's nothing to mount. A rolled-back action shows nothing. Title and body always render as text. Use `notify()` from Vue, and the `notificationsLabel` option to translate what screen readers call the region.
+- **`NotificationAction`** puts buttons on a notification. One can open a URL, close the notification, or run a named action of an `ActionSet`, which checks `authorize()` again on the click. An unsafe URL or an action the viewer can't run leaves the button out, and an action with a modal or a confirmation is refused.
 - **`Action::successNotificationTitle()`** sends a success notification once the action has returned.
 - **`ActionGroup`** puts actions behind one button that opens a menu. It works in an `Actions` layout and in an `ActionSet`. With no `label()`, the button is just an icon. Each action keeps its own `authorize()` and modal, and the group hides itself when the viewer can use none of them.
 - **`Form::disabled()`** shows a form nobody can change, as on a View page. It is kept in the token, so requests after the page loads are refused too. Fields can't be changed, `save()` throws, and `XqForm` leaves out its `actions` slot. Actions in an `Actions` layout still work.

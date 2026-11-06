@@ -1,11 +1,18 @@
 <script setup lang="ts">
+import { router } from '@inertiajs/vue3';
 import { X } from 'lucide-vue-next';
 import { ToastClose, ToastDescription, ToastRoot, ToastTitle, useToastManager } from 'reka-ui';
 import type { ToastObject } from 'reka-ui';
-import { cn } from '../lib/utils';
+import { reactive } from 'vue';
+import { runNotificationAction } from '../core/notifications';
+import { cn, isOwnUrl } from '../lib/utils';
+import type { XqNotificationAction } from '../schema/types';
+import { actionVariants } from './classes';
+import XqButton from './XqButton.vue';
 import XqIcon from './XqIcon.vue';
 
-const { toasts } = useToastManager();
+const { toasts, close } = useToastManager();
+const running = reactive(new Set<string>());
 
 const statusIcons: Record<string, string> = {
     success: 'circle-check',
@@ -24,6 +31,36 @@ const iconClasses: Record<string, string> = {
     warning: 'text-xq-warning',
     info: 'text-xq-info',
 };
+
+async function press(toast: ToastObject, action: XqNotificationAction): Promise<void> {
+    // A second click on "Undo" would run it twice.
+    if (running.has(toast.id)) {
+        return;
+    }
+
+    running.add(toast.id);
+
+    const hasWorked = !action.run || (await runNotificationAction(action));
+
+    running.delete(toast.id);
+
+    if (hasWorked && action.close) {
+        close(toast.id);
+    }
+}
+
+function follow(event: MouseEvent, toast: ToastObject, action: XqNotificationAction): void {
+    const opensElsewhere = event.ctrlKey || event.metaKey || event.shiftKey || action.openInNewTab;
+
+    if (action.close) {
+        close(toast.id);
+    }
+
+    if (!opensElsewhere && isOwnUrl(action.url!)) {
+        event.preventDefault();
+        router.visit(action.url!);
+    }
+}
 </script>
 
 <template>
@@ -31,7 +68,7 @@ const iconClasses: Record<string, string> = {
         v-for="toast in toasts"
         :key="toast.id"
         :toast="toast"
-        class="gap-3 p-3 shadow-lg data-[swipe=cancel]:translate-x-0 flex items-start rounded-xq-md border border-xq-border bg-xq-popover text-xq-popover-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-xq-ring/25 data-[limited]:hidden data-[swipe=end]:translate-x-(--reka-toast-swipe-end-x) data-[swipe=move]:translate-x-(--reka-toast-swipe-move-x) motion-safe:data-[state=closed]:animate-xq-fade-out motion-safe:data-[state=open]:animate-xq-fade-in"
+        class="gap-3 p-3 shadow-lg inset-x-0 top-0 ease-out data-[swipe=cancel]:translate-x-0 absolute flex [transform:translateY(calc(var(--reka-toast-offset-y)+var(--reka-toast-index)*0.5rem))] items-start rounded-xq-md border border-xq-border bg-xq-popover text-xq-popover-foreground transition-[transform,opacity] duration-200 outline-none focus-visible:ring-[3px] focus-visible:ring-xq-ring/25 data-[limited]:invisible data-[swipe=end]:translate-x-(--reka-toast-swipe-end-x) data-[swipe=move]:translate-x-(--reka-toast-swipe-move-x) data-[swipe=move]:transition-none motion-safe:data-[state=closed]:animate-xq-toast-out motion-safe:data-[state=open]:animate-xq-toast-in motion-reduce:transition-none"
     >
         <XqIcon
             v-if="iconFor(toast)"
@@ -45,6 +82,37 @@ const iconClasses: Record<string, string> = {
             <ToastDescription v-if="toast.description" class="text-sm text-xq-muted-foreground">
                 {{ toast.description }}
             </ToastDescription>
+            <div v-if="toast.data?.actions?.length" class="mt-2 gap-2 flex flex-wrap">
+                <template v-for="action in toast.data.actions" :key="action.label">
+                    <XqButton
+                        v-if="action.url"
+                        as-child
+                        size="sm"
+                        :variant="actionVariants[action.color ?? ''] ?? 'outline'"
+                    >
+                        <a
+                            :href="action.url"
+                            :target="action.openInNewTab ? '_blank' : undefined"
+                            :rel="action.openInNewTab ? 'noopener noreferrer' : undefined"
+                            @click="follow($event, toast, action)"
+                        >
+                            <XqIcon v-if="action.icon" :name="action.icon" />
+                            {{ action.label }}
+                        </a>
+                    </XqButton>
+                    <XqButton
+                        v-else
+                        type="button"
+                        size="sm"
+                        :variant="actionVariants[action.color ?? ''] ?? 'outline'"
+                        :aria-busy="running.has(toast.id) || undefined"
+                        @click="press(toast, action)"
+                    >
+                        <XqIcon v-if="action.icon" :name="action.icon" />
+                        {{ action.label }}
+                    </XqButton>
+                </template>
+            </div>
         </div>
         <ToastClose
             :aria-label="toast.data?.closeLabel ?? 'Close'"

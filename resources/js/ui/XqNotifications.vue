@@ -20,7 +20,7 @@ withDefaults(defineProps<{ label?: string }>(), { label: 'Notifications ({hotkey
         <ToastViewport
             :label="label"
             data-slot="xq-notifications"
-            class="right-4 top-4 gap-2 max-w-sm pointer-events-auto fixed z-[60] flex w-[calc(100%-2rem)] flex-col-reverse outline-none"
+            class="top-4 right-4 max-w-sm pointer-events-auto fixed z-[60] w-[calc(100%-2rem)] outline-none"
         />
     </ToastProvider>
 </template>

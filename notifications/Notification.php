@@ -24,6 +24,9 @@ class Notification
 
     protected bool $isPersistent = false;
 
+    /** @var array<int, NotificationAction> */
+    protected array $actions = [];
+
     final public function __construct() {}
 
     public static function make(): static
@@ -103,6 +106,18 @@ class Notification
         return $this;
     }
 
+    /**
+     * Buttons under the text. Add persistent() when people need time to use them.
+     *
+     * @param  array<int, NotificationAction>  $actions
+     */
+    public function actions(array $actions): static
+    {
+        $this->actions = $actions;
+
+        return $this;
+    }
+
     public function send(): static
     {
         app(NotificationQueue::class)->push($this);
@@ -114,7 +129,7 @@ class Notification
      * The close label travels with it, because there's no form around the
      * toaster to bring translations.
      *
-     * @return array{title: ?string, body: ?string, status: ?string, icon: ?string, duration: ?int, persistent: bool, closeLabel: string}
+     * @return array{title: ?string, body: ?string, status: ?string, icon: ?string, duration: ?int, persistent: bool, actions: array<int, array<string, mixed>>, closeLabel: string}
      */
     public function toArray(): array
     {
@@ -125,6 +140,10 @@ class Notification
             'icon' => $this->icon,
             'duration' => $this->duration,
             'persistent' => $this->isPersistent,
+            'actions' => array_values(array_filter(array_map(
+                fn (NotificationAction $action): ?array => $action->toArray(),
+                $this->actions,
+            ))),
             'closeLabel' => trans('xelqun-forms::client.Close'),
         ];
     }

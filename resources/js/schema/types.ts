@@ -182,7 +182,20 @@ export interface XqNotification {
     /** In milliseconds. */
     duration?: number | null;
     persistent?: boolean;
+    actions?: XqNotificationAction[];
     closeLabel?: string;
+}
+
+export interface XqNotificationAction {
+    label: string;
+    icon?: string | null;
+    color?: string | null;
+    /** Close the notification once the button has done its work. */
+    close: boolean;
+    url?: string;
+    openInNewTab?: boolean;
+    run?: { endpoint: string; token: string; action: string };
+    failureMessage?: string;
 }
 
 export interface ActionResult extends UpdatePatch {

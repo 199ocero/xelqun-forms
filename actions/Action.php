@@ -500,6 +500,11 @@ class Action extends Component implements NeedsServer
         return $this->evaluate($this->fillUsing);
     }
 
+    public function needsConfirmation(): bool
+    {
+        return (bool) $this->evaluate($this->requiresConfirmation);
+    }
+
     public function hasModalForm(): bool
     {
         return $this->modalComponents !== [];
@@ -549,7 +554,7 @@ class Action extends Component implements NeedsServer
             'label' => $label,
             'style' => $this->style,
             'disabled' => $this->isDisabled(),
-            'confirmation' => (bool) $this->evaluate($this->requiresConfirmation),
+            'confirmation' => $this->needsConfirmation(),
             'hasForm' => $this->hasModalForm(),
             'heading' => $this->evaluate($this->modalHeading) ?? $label,
             'description' => $this->evaluate($this->modalDescription),

@@ -1,19 +1,24 @@
 import { flushPromises } from '@vue/test-utils';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createApp, h } from 'vue';
 import type { App } from 'vue';
 import { createFormStore } from '../../resources/js/core/store';
 import { FLASH_KEY, notify } from '../../resources/js/core/notifications';
 import { createXelqunForms } from '../../resources/js/plugin';
+import type { XqNotificationAction } from '../../resources/js/schema/types';
 import { schema } from './fixtures';
 
-const { listeners, remove } = vi.hoisted(() => ({
+const { listeners, remove, reload, visit } = vi.hoisted(() => ({
     listeners: new Map<string, (event: unknown) => void>(),
     remove: vi.fn(),
+    reload: vi.fn(),
+    visit: vi.fn(),
 }));
 
 vi.mock('@inertiajs/vue3', () => ({
     router: {
+        reload,
+        visit,
         on: (name: string, listener: (event: unknown) => void) => {
             listeners.set(name, listener);
 
@@ -165,5 +170,113 @@ describe('notifications from the server', () => {
 
         expect(remove).toHaveBeenCalledOnce();
         expect(document.querySelector('[data-slot="xq-notifications"]')).toBeNull();
+    });
+});
+
+describe('notification actions', () => {
+    let app: App;
+    const run = { endpoint: '/_xelqun/forms/action', token: 'token', action: 'data#restore' };
+    const undo = { label: 'Undo', close: true, run, failureMessage: 'That action could not run.' };
+
+    async function showWith(actions: XqNotificationAction[]): Promise<HTMLElement> {
+        app = installForms();
+        await flushPromises();
+        notify({ title: 'Deleted', persistent: true, actions });
+        await flushPromises();
+
+        return toasts()[0];
+    }
+
+    function press(toast: HTMLElement, label: string): void {
+        [...toast.querySelectorAll<HTMLElement>('a, button')]
+            .find((element) => element.textContent?.includes(label))!
+            .click();
+    }
+
+    beforeEach(() => {
+        vi.stubGlobal('fetch', vi.fn());
+        reload.mockClear();
+        visit.mockClear();
+    });
+
+    afterEach(() => {
+        app.unmount();
+        vi.unstubAllGlobals();
+    });
+
+    it('runs the action, shows what it reports, reloads and closes', async () => {
+        vi.mocked(fetch).mockResolvedValueOnce(
+            new Response(JSON.stringify({ notifications: [{ title: 'Restored' }] })),
+        );
+
+        press(await showWith([undo]), 'Undo');
+        await flushPromises();
+        await flushPromises();
+
+        const body = JSON.parse(vi.mocked(fetch).mock.calls[0][1]!.body as string);
+
+        expect(body).toMatchObject({ token: 'token', action: 'data#restore', phase: 'run' });
+        expect(reload).toHaveBeenCalledOnce();
+        expect(toasts().map((toast) => toast.textContent)).toEqual([
+            expect.stringContaining('Restored'),
+        ]);
+    });
+
+    it('stays open and says why when the action fails', async () => {
+        vi.mocked(fetch).mockResolvedValueOnce(
+            new Response(JSON.stringify({ errors: { data: ['Too late.'] } }), { status: 422 }),
+        );
+
+        const toast = await showWith([undo]);
+
+        press(toast, 'Undo');
+        await flushPromises();
+        await flushPromises();
+
+        expect(reload).not.toHaveBeenCalled();
+        expect(toasts().some((item) => item.textContent?.includes('Deleted'))).toBe(true);
+        expect(document.querySelector('[data-status="danger"]')?.textContent).toContain(
+            'Too late.',
+        );
+    });
+
+    it('runs once, however fast the button is pressed', async () => {
+        vi.mocked(fetch).mockReturnValue(new Promise(() => {}));
+
+        const toast = await showWith([undo]);
+
+        press(toast, 'Undo');
+        press(toast, 'Undo');
+        await flushPromises();
+
+        expect(fetch).toHaveBeenCalledOnce();
+    });
+
+    it('visits a link inside the app without a full page load', async () => {
+        press(await showWith([{ label: 'View', url: '/orders/1', close: false }]), 'View');
+        await flushPromises();
+
+        expect(visit).toHaveBeenCalledWith('/orders/1');
+        expect(toasts()).toHaveLength(1);
+    });
+
+    it('leaves a new tab to the browser', async () => {
+        const toast = await showWith([
+            { label: 'Docs', url: '/docs', openInNewTab: true, close: false },
+        ]);
+
+        toast.querySelector('a')!.addEventListener('click', (event) => event.preventDefault());
+        press(toast, 'Docs');
+
+        expect(visit).not.toHaveBeenCalled();
+        expect(toast.querySelector('a')?.getAttribute('rel')).toBe('noopener noreferrer');
+    });
+
+    it('closes when the button has nothing else to do', async () => {
+        press(await showWith([{ label: 'Dismiss', close: true }]), 'Dismiss');
+        await flushPromises();
+        await flushPromises();
+
+        expect(toasts().filter((toast) => toast.dataset.state === 'open')).toHaveLength(0);
     });
 });

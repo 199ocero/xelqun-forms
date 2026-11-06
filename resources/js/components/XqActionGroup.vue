@@ -13,10 +13,10 @@ import type { ComponentPublicInstance } from 'vue';
 import { useFormStore } from '../composables/context';
 import { cn, isOwnUrl } from '../lib/utils';
 import type { SchemaNode } from '../schema/types';
-import { optionClass, popoverClass } from '../ui/classes';
+import { actionVariants, optionClass, popoverClass } from '../ui/classes';
 import XqButton from '../ui/XqButton.vue';
 import XqIcon from '../ui/XqIcon.vue';
-import XqAction, { actionVariants } from './XqAction.vue';
+import XqAction from './XqAction.vue';
 import type { ActionRunner } from './XqAction.vue';
 
 /**

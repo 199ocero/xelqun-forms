@@ -42,7 +42,7 @@ class OrderForm extends Form
 - **Repeaters and uploads included.** Nested rows map to validation errors, and files upload as soon as they're picked.
 - **Every field you'd expect.** Select with relationships, date and time pickers, tags, sliders, colors, a block `Builder`, and rich text, Markdown and code editors.
 - **Wizards and actions.** Multi-step forms check each step on the server, and buttons can run PHP through a modal with its own fields. Group them in a menu with `ActionGroup`.
-- **Notifications.** Send one from an action, a hook or a controller with `Notification::make()`, and it reaches the page by itself.
+- **Notifications.** Send one from an action, a hook or a controller with `Notification::make()`, and it reaches the page by itself. Add buttons with `NotificationAction`.
 
 ## Installation
 

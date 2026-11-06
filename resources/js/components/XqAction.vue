@@ -5,12 +5,6 @@ import type { FormStore } from '../core/store';
  * What the button needs from whatever holds it. Outside a form, pass your own.
  */
 export type ActionRunner = Pick<FormStore, 'mountAction' | 'runAction' | 'processing' | 't'>;
-
-export const actionVariants: Record<string, 'default' | 'destructive' | 'outline'> = {
-    primary: 'default',
-    danger: 'destructive',
-    gray: 'outline',
-};
 </script>
 
 <script setup lang="ts">
@@ -21,6 +15,7 @@ import { useFormStore } from '../composables/context';
 import { createFormStore, LOADING_INDICATOR_DELAY } from '../core/store';
 import { cn, isOwnUrl } from '../lib/utils';
 import type { SchemaNode } from '../schema/types';
+import { actionVariants } from '../ui/classes';
 import XqButton from '../ui/XqButton.vue';
 import XqConfirmDialog from '../ui/XqConfirmDialog.vue';
 import XqDialog from '../ui/XqDialog.vue';

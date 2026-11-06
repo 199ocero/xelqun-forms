@@ -8,6 +8,8 @@
 @theme inline {
     --animate-xq-fade-in: xq-fade-in 150ms ease-out;
     --animate-xq-fade-out: xq-fade-out 100ms ease-in forwards;
+    --animate-xq-toast-in: xq-toast-in 200ms cubic-bezier(0.16, 1, 0.3, 1);
+    --animate-xq-toast-out: xq-toast-out 150ms ease-in forwards;
     --animate-xq-dialog-in: xq-dialog-in 180ms cubic-bezier(0.16, 1, 0.3, 1);
     --animate-xq-dialog-out: xq-dialog-out 100ms ease-in forwards;
     --color-xq-background: var(--xq-background);
@@ -295,6 +297,20 @@
 @keyframes xq-fade-out {
     to {
         opacity: 0;
+    }
+}
+
+@keyframes xq-toast-in {
+    from {
+        opacity: 0;
+        translate: 0 -0.5rem;
+    }
+}
+
+@keyframes xq-toast-out {
+    to {
+        opacity: 0;
+        translate: 1rem 0;
     }
 }
 
