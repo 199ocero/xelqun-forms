@@ -2,6 +2,22 @@
 
 Xelqun Forms is pre-alpha. Until 1.0, a minor version can break existing code, and each break is listed here.
 
+## 0.3.0 - 2026-11-06
+
+This release adds what `xelqun/tables` builds on. The schema version (`$xq`) stays 1.
+
+### Upgrading
+
+Update both halves together: `composer update xelqun/forms` and `npm install @xelqun/forms@0.3.0`. Plugins that require `^0.2.0` need a new release, because a caret range on 0.x stops at the next minor version.
+
+### Added
+
+- **`Action::url()`** turns an action into a link. It still needs `authorize()`. Its URL has to be http(s), mailto, tel or a path on the site, or the action hides itself.
+- **`Form::resolveRecord()`** finds the record a token names, so a form limited to some records can stay inside them on every request.
+- **`XqAction` takes a `runner` prop**, so the button works outside a form.
+- **`XqPopover`** and an `indeterminate` prop on `XqCheckbox`.
+- New exports: `XqAction`, `useRegistry`, `postJson`, `translate` and `reportRequestFailure`.
+
 ## 0.2.0 - 2026-11-06
 
 This release covers Filament parity (M10 to M22): a plugin foundation, the missing field types, relationships, wizards, actions, a block builder and three editors. The schema version (`$xq`) stays 1.
