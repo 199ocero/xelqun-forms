@@ -1,6 +1,6 @@
 {
     "name": "@xelqun/forms",
-    "version": "0.3.0",
+    "version": "0.3.1",
     "description": "Vue renderer for Xelqun Forms: PHP-defined, schema-driven forms for Laravel + Inertia.",
     "license": "MIT",
     "repository": {
