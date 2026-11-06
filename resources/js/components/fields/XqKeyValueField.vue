@@ -8,7 +8,9 @@ import { moveItem } from '../../ui/options';
 import XqButton from '../../ui/XqButton.vue';
 import XqInput from '../../ui/XqInput.vue';
 import XqFieldWrapper from '../XqFieldWrapper.vue';
+import { useTranslator } from '../../composables/context';
 
+const t = useTranslator();
 interface Row {
     id: number;
     key: string;
@@ -120,7 +122,7 @@ useSortable(rowList, {
                             type="button"
                             variant="ghost"
                             size="icon-sm"
-                            :aria-label="`Move row ${index + 1} up`"
+                            :aria-label="t('Move row :number up', { number: index + 1 })"
                             :disabled="disabled || index === 0"
                             @click="move(row, -1)"
                         >
@@ -130,7 +132,7 @@ useSortable(rowList, {
                             type="button"
                             variant="ghost"
                             size="icon-sm"
-                            :aria-label="`Move row ${index + 1} down`"
+                            :aria-label="t('Move row :number down', { number: index + 1 })"
                             :disabled="disabled || index === rows.length - 1"
                             @click="move(row, 1)"
                         >
@@ -142,7 +144,7 @@ useSortable(rowList, {
                         type="button"
                         variant="ghost"
                         size="icon-sm"
-                        :aria-label="`Remove row ${index + 1}`"
+                        :aria-label="t('Remove row :number', { number: index + 1 })"
                         :disabled="disabled"
                         @click="remove(row)"
                     >

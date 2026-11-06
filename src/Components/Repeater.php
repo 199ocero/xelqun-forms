@@ -391,7 +391,7 @@ class Repeater extends Field implements ContainsRows, PersistsItself
      */
     public function getChildComponents(): array
     {
-        return [];
+        return $this->slotComponents;
     }
 
     /**

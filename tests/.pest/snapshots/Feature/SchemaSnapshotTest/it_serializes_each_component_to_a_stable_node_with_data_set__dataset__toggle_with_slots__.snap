@@ -1,0 +1,70 @@
+{
+    "state": {
+        "data": {
+            "active": false
+        }
+    },
+    "components": [
+        {
+            "key": "data.active",
+            "type": "toggle",
+            "hidden": false,
+            "path": "data.active",
+            "label": "Active",
+            "hint": null,
+            "placeholder": null,
+            "required": false,
+            "disabled": false,
+            "rules": {
+                "visible": null,
+                "required": null,
+                "disabled": null
+            },
+            "computed": null,
+            "live": null,
+            "span": null,
+            "props": {
+                "description": null
+            },
+            "children": [
+                {
+                    "key": "data#0.s0",
+                    "type": "text",
+                    "hidden": false,
+                    "path": null,
+                    "label": null,
+                    "rules": {
+                        "visible": null
+                    },
+                    "span": null,
+                    "props": {
+                        "content": "Above",
+                        "html": null
+                    },
+                    "children": [],
+                    "slot": "aboveContent",
+                    "deps": []
+                },
+                {
+                    "key": "data#0.s1",
+                    "type": "text",
+                    "hidden": false,
+                    "path": null,
+                    "label": null,
+                    "rules": {
+                        "visible": null
+                    },
+                    "span": null,
+                    "props": {
+                        "content": "Below",
+                        "html": null
+                    },
+                    "children": [],
+                    "slot": "belowContent",
+                    "deps": []
+                }
+            ],
+            "deps": []
+        }
+    ]
+}

@@ -6,7 +6,9 @@ import type { SchemaNode, SelectOption } from '../../schema/types';
 import XqCombobox from '../../ui/XqCombobox.vue';
 import XqSelect from '../../ui/XqSelect.vue';
 import XqFieldWrapper from '../XqFieldWrapper.vue';
+import { useTranslator } from '../../composables/context';
 
+const t = useTranslator();
 const props = defineProps<{ node: SchemaNode }>();
 const {
     store,
@@ -156,7 +158,7 @@ const hasValue = computed(
                 v-if="!required && hasValue && !disabled"
                 type="button"
                 class="right-9 size-5 rounded-sm absolute top-1/2 flex -translate-y-1/2 cursor-pointer items-center justify-center text-xq-muted-foreground hover:text-xq-foreground"
-                aria-label="Clear selection"
+                :aria-label="t('Clear selection')"
                 @click="value = null"
             >
                 <X class="size-3.5" />

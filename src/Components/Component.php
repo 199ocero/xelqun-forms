@@ -38,6 +38,13 @@ abstract class Component
     /** @var array<int, Component> */
     protected array $childComponents = [];
 
+    /** @var array<int, Component> Extra content around a field. See HasSlots. */
+    protected array $slotComponents = [];
+
+    protected ?string $slot = null;
+
+    protected bool|Closure|null $grow = null;
+
     protected bool|Closure $hidden = false;
 
     /** @var array<string, Closure(string): bool> Property name => whether it is on for an operation. */
@@ -215,6 +222,16 @@ abstract class Component
     }
 
     /**
+     * Whether this component takes the free space in a Flex. It does by default.
+     */
+    public function grow(bool|Closure $condition = true): static
+    {
+        $this->grow = $condition;
+
+        return $this;
+    }
+
+    /**
      * HTML attributes for the component's outer element. They reach the page as
      * given, so never put user input in an attribute name.
      *
@@ -248,6 +265,10 @@ abstract class Component
             $child->mount($form, $this, $this->getChildContainer(), $this->getChildPosition($index), $this->getChildContainerPattern());
         }
 
+        foreach ($this->slotComponents as $index => $child) {
+            $child->mount($form, $this, $this->container, "{$this->position}.s{$index}", $this->containerPattern);
+        }
+
         return $this;
     }
 
@@ -271,6 +292,27 @@ abstract class Component
         foreach ($this->childComponents as $index => $child) {
             $this->childComponents[$index] = clone $child;
         }
+
+        foreach ($this->slotComponents as $index => $child) {
+            $this->slotComponents[$index] = clone $child;
+        }
+    }
+
+    /**
+     * Name the slot this component fills.
+     *
+     * @internal
+     */
+    public function inSlot(string $slot): static
+    {
+        $this->slot = $slot;
+
+        return $this;
+    }
+
+    public function getSlot(): ?string
+    {
+        return $this->slot;
     }
 
     public function getKey(): string
@@ -314,14 +356,14 @@ abstract class Component
     }
 
     /**
-     * Children rendered by this component. Repeaters return an empty list
+     * Children rendered by this component. Repeaters leave out their template
      * because their rows are expanded from state.
      *
      * @return array<int, Component>
      */
     public function getChildComponents(): array
     {
-        return $this->childComponents;
+        return [...$this->childComponents, ...$this->slotComponents];
     }
 
     /**
@@ -452,6 +494,14 @@ abstract class Component
 
         if ($this->extraAttributes !== []) {
             $node['extraAttributes'] = $this->evaluate($this->extraAttributes);
+        }
+
+        if ($this->slot !== null) {
+            $node['slot'] = $this->slot;
+        }
+
+        if ($this->grow !== null) {
+            $node['grow'] = (bool) $this->evaluate($this->grow);
         }
 
         $node['rules']['visible'] = $this->visibleWhen?->toArray($this->container);

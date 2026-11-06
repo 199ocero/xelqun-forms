@@ -67,10 +67,26 @@ export interface SchemaNode {
     /** Set by fields that hold a file, which a copied row can't share. */
     acceptsUploads?: boolean;
     span?: ColumnSpan;
+    /** False keeps a child of a Flex at its own width. */
+    grow?: boolean;
+    /** The place around its field this child renders in. */
+    slot?: FieldSlot;
     props?: Record<string, any>;
     children?: SchemaNode[];
     deps?: string[];
 }
+
+export type FieldSlot =
+    | 'aboveLabel'
+    | 'beforeLabel'
+    | 'afterLabel'
+    | 'belowLabel'
+    | 'aboveContent'
+    | 'beforeContent'
+    | 'afterContent'
+    | 'belowContent'
+    | 'aboveErrorMessage'
+    | 'belowErrorMessage';
 
 export interface FormEndpoints {
     update: string;
@@ -84,6 +100,10 @@ export interface FormSchema {
     id: string;
     token: string | null;
     endpoints: FormEndpoints;
+    locale?: string;
+    /** Text in this locale, by its English original. Anything missing stays English. */
+    messages?: Record<string, string>;
+    unsavedChangesAlert?: boolean;
     state: { data: Record<string, any> };
     components: SchemaNode[];
 }

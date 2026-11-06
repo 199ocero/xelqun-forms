@@ -1,0 +1,26 @@
+{
+    "state": {
+        "data": {}
+    },
+    "components": [
+        {
+            "key": "data#0",
+            "type": "empty-state",
+            "hidden": false,
+            "path": null,
+            "label": "Nothing yet",
+            "rules": {
+                "visible": null
+            },
+            "span": null,
+            "props": {
+                "columns": null,
+                "description": "Add one",
+                "icon": "inbox",
+                "contained": false
+            },
+            "children": [],
+            "deps": []
+        }
+    ]
+}

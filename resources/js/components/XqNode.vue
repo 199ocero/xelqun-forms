@@ -21,6 +21,7 @@ const component = computed(() => registry?.get(props.node.type) ?? null);
         class="xq-cell"
         :style="spanStyle(node.span)"
         :data-xq-key="node.key"
+        :data-xq-grow="node.grow === false ? 'false' : undefined"
     >
         <component :is="component" v-if="component" :node="node" />
         <XqUnknownNode v-else :node="node" />

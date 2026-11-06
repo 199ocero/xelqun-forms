@@ -1,0 +1,96 @@
+{
+    "state": {
+        "data": {
+            "name": null
+        }
+    },
+    "components": [
+        {
+            "key": "data.name",
+            "type": "text-input",
+            "hidden": false,
+            "path": "data.name",
+            "label": "Name",
+            "hint": null,
+            "placeholder": null,
+            "required": false,
+            "disabled": false,
+            "rules": {
+                "visible": null,
+                "required": null,
+                "disabled": null
+            },
+            "computed": null,
+            "live": null,
+            "span": null,
+            "props": {
+                "inputType": "text",
+                "numeric": false,
+                "integer": false,
+                "min": null,
+                "max": null,
+                "step": null,
+                "maxLength": null,
+                "prefix": null,
+                "suffix": null,
+                "autocomplete": null
+            },
+            "children": [
+                {
+                    "key": "data#0.s0",
+                    "type": "text",
+                    "hidden": false,
+                    "path": null,
+                    "label": null,
+                    "rules": {
+                        "visible": null
+                    },
+                    "span": null,
+                    "props": {
+                        "content": "Optional",
+                        "html": null
+                    },
+                    "children": [],
+                    "slot": "afterLabel",
+                    "deps": []
+                },
+                {
+                    "key": "data#0.s1",
+                    "type": "icon",
+                    "hidden": false,
+                    "path": null,
+                    "label": null,
+                    "rules": {
+                        "visible": null
+                    },
+                    "span": null,
+                    "props": {
+                        "icon": "user"
+                    },
+                    "children": [],
+                    "slot": "beforeContent",
+                    "deps": []
+                },
+                {
+                    "key": "data#0.s2",
+                    "type": "text",
+                    "hidden": false,
+                    "path": null,
+                    "label": null,
+                    "rules": {
+                        "visible": null
+                    },
+                    "span": null,
+                    "props": {
+                        "content": "Help",
+                        "html": null
+                    },
+                    "children": [],
+                    "slot": "belowErrorMessage",
+                    "deps": []
+                }
+            ],
+            "deps": []
+        }
+    ]
+}

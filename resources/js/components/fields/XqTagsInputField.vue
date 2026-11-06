@@ -15,7 +15,9 @@ import type { SchemaNode } from '../../schema/types';
 import { controlClass } from '../../ui/classes';
 import { moveItem } from '../../ui/options';
 import XqFieldWrapper from '../XqFieldWrapper.vue';
+import { useTranslator } from '../../composables/context';
 
+const t = useTranslator();
 const props = defineProps<{ node: SchemaNode }>();
 const { value, error, placeholder, describedBy, required, disabled, id, onBlur } = useField<
     string[]
@@ -81,7 +83,7 @@ useSortable(tagList, {
                         v-if="options.reorderable && index > 0"
                         type="button"
                         class="rounded-sm cursor-pointer opacity-60 hover:opacity-100"
-                        :aria-label="`Move ${tag} earlier`"
+                        :aria-label="t('Move :name earlier', { name: tag })"
                         :disabled="disabled"
                         @click="move(tag, -1)"
                     >
@@ -94,7 +96,7 @@ useSortable(tagList, {
                         v-if="options.reorderable && index < tags.length - 1"
                         type="button"
                         class="rounded-sm cursor-pointer opacity-60 hover:opacity-100"
-                        :aria-label="`Move ${tag} later`"
+                        :aria-label="t('Move :name later', { name: tag })"
                         :disabled="disabled"
                         @click="move(tag, 1)"
                     >
@@ -102,7 +104,7 @@ useSortable(tagList, {
                     </button>
                     <TagsInputItemDelete
                         class="rounded-sm cursor-pointer opacity-60 hover:opacity-100"
-                        :aria-label="`Remove ${tag}`"
+                        :aria-label="t('Remove :name', { name: tag })"
                     >
                         <X class="size-3" />
                     </TagsInputItemDelete>
@@ -110,7 +112,7 @@ useSortable(tagList, {
             </span>
             <TagsInputInput
                 :id="id"
-                :placeholder="placeholder ?? 'Add a tag…'"
+                :placeholder="placeholder ?? t('Add a tag…')"
                 :list="suggestions.length ? `${id}-list` : undefined"
                 :aria-invalid="error ? true : undefined"
                 :aria-describedby="describedBy"

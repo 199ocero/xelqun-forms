@@ -12,9 +12,12 @@ import { controlClass, popoverClass, spinnerClass } from '../../ui/classes';
 import XqCalendar from '../../ui/XqCalendar.vue';
 import XqTimeField from '../../ui/XqTimeField.vue';
 import XqFieldWrapper from '../XqFieldWrapper.vue';
+import { useTranslator } from '../../composables/context';
 
+const t = useTranslator();
 const props = defineProps<{ node: SchemaNode }>();
 const {
+    store,
     value,
     error,
     label: fieldLabel,
@@ -107,7 +110,7 @@ const label = computed(() => {
 
     shown.setHours(hours, minutes, seconds);
 
-    return formatPhpDate(shown, options.value.displayFormat);
+    return formatPhpDate(shown, options.value.displayFormat, store.locale);
 });
 </script>
 
@@ -138,7 +141,7 @@ const label = computed(() => {
                             />
                             <CalendarDays v-else class="size-4 shrink-0 opacity-60" />
                             <span class="truncate">{{
-                                label ?? placeholder ?? 'Pick a date'
+                                label ?? placeholder ?? t('Pick a date')
                             }}</span>
                         </button>
                     </PopoverTrigger>
@@ -146,7 +149,7 @@ const label = computed(() => {
                         v-if="label && !required && !disabled"
                         type="button"
                         class="right-2 size-6 rounded-sm absolute top-1/2 flex -translate-y-1/2 cursor-pointer items-center justify-center text-xq-muted-foreground hover:text-xq-foreground"
-                        aria-label="Clear date"
+                        :aria-label="t('Clear date')"
                         @click="date = undefined"
                     >
                         <X class="size-3.5" />
@@ -159,6 +162,7 @@ const label = computed(() => {
                         :class="cn(popoverClass, 'w-auto')"
                     >
                         <XqCalendar
+                            :locale="store.locale"
                             v-model="date"
                             :min-value="parse(node.props?.min)"
                             :max-value="parse(node.props?.max)"
@@ -175,6 +179,7 @@ const label = computed(() => {
                 v-if="hasTime"
                 :id="hasDate ? `${id}-time` : id"
                 v-model="timeText"
+                :locale="store.locale"
                 :seconds="!!options.seconds"
                 :steps="options.steps"
                 :disabled="disabled"

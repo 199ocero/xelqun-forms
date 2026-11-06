@@ -1,0 +1,94 @@
+{
+    "state": {
+        "data": {
+            "a": null,
+            "b": null
+        }
+    },
+    "components": [
+        {
+            "key": "data#0",
+            "type": "flex",
+            "hidden": false,
+            "path": null,
+            "label": null,
+            "rules": {
+                "visible": null
+            },
+            "span": null,
+            "props": {
+                "from": "md"
+            },
+            "children": [
+                {
+                    "key": "data.a",
+                    "type": "text-input",
+                    "hidden": false,
+                    "path": "data.a",
+                    "label": "A",
+                    "hint": null,
+                    "placeholder": null,
+                    "required": false,
+                    "disabled": false,
+                    "rules": {
+                        "visible": null,
+                        "required": null,
+                        "disabled": null
+                    },
+                    "computed": null,
+                    "live": null,
+                    "span": null,
+                    "props": {
+                        "inputType": "text",
+                        "numeric": false,
+                        "integer": false,
+                        "min": null,
+                        "max": null,
+                        "step": null,
+                        "maxLength": null,
+                        "prefix": null,
+                        "suffix": null,
+                        "autocomplete": null
+                    },
+                    "children": [],
+                    "deps": []
+                },
+                {
+                    "key": "data.b",
+                    "type": "text-input",
+                    "hidden": false,
+                    "path": "data.b",
+                    "label": "B",
+                    "hint": null,
+                    "placeholder": null,
+                    "required": false,
+                    "disabled": false,
+                    "rules": {
+                        "visible": null,
+                        "required": null,
+                        "disabled": null
+                    },
+                    "computed": null,
+                    "live": null,
+                    "span": null,
+                    "props": {
+                        "inputType": "text",
+                        "numeric": false,
+                        "integer": false,
+                        "min": null,
+                        "max": null,
+                        "step": null,
+                        "maxLength": null,
+                        "prefix": null,
+                        "suffix": null,
+                        "autocomplete": null
+                    },
+                    "children": [],
+                    "grow": false,
+                    "deps": []
+                }
+            ],
+            "deps": []
+        }
+    ]
+}

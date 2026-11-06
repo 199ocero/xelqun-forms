@@ -3,6 +3,7 @@ import { CircleAlert } from 'lucide-vue-next';
 import { computed, inject, onMounted, provide, ref } from 'vue';
 import { HEADING_LEVEL, provideFormStore } from '../composables/context';
 import { REGISTRY } from '../composables/registry';
+import { useUnsavedChangesAlert } from '../composables/useUnsavedChangesAlert';
 import { useXqForm } from '../composables/useXqForm';
 import type { FormStore } from '../core/store';
 import { cn } from '../lib/utils';
@@ -22,7 +23,7 @@ const props = withDefaults(
         headingLevel?: 2 | 3 | 4 | 5 | 6;
         class?: string;
     }>(),
-    { method: 'post', submitLabel: 'Save', headingLevel: 2, preserveState: 'errors' },
+    { method: 'post', headingLevel: 2, preserveState: 'errors' },
 );
 const emit = defineEmits<{
     submit: [store: FormStore];
@@ -42,6 +43,8 @@ const errorCount = computed(() => Object.keys(store.errors).length);
 provideFormStore(store);
 provide(HEADING_LEVEL, props.headingLevel);
 provide(REGISTRY, inject(REGISTRY, null) ?? createRegistry());
+
+useUnsavedChangesAlert(store);
 
 const root = ref<HTMLFormElement | null>(null);
 
@@ -86,7 +89,11 @@ function submit(): void {
         </div>
         <p role="status" class="sr-only">
             <template v-if="errorCount">
-                {{ errorCount }} {{ errorCount === 1 ? 'field needs' : 'fields need' }} attention.
+                {{
+                    errorCount === 1
+                        ? store.t('1 field needs attention.')
+                        : store.t(':count fields need attention.', { count: errorCount })
+                }}
             </template>
         </p>
         <div
@@ -113,7 +120,7 @@ function submit(): void {
                 :disabled="syncing"
                 @click="store.queue.retry()"
             >
-                Try again
+                {{ store.t('Try again') }}
             </XqButton>
         </div>
         <slot
@@ -124,11 +131,11 @@ function submit(): void {
             :submit="submit"
         >
             <div v-if="action" class="gap-3 flex items-center justify-end">
-                <span v-if="uploading" class="text-xs text-xq-muted-foreground"
-                    >Waiting for uploads…</span
-                >
+                <span v-if="uploading" class="text-xs text-xq-muted-foreground">{{
+                    store.t('Waiting for uploads…')
+                }}</span>
                 <XqButton type="submit" :disabled="processing">
-                    {{ processing ? 'Saving…' : submitLabel }}
+                    {{ processing ? store.t('Saving…') : (submitLabel ?? store.t('Save')) }}
                 </XqButton>
             </div>
         </slot>

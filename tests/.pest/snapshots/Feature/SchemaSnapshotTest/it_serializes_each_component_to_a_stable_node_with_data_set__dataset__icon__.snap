@@ -1,0 +1,26 @@
+{
+    "state": {
+        "data": {}
+    },
+    "components": [
+        {
+            "key": "data#0",
+            "type": "icon",
+            "hidden": false,
+            "path": null,
+            "label": null,
+            "rules": {
+                "visible": null
+            },
+            "span": null,
+            "props": {
+                "icon": "star",
+                "color": "warning",
+                "size": "lg",
+                "tooltip": "Starred"
+            },
+            "children": [],
+            "deps": []
+        }
+    ]
+}

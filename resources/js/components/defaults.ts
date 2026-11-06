@@ -7,10 +7,18 @@ import XqSelectField from './fields/XqSelectField.vue';
 import XqTextareaField from './fields/XqTextareaField.vue';
 import XqTextInputField from './fields/XqTextInputField.vue';
 import XqToggleField from './fields/XqToggleField.vue';
+import XqCallout from './layouts/XqCallout.vue';
+import XqEmptyState from './layouts/XqEmptyState.vue';
 import XqFieldset from './layouts/XqFieldset.vue';
+import XqFlex from './layouts/XqFlex.vue';
+import XqFusedGroup from './layouts/XqFusedGroup.vue';
 import XqGrid from './layouts/XqGrid.vue';
+import XqIconNode from './layouts/XqIconNode.vue';
+import XqImageNode from './layouts/XqImageNode.vue';
 import XqSection from './layouts/XqSection.vue';
 import XqTabsLayout from './layouts/XqTabsLayout.vue';
+import XqTextNode from './layouts/XqTextNode.vue';
+import XqUnorderedList from './layouts/XqUnorderedList.vue';
 
 /**
  * Built-in renderers keyed by schema node type. Heavier fields are code-split.
@@ -38,6 +46,14 @@ export function defaultComponents(): Record<string, ComponentResolver> {
         grid: XqGrid,
         fieldset: XqFieldset,
         tabs: XqTabsLayout,
+        flex: XqFlex,
+        'fused-group': XqFusedGroup,
+        callout: XqCallout,
+        'empty-state': XqEmptyState,
+        text: XqTextNode,
+        icon: XqIconNode,
+        image: XqImageNode,
+        'unordered-list': XqUnorderedList,
     };
 }
 

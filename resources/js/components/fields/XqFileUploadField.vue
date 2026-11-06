@@ -19,7 +19,9 @@ import type { SchemaNode } from '../../schema/types';
 import { moveItem } from '../../ui/options';
 import XqButton from '../../ui/XqButton.vue';
 import XqFieldWrapper from '../XqFieldWrapper.vue';
+import { useTranslator } from '../../composables/context';
 
+const t = useTranslator();
 interface PendingFile {
     id: number;
     file: File;
@@ -66,7 +68,7 @@ function setValues(next: string[]): void {
 function describe(file: string) {
     const local = uploaded.value.get(file);
     const known = options.value.files?.[file];
-    const name = local?.name ?? known?.name ?? file.split('/').pop() ?? 'File';
+    const name = local?.name ?? known?.name ?? file.split('/').pop() ?? t('File');
     const url: string | null = local?.preview ?? known?.url ?? null;
 
     return {
@@ -137,11 +139,15 @@ function canRemove(file: { isNew: boolean }): boolean {
 
 function sizeProblem(picked: File): string | null {
     if (options.value.maxSize && picked.size > options.value.maxSize * 1024) {
-        return `The file may not be larger than ${formatBytes(options.value.maxSize * 1024)}.`;
+        return t('The file may not be larger than :size.', {
+            size: formatBytes(options.value.maxSize * 1024),
+        });
     }
 
     if (options.value.minSize && picked.size < options.value.minSize * 1024) {
-        return `The file must be at least ${formatBytes(options.value.minSize * 1024)}.`;
+        return t('The file must be at least :size.', {
+            size: formatBytes(options.value.minSize * 1024),
+        });
     }
 
     return null;
@@ -186,7 +192,7 @@ async function uploadOne(item: PendingFile): Promise<void> {
             uploadError.value =
                 failure instanceof HttpError
                     ? (failure.validationErrors.file?.[0] ?? failure.message)
-                    : 'The upload failed. Please try again.';
+                    : t('The upload failed. Please try again.');
         }
     } finally {
         item.status = 'finished';
@@ -216,7 +222,10 @@ function addFiles(picked: File[]): void {
         : 1;
 
     if (picked.length > room) {
-        uploadError.value = `You can add ${room === 1 ? '1 more file' : `${room} more files`}.`;
+        uploadError.value =
+            room === 1
+                ? t('You can add 1 more file.')
+                : t('You can add :count more files.', { count: room });
     }
 
     for (const file of picked.slice(0, room)) {
@@ -340,7 +349,7 @@ onBeforeUnmount(() => {
                     variant="outline"
                     size="icon-sm"
                     class="top-0 right-0 absolute rounded-full"
-                    :aria-label="`Remove ${files[0].name}`"
+                    :aria-label="t('Remove :name', { name: files[0].name })"
                     data-xq-remove
                     @click="remove(files[0].value)"
                 >
@@ -377,7 +386,7 @@ onBeforeUnmount(() => {
                     <div class="min-w-0 flex-1">
                         <p class="text-sm font-medium truncate">{{ file.name }}</p>
                         <p class="text-xs text-xq-muted-foreground">
-                            {{ file.isNew ? 'Uploaded, saved when you submit' : 'Stored'
+                            {{ file.isNew ? t('Uploaded, saved when you submit') : t('Stored')
                             }}<template v-if="file.size"> · {{ formatBytes(file.size) }}</template>
                         </p>
                     </div>
@@ -387,7 +396,7 @@ onBeforeUnmount(() => {
                             variant="ghost"
                             size="icon-sm"
                             :disabled="index === 0"
-                            :aria-label="`Move ${file.name} up`"
+                            :aria-label="t('Move :name up', { name: file.name })"
                             data-xq-move="-1"
                             @click="moveWithButton(file.value, -1)"
                         >
@@ -398,7 +407,7 @@ onBeforeUnmount(() => {
                             variant="ghost"
                             size="icon-sm"
                             :disabled="index === files.length - 1"
-                            :aria-label="`Move ${file.name} down`"
+                            :aria-label="t('Move :name down', { name: file.name })"
                             data-xq-move="1"
                             @click="moveWithButton(file.value, 1)"
                         >
@@ -413,7 +422,7 @@ onBeforeUnmount(() => {
                         rel="noopener"
                         variant="ghost"
                         size="icon-sm"
-                        :aria-label="`Open ${file.name}`"
+                        :aria-label="t('Open :name', { name: file.name })"
                     >
                         <ExternalLink />
                     </XqButton>
@@ -424,7 +433,7 @@ onBeforeUnmount(() => {
                         :download="file.name"
                         variant="ghost"
                         size="icon-sm"
-                        :aria-label="`Download ${file.name}`"
+                        :aria-label="t('Download :name', { name: file.name })"
                     >
                         <Download />
                     </XqButton>
@@ -433,7 +442,9 @@ onBeforeUnmount(() => {
                         type="button"
                         variant="ghost"
                         size="icon-sm"
-                        :aria-label="isMultiple ? `Remove ${file.name}` : 'Remove file'"
+                        :aria-label="
+                            isMultiple ? t('Remove :name', { name: file.name }) : t('Remove file')
+                        "
                         data-xq-remove
                         @click="remove(file.value)"
                     >
@@ -454,7 +465,7 @@ onBeforeUnmount(() => {
                         aria-valuemin="0"
                         aria-valuemax="100"
                         :aria-valuenow="item.percent"
-                        :aria-label="`Uploading ${item.name}`"
+                        :aria-label="t('Uploading :name', { name: item.name })"
                         class="h-1.5 w-full overflow-hidden rounded-full bg-xq-muted"
                     >
                         <span
@@ -467,7 +478,7 @@ onBeforeUnmount(() => {
                     type="button"
                     variant="ghost"
                     size="icon-sm"
-                    :aria-label="`Cancel ${item.name}`"
+                    :aria-label="t('Cancel :name', { name: item.name })"
                     @click="cancel(item)"
                 >
                     <X />
@@ -493,15 +504,15 @@ onBeforeUnmount(() => {
                 <template v-if="!isAvatar">
                     <span class="text-sm"
                         ><span class="font-medium text-xq-primary">{{
-                            isMultiple ? 'Choose files' : 'Choose a file'
+                            isMultiple ? t('Choose files') : t('Choose a file')
                         }}</span>
-                        or drag {{ isMultiple ? 'them' : 'it' }} here</span
+                        {{ isMultiple ? t('or drag them here') : t('or drag it here') }}</span
                     >
-                    <span class="text-xs text-xq-muted-foreground"
-                        >Up to {{ formatBytes((options.maxSize ?? 10240) * 1024) }}</span
-                    >
+                    <span class="text-xs text-xq-muted-foreground">{{
+                        t('Up to :size', { size: formatBytes((options.maxSize ?? 10240) * 1024) })
+                    }}</span>
                 </template>
-                <span v-else class="sr-only">Choose an image</span>
+                <span v-else class="sr-only">{{ t('Choose an image') }}</span>
                 <input
                     :id="id"
                     ref="input"

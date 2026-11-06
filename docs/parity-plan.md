@@ -60,7 +60,7 @@ Confirmed by reading the code. Nothing has been run yet, so each fix starts with
 
 ## Milestones
 
-M10 to M17 are built. The plugin author guide is [`plugins.md`](plugins.md).
+M10 to M18 are built. The plugin author guide is [`plugins.md`](plugins.md).
 
 | # | Milestone | Adds | Playground proof |
 |---|---|---|---|
@@ -72,7 +72,7 @@ M10 to M17 are built. The plugin author guide is [`plugins.md`](plugins.md).
 | **M15** ✓ | Everyday fields | `DateTimePicker`, `TimePicker`, `timezone()`, `format()`, `displayFormat()`, `disabledDates()`, steps; `CheckboxList`, `TagsInput`, `ToggleButtons`, `Slider`, `KeyValue`, `ColorPicker`; Select groups, `disableOptionWhen()`, `boolean()`, `reorderable()`, messages; TextInput `revealable()`, `trim()`, `mask()`, `stripCharacters()`, `datalist()`, `copyable()`, `length()`, icons | New "All fields" example |
 | **M16** ✓ | Repeater upgrade | Nested repeaters, `cloneable()`, `collapsible()`, `collapsed()`, `simple()`, `grid()`, `table()`, `addable()`, `deletable()`, `distinct()`, delete confirmation, item numbers, drag-and-drop (up/down stays for keyboard users) | Two-level repeater saves and reloads |
 | **M17** ✓ | Files | `multiple()`, `minFiles()`, `maxFiles()`, `reorderable()`, `minSize()`, `pasteable()`, `downloadable()`, `openable()`, `avatar()`, parallel limit, file relations | Multi-file gallery in a row |
-| **M18** | Layout and display | `Flex`, `FusedGroup`, `Callout`, empty states, `Text`, `Icon`, `Image`, `UnorderedList`, field slots, translated Vue strings, unsaved-changes warning | Layout example; a translated locale; leave warning |
+| **M18** ✓ | Layout and display | `Flex`, `FusedGroup`, `Callout`, empty states, `Text`, `Icon`, `Image`, `UnorderedList`, field slots, translated Vue strings, unsaved-changes warning | Layout example; a translated locale; leave warning |
 | **M19** | Wizard and browser validation | `POST validate`, scoped error replacement, `Wizard`, `Step`, step query param, step hooks, frontend validation, live validation in patches | Multi-step form blocks on invalid steps |
 | **M20** | Action core | `Action`, `run` endpoint, token action chain, `ActionForm`, confirmation, reka Dialog modal, parent patch through a reusable `buildPatch` | A row action opens a modal and updates the form |
 | **M21** | Action features | Select `createOptionForm()`, `editOptionForm()`, `manageOptionForm()`, prefix and suffix actions, `extraItemActions()` | Create a country from its select |

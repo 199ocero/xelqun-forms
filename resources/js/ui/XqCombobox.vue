@@ -21,7 +21,9 @@ import { cn } from '../lib/utils';
 import type { SelectMessages, SelectOption } from '../schema/types';
 import { controlClass, groupLabelClass, optionClass, popoverClass, spinnerClass } from './classes';
 import { groupOptions, moveItem } from './options';
+import { useTranslator } from '../composables/context';
 
+const t = useTranslator();
 type Value = string | number;
 
 const props = defineProps<{
@@ -129,7 +131,7 @@ function clear(): void {
                         v-if="reorderable && index > 0"
                         type="button"
                         class="rounded-sm cursor-pointer opacity-60 hover:opacity-100"
-                        :aria-label="`Move ${labelFor(value)} earlier`"
+                        :aria-label="t('Move :name earlier', { name: labelFor(value) })"
                         :disabled="disabled"
                         @click.stop="move(value, -1)"
                     >
@@ -140,7 +142,7 @@ function clear(): void {
                         v-if="reorderable && index < selectedValues.length - 1"
                         type="button"
                         class="rounded-sm cursor-pointer opacity-60 hover:opacity-100"
-                        :aria-label="`Move ${labelFor(value)} later`"
+                        :aria-label="t('Move :name later', { name: labelFor(value) })"
                         :disabled="disabled"
                         @click.stop="move(value, 1)"
                     >
@@ -149,7 +151,7 @@ function clear(): void {
                     <button
                         type="button"
                         class="rounded-sm cursor-pointer opacity-60 hover:opacity-100"
-                        :aria-label="`Remove ${labelFor(value)}`"
+                        :aria-label="t('Remove :name', { name: labelFor(value) })"
                         :disabled="disabled"
                         @click.stop="remove(value)"
                     >
@@ -162,7 +164,9 @@ function clear(): void {
                 v-model="searchTerm"
                 @input="emit('search', ($event.target as HTMLInputElement).value)"
                 :display-value="multiple ? undefined : labelFor"
-                :placeholder="selectedValues.length && multiple ? '' : (placeholder ?? 'Search…')"
+                :placeholder="
+                    selectedValues.length && multiple ? '' : (placeholder ?? t('Search…'))
+                "
                 :aria-invalid="invalid || undefined"
                 :aria-describedby="describedBy"
                 class="h-7 min-w-16 px-1 text-sm flex-1 bg-transparent outline-none placeholder:text-xq-muted-foreground disabled:cursor-not-allowed"
@@ -172,7 +176,7 @@ function clear(): void {
                 v-else-if="selectedValues.length && !disabled"
                 type="button"
                 class="size-6 rounded-sm flex cursor-pointer items-center justify-center text-xq-muted-foreground hover:text-xq-foreground"
-                aria-label="Clear selection"
+                :aria-label="t('Clear selection')"
                 @click.stop="clear"
             >
                 <X class="size-3.5" />
@@ -200,14 +204,14 @@ function clear(): void {
                     <ComboboxEmpty class="px-2 py-6 text-sm text-center text-xq-muted-foreground">
                         {{
                             searching
-                                ? (messages?.searching ?? 'Searching…')
+                                ? (messages?.searching ?? t('Searching…'))
                                 : loading
-                                  ? (messages?.loading ?? 'Loading…')
+                                  ? (messages?.loading ?? t('Loading…'))
                                   : searchTerm
-                                    ? (messages?.noResults ?? 'No results')
+                                    ? (messages?.noResults ?? t('No results'))
                                     : remote
-                                      ? (messages?.prompt ?? 'Type to search')
-                                      : (messages?.noOptions ?? 'No results')
+                                      ? (messages?.prompt ?? t('Type to search'))
+                                      : (messages?.noOptions ?? t('No results'))
                         }}
                     </ComboboxEmpty>
                     <ComboboxGroup v-for="group in groups" :key="group.label ?? ''">

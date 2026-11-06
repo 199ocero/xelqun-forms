@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { LoaderCircle } from 'lucide-vue-next';
-import { computed } from 'vue';
-import { useFormStore } from '../composables/context';
+import { computed, inject } from 'vue';
+import { FUSED_GROUP, useFormStore } from '../composables/context';
 import { cn } from '../lib/utils';
 import type { SchemaNode } from '../schema/types';
 import XqLabel from '../ui/XqLabel.vue';
+import XqFieldSlot from './XqFieldSlot.vue';
 
 const props = defineProps<{
     node: SchemaNode;
@@ -29,6 +30,14 @@ const inlineLabel = computed(() => props.node.inlineLabel && !props.node.hiddenL
 const showLabelSpinner = computed(
     () => !props.controlShowsLoading && store.showsLoadingIndicator(props.node),
 );
+const fused = inject(FUSED_GROUP, false);
+const hasSlot = (name: string) => props.node.children?.some((child) => child.slot === name);
+const hasLabelSlots = computed(() => hasSlot('beforeLabel') || hasSlot('afterLabel'));
+// A wrapper around a screen-reader label would be an empty row with a gap.
+const hasStackedLabel = computed(
+    () => hasLabelSlots.value || hasSlot('aboveLabel') || hasSlot('belowLabel'),
+);
+const hasContentSlots = computed(() => hasSlot('beforeContent') || hasSlot('afterContent'));
 </script>
 
 <template>
@@ -38,34 +47,52 @@ const showLabelSpinner = computed(
         :data-invalid="error ? '' : undefined"
         :aria-busy="loading || undefined"
     >
-        <XqLabel
-            v-if="label && !hideLabel"
-            :id="`${id}-label`"
-            :for="labelFor === null ? undefined : (labelFor ?? id)"
-            :class="cn('gap-0.5', node.hiddenLabel && 'sr-only', inlineLabel && 'sm:mt-2')"
-        >
-            {{ label }}
-            <span v-if="required" class="text-xq-destructive" aria-hidden="true">*</span>
-            <span v-if="required" class="sr-only">(required)</span>
-            <LoaderCircle
-                v-if="showLabelSpinner"
-                class="ml-1 size-3 motion-safe:animate-spin text-xq-muted-foreground"
-                aria-hidden="true"
-            />
-        </XqLabel>
+        <div :class="hasStackedLabel ? 'gap-2 grid content-start' : 'contents'">
+            <XqFieldSlot :node="node" name="aboveLabel" />
+            <div :class="hasLabelSlots ? 'gap-2 flex items-center' : 'contents'">
+                <XqFieldSlot :node="node" name="beforeLabel" />
+                <XqLabel
+                    v-if="label && !hideLabel"
+                    :id="`${id}-label`"
+                    :for="labelFor === null ? undefined : (labelFor ?? id)"
+                    :class="cn('gap-0.5', node.hiddenLabel && 'sr-only', inlineLabel && 'sm:mt-2')"
+                >
+                    {{ label }}
+                    <span v-if="required" class="text-xq-destructive" aria-hidden="true">*</span>
+                    <span v-if="required" class="sr-only">{{ store.t('(required)') }}</span>
+                    <LoaderCircle
+                        v-if="showLabelSpinner"
+                        class="ml-1 size-3 motion-safe:animate-spin text-xq-muted-foreground"
+                        aria-hidden="true"
+                    />
+                </XqLabel>
+                <XqFieldSlot class="ms-auto" :node="node" name="afterLabel" />
+            </div>
+            <XqFieldSlot :node="node" name="belowLabel" />
+        </div>
         <div :class="inlineLabel ? 'gap-2 min-w-0 grid' : 'contents'">
-            <slot />
+            <XqFieldSlot :node="node" name="aboveContent" />
+            <div :class="hasContentSlots ? 'gap-2 flex items-center' : 'contents'">
+                <XqFieldSlot :node="node" name="beforeContent" />
+                <div :class="hasContentSlots ? 'min-w-0 flex-1' : 'contents'">
+                    <slot />
+                </div>
+                <XqFieldSlot :node="node" name="afterContent" />
+            </div>
+            <XqFieldSlot :node="node" name="belowContent" />
             <p v-if="hint && !error" :id="`${id}-hint`" class="text-xs text-xq-muted-foreground">
                 {{ hint }}
             </p>
+            <XqFieldSlot :node="node" name="aboveErrorMessage" />
             <p
-                v-if="error"
+                v-if="error && !fused"
                 :id="`${id}-error`"
                 :role="announceError ? 'alert' : undefined"
                 class="text-xs font-medium text-xq-destructive"
             >
                 {{ error }}
             </p>
+            <XqFieldSlot :node="node" name="belowErrorMessage" />
         </div>
     </div>
 </template>

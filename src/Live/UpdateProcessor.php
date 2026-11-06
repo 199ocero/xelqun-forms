@@ -46,7 +46,8 @@ final class UpdateProcessor
         foreach ($this->affectedKeys($form, $triggers, $setPaths, $dependencies) as $key) {
             $component = $form->findComponent($key);
 
-            if ($component === null) {
+            // The browser names these keys, and its parent's patch brings a child back.
+            if ($component === null || $component->getParent()?->isHiddenOnServer()) {
                 continue;
             }
 

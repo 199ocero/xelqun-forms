@@ -6,7 +6,9 @@ import { gridStyle } from '../../composables/layout';
 import { cn } from '../../lib/utils';
 import type { SchemaNode } from '../../schema/types';
 import XqNode from '../XqNode.vue';
+import { useTranslator } from '../../composables/context';
 
+const t = useTranslator();
 const props = defineProps<{ node: SchemaNode }>();
 const options = computed(() => props.node.props ?? {});
 const collapsed = ref<boolean>(!!props.node.props?.collapsed);
@@ -42,7 +44,7 @@ provide(HEADING_LEVEL, Math.min(headingLevel + 1, 6));
                 type="button"
                 class="size-7 flex cursor-pointer items-center justify-center rounded-xq-md text-xq-muted-foreground hover:bg-xq-accent"
                 :aria-expanded="!collapsed"
-                :aria-label="collapsed ? 'Expand section' : 'Collapse section'"
+                :aria-label="collapsed ? t('Expand section') : t('Collapse section')"
                 @click="collapsed = !collapsed"
             >
                 <ChevronDown

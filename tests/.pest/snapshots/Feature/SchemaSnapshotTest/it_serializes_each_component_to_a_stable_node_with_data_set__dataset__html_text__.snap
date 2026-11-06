@@ -1,0 +1,24 @@
+{
+    "state": {
+        "data": {}
+    },
+    "components": [
+        {
+            "key": "data#0",
+            "type": "text",
+            "hidden": false,
+            "path": null,
+            "label": null,
+            "rules": {
+                "visible": null
+            },
+            "span": null,
+            "props": {
+                "content": null,
+                "html": "<strong>Bold</strong>"
+            },
+            "children": [],
+            "deps": []
+        }
+    ]
+}

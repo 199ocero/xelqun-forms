@@ -15,6 +15,7 @@ const props = defineProps<{
     invalid?: boolean;
     describedBy?: string;
     label?: string | null;
+    locale?: string;
     class?: HTMLAttributes['class'];
 }>();
 const model = defineModel<string | null>();
@@ -41,6 +42,7 @@ const time = computed<Time | undefined>({
         :granularity="seconds ? 'second' : 'minute'"
         :step="steps"
         :hour-cycle="24"
+        :locale="locale"
         :disabled="disabled"
         :aria-invalid="invalid || undefined"
         :aria-describedby="describedBy"

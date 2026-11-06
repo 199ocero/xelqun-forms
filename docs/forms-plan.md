@@ -440,7 +440,7 @@ Milestones 0–9 are built and tested. Milestone 9 added failure and loading fee
 | File upload inside a repeater row | browser test, package `UploadTest` |
 | Server errors on the correct nested field | browser tests (`Price (Item 2)`), package `ValidationTest` |
 
-**Test counts:** package Pest 751, package Vitest 342, playground feature and browser 59.
+**Test counts:** package Pest 782, package Vitest 376, playground feature and browser 64.
 
 ### Milestone 10: foundations
 
@@ -684,6 +684,43 @@ Limits to keep in mind:
 - `appendFiles()` differs from Filament, where it works around FilePond sometimes adding files at the start. New files here go last unless the form sets `appendFiles(false)`, which puts the newest file first, so two files picked together end up in reverse order.
 - `deletable(false)` protects a stored file, not the row around it: removing a repeater row still removes that row's files.
 - `storeFiles(false)` and deleting removed files from the disk aren't built. They're listed under M22.
+
+### Milestone 18: layout and display
+
+The proof is the "Layout and display" example. Everything in it comes from PHP, `?locale=es` shows the browser text in Spanish, and leaving with changes shows the warning.
+
+- **`Flex`** shares a row with flexbox. `from('md')` stacks it below that breakpoint, and `grow(false)` keeps a child at its own width.
+- **`FusedGroup`** joins fields under one label. Each field keeps its label for screen readers, and errors list below the group, under the id each control points at.
+- **`Callout`** and **`EmptyState`** take a footer of components. A callout's status brings its own icon.
+- **`Text`, `Icon`, `Image` and `UnorderedList`** only show something. They live in `src/Layouts`, so no new base folder was needed. A closure reading `$get` updates live, the same way a label does.
+- **Field slots.** All ten of Filament's. A slot takes a string, a closure returning one, a component or a list. Slot components travel as the field's `children` with a `slot` key, so patches, deps and row keys work with no new client code. A field in a slot throws, because nothing would check or save it.
+- **Translated Vue strings.** `t('Remove :name', { name })` keys each line by its English text, so a missing line stays readable. The lines are in `resources/lang/en/client.php`, and `toSchema()` sends only those that differ from their key, so an English app sends none. A test fails if the file and the code disagree. Plugins get the same thing from `useTranslator()`.
+- **`unsavedChangesAlerts()`** compares the state with a snapshot, so undoing a change clears the warning. For a form class, call it from `boot()`.
+
+Found in review, each with a failing test first:
+
+- `update` now refuses nodes under a hidden parent. The browser names the keys in `deps`, so a forged map could read a label or an option from a hidden section. This was already possible before slots.
+- The locale goes out as `pt-BR`, because `Intl` throws on Laravel's `pt_BR`.
+
+Where this differs from Filament:
+
+- Colors are six names, not Filament's color arrays. `Callout::color()` isn't built, and `status()` covers it.
+- `Text::make()` takes no `js()` content, which is Alpine-specific and out of scope.
+- `Callout::actions()` and `controlActions()` wait for actions in M20.
+
+Changes that can break existing code, for the release notes:
+
+- Any `Field` now has `children` when it has slots, and a plugin field that used `childComponents` for something else has to keep it apart.
+- `submitLabel` on `XqForm` no longer defaults to `'Save'`. The default comes from the translation.
+- Dates follow the server's locale, not the browser's.
+- `update` no longer answers for nodes under a hidden parent.
+
+Limits to keep in mind:
+
+- The warning can't stop the browser's back button: Inertia restores the page from history with no `before` event to cancel.
+- A visit with `preserveState: true` to the same path counts as staying, even if it would replace the form.
+- `FusedGroup` shows `(required)` only on the label of each field, for screen readers. The group's visible star is the only sign on screen.
+- `aria-label` on an `Icon` also lands on its cell, because `extraAttributes` goes to the outer element.
 
 ### Where the build differs from the plan
 - **Patches have no `add`/`remove`.** A component hidden by a server closure is sent as a stub (`{ key, type, hidden: true, deps }`) and later patched to a full node, which keeps every key stable.

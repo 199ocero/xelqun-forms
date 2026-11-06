@@ -5,6 +5,7 @@ namespace Xelqun\Forms\Components;
 use Closure;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use Xelqun\Forms\Components\Concerns\HasSlots;
 use Xelqun\Forms\Components\Concerns\HasValidationRules;
 use Xelqun\Forms\Conditions\Condition;
 use Xelqun\Forms\Conditions\ConditionalText;
@@ -22,6 +23,7 @@ use Xelqun\Forms\Support\StatePath;
  */
 abstract class Field extends Component implements NeedsServer
 {
+    use HasSlots;
     use HasValidationRules;
 
     protected string|Closure|ConditionalText|null $label = null;

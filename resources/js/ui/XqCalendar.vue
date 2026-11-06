@@ -23,6 +23,7 @@ const props = defineProps<{
     maxValue?: DateValue;
     placeholder?: DateValue;
     isDateUnavailable?: (date: DateValue) => boolean;
+    locale?: string;
     class?: HTMLAttributes['class'];
 }>();
 const model = defineModel<DateValue | undefined>();
@@ -38,6 +39,7 @@ const navClass =
         :min-value="minValue"
         :max-value="maxValue"
         :placeholder="placeholder"
+        :locale="locale"
         :is-date-unavailable="isDateUnavailable"
         fixed-weeks
         weekday-format="short"

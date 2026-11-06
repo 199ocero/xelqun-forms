@@ -12,7 +12,9 @@ import XqConfirmDialog from '../../ui/XqConfirmDialog.vue';
 import XqFieldWrapper from '../XqFieldWrapper.vue';
 import XqNode from '../XqNode.vue';
 import XqRepeaterRowActions from './XqRepeaterRowActions.vue';
+import { useTranslator } from '../../composables/context';
 
+const t = useTranslator();
 const props = defineProps<{ node: SchemaNode }>();
 const { store, path, error, required, disabled, id } = useField(props.node);
 const options = computed(() => props.node.props ?? {});
@@ -182,7 +184,9 @@ useSortable(rowList, {
                                     >*</span
                                 >
                             </th>
-                            <th scope="col" class="w-px"><span class="sr-only">Actions</span></th>
+                            <th scope="col" class="w-px">
+                                <span class="sr-only">{{ t('Actions') }}</span>
+                            </th>
                         </tr>
                     </thead>
                     <tbody ref="rowList">

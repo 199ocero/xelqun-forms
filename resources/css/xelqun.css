@@ -23,6 +23,8 @@
     --color-xq-destructive: var(--xq-destructive);
     --color-xq-destructive-foreground: var(--xq-destructive-foreground);
     --color-xq-success: var(--xq-success);
+    --color-xq-warning: var(--xq-warning);
+    --color-xq-info: var(--xq-info);
     --color-xq-border: var(--xq-border);
     --color-xq-input: var(--xq-input);
     --color-xq-ring: var(--xq-ring);
@@ -51,6 +53,8 @@
     --xq-destructive: oklch(0.54 0.22 27);
     --xq-destructive-foreground: oklch(0.99 0 0);
     --xq-success: oklch(0.47 0.12 155);
+    --xq-warning: oklch(0.55 0.13 75);
+    --xq-info: oklch(0.5 0.13 240);
     --xq-border: oklch(0.915 0.006 270);
     --xq-input: oklch(0.885 0.008 270);
     --xq-ring: oklch(0.55 0.19 272);
@@ -75,6 +79,8 @@
     --xq-destructive: oklch(0.68 0.19 25);
     --xq-destructive-foreground: oklch(0.17 0.02 25);
     --xq-success: oklch(0.72 0.15 155);
+    --xq-warning: oklch(0.8 0.14 85);
+    --xq-info: oklch(0.74 0.12 240);
     --xq-border: oklch(1 0 0 / 10%);
     --xq-input: oklch(1 0 0 / 14%);
     --xq-ring: oklch(0.68 0.16 272);
@@ -159,4 +165,34 @@
             var(--xq-span-lg, var(--xq-span-md, var(--xq-span-sm, var(--xq-span, auto))))
         );
     }
+}
+
+/* Flex: children share the row. A child's span means nothing here. */
+.xq-flex > .xq-cell {
+    flex: 1 1 0%;
+}
+
+.xq-flex > .xq-cell[data-xq-grow='false'] {
+    flex: none;
+}
+
+/* FusedGroup: one border around the group, and the 1px gaps show the same color as dividers. */
+.xq-fused {
+    gap: 1px;
+    overflow: hidden;
+    border: 1px solid var(--xq-input);
+    border-radius: var(--radius-xq-md);
+    background: var(--xq-input);
+}
+
+.xq-fused > .xq-cell {
+    background: var(--xq-background);
+}
+
+.xq-fused [class*='rounded-xq'] {
+    border-radius: 0;
+}
+
+.xq-fused [class*='border-xq-input']:not(:focus-visible, [aria-invalid='true']) {
+    border-color: transparent;
 }

@@ -1,0 +1,27 @@
+{
+    "state": {
+        "data": {}
+    },
+    "components": [
+        {
+            "key": "data#0",
+            "type": "image",
+            "hidden": false,
+            "path": null,
+            "label": null,
+            "rules": {
+                "visible": null
+            },
+            "span": null,
+            "props": {
+                "url": "/logo.png",
+                "alt": "Logo",
+                "width": 40,
+                "height": 40,
+                "alignment": "center"
+            },
+            "children": [],
+            "deps": []
+        }
+    ]
+}

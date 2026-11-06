@@ -8,7 +8,9 @@ import XqCheckbox from '../../ui/XqCheckbox.vue';
 import XqInput from '../../ui/XqInput.vue';
 import XqLabel from '../../ui/XqLabel.vue';
 import XqFieldWrapper from '../XqFieldWrapper.vue';
+import { useTranslator } from '../../composables/context';
 
+const t = useTranslator();
 type Value = string | number;
 
 const props = defineProps<{ node: SchemaNode }>();
@@ -53,7 +55,7 @@ function setAll(checked: boolean): void {
                     v-model="search"
                     type="search"
                     placeholder="Search…"
-                    :aria-label="`Search ${label ?? ''}`"
+                    :aria-label="t('Search :label', { label: label ?? '' })"
                 />
                 <template v-if="node.props?.bulkToggleable">
                     <XqButton
@@ -63,7 +65,7 @@ function setAll(checked: boolean): void {
                         :disabled="disabled"
                         @click="setAll(true)"
                     >
-                        Select all
+                        {{ t('Select all') }}
                     </XqButton>
                     <XqButton
                         type="button"
@@ -72,7 +74,7 @@ function setAll(checked: boolean): void {
                         :disabled="disabled"
                         @click="setAll(false)"
                     >
-                        Deselect all
+                        {{ t('Deselect all') }}
                     </XqButton>
                 </template>
             </div>

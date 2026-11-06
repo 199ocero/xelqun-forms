@@ -1,0 +1,98 @@
+{
+    "state": {
+        "data": {
+            "city": null,
+            "zip": null
+        }
+    },
+    "components": [
+        {
+            "key": "data#0",
+            "type": "fused-group",
+            "hidden": false,
+            "path": null,
+            "label": "Location",
+            "rules": {
+                "visible": null
+            },
+            "span": null,
+            "props": {
+                "columns": {
+                    "default": 1,
+                    "md": 2
+                }
+            },
+            "children": [
+                {
+                    "key": "data.city",
+                    "type": "text-input",
+                    "hidden": false,
+                    "path": "data.city",
+                    "label": "City",
+                    "hint": null,
+                    "placeholder": "City",
+                    "required": false,
+                    "disabled": false,
+                    "rules": {
+                        "visible": null,
+                        "required": null,
+                        "disabled": null
+                    },
+                    "computed": null,
+                    "live": null,
+                    "hiddenLabel": true,
+                    "span": null,
+                    "props": {
+                        "inputType": "text",
+                        "numeric": false,
+                        "integer": false,
+                        "min": null,
+                        "max": null,
+                        "step": null,
+                        "maxLength": null,
+                        "prefix": null,
+                        "suffix": null,
+                        "autocomplete": null
+                    },
+                    "children": [],
+                    "deps": []
+                },
+                {
+                    "key": "data.zip",
+                    "type": "text-input",
+                    "hidden": false,
+                    "path": "data.zip",
+                    "label": "Zip",
+                    "hint": null,
+                    "placeholder": null,
+                    "required": false,
+                    "disabled": false,
+                    "rules": {
+                        "visible": null,
+                        "required": null,
+                        "disabled": null
+                    },
+                    "computed": null,
+                    "live": null,
+                    "hiddenLabel": true,
+                    "span": null,
+                    "props": {
+                        "inputType": "text",
+                        "numeric": false,
+                        "integer": false,
+                        "min": null,
+                        "max": null,
+                        "step": null,
+                        "maxLength": null,
+                        "prefix": null,
+                        "suffix": null,
+                        "autocomplete": null
+                    },
+                    "children": [],
+                    "deps": []
+                }
+            ],
+            "deps": []
+        }
+    ]
+}

@@ -2,7 +2,9 @@
 import { ArrowDown, ArrowUp, ChevronDown, Copy, Trash2 } from 'lucide-vue-next';
 import { cn } from '../../lib/utils';
 import XqButton from '../../ui/XqButton.vue';
+import { useTranslator } from '../../composables/context';
 
+const t = useTranslator();
 defineProps<{
     label: string;
     index: number;
@@ -27,7 +29,7 @@ defineEmits<{ move: [direction: -1 | 1]; clone: []; remove: []; toggle: [] }>();
                 variant="ghost"
                 size="icon-sm"
                 :disabled="disabled || index === 0"
-                :aria-label="`Move ${label} ${index + 1} up`"
+                :aria-label="t('Move :label :number up', { label, number: index + 1 })"
                 data-xq-move="-1"
                 @click="$emit('move', -1)"
             >
@@ -38,7 +40,7 @@ defineEmits<{ move: [direction: -1 | 1]; clone: []; remove: []; toggle: [] }>();
                 variant="ghost"
                 size="icon-sm"
                 :disabled="disabled || index === count - 1"
-                :aria-label="`Move ${label} ${index + 1} down`"
+                :aria-label="t('Move :label :number down', { label, number: index + 1 })"
                 data-xq-move="1"
                 @click="$emit('move', 1)"
             >
@@ -51,7 +53,7 @@ defineEmits<{ move: [direction: -1 | 1]; clone: []; remove: []; toggle: [] }>();
             variant="ghost"
             size="icon-sm"
             :disabled="!canClone"
-            :aria-label="`Copy ${label} ${index + 1}`"
+            :aria-label="t('Copy :label :number', { label, number: index + 1 })"
             data-xq-clone
             @click="$emit('clone')"
         >
@@ -64,7 +66,7 @@ defineEmits<{ move: [direction: -1 | 1]; clone: []; remove: []; toggle: [] }>();
             size="icon-sm"
             class="text-xq-muted-foreground hover:text-xq-destructive"
             :disabled="!canRemove"
-            :aria-label="`Remove ${label} ${index + 1}`"
+            :aria-label="t('Remove :label :number', { label, number: index + 1 })"
             data-xq-remove
             @click="$emit('remove')"
         >
@@ -76,7 +78,12 @@ defineEmits<{ move: [direction: -1 | 1]; clone: []; remove: []; toggle: [] }>();
             variant="ghost"
             size="icon-sm"
             :aria-expanded="!collapsed"
-            :aria-label="`${collapsed ? 'Expand' : 'Collapse'} ${label} ${index + 1}`"
+            :aria-label="
+                t(collapsed ? 'Expand :label :number' : 'Collapse :label :number', {
+                    label,
+                    number: index + 1,
+                })
+            "
             data-xq-collapse
             @click="$emit('toggle')"
         >

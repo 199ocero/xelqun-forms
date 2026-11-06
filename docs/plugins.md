@@ -242,7 +242,9 @@ $this->loadTranslationsFrom(__DIR__.'/../resources/lang', 'acme-rating');
 $fail(__('acme-rating::rating.range', ['max' => $this->max]));
 ```
 
-The package's own server text is in `xelqun-forms::messages`. Run `php artisan vendor:publish --tag=xelqun-forms-lang` to change it. Text in the Vue components is not translated yet: that arrives in M18.
+The package's own server text is in `xelqun-forms::messages`. Run `php artisan vendor:publish --tag=xelqun-forms-lang` to change it. Its browser text is in `xelqun-forms::client`.
+
+`useTranslator()` gives a Vue component the same `t()` the package uses, which fills `:name` placeholders. It only knows the package's lines, so send your own text through your field's props, translated in PHP.
 
 ## Installing a plugin
 

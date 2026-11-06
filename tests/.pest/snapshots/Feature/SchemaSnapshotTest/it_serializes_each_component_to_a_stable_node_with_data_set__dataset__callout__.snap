@@ -1,0 +1,44 @@
+{
+    "state": {
+        "data": {}
+    },
+    "components": [
+        {
+            "key": "data#0",
+            "type": "callout",
+            "hidden": false,
+            "path": null,
+            "label": "Heads up",
+            "rules": {
+                "visible": null
+            },
+            "span": null,
+            "props": {
+                "columns": null,
+                "description": "Read this",
+                "status": "warning",
+                "icon": "triangle-alert"
+            },
+            "children": [
+                {
+                    "key": "data#0.0",
+                    "type": "text",
+                    "hidden": false,
+                    "path": null,
+                    "label": null,
+                    "rules": {
+                        "visible": null
+                    },
+                    "span": null,
+                    "props": {
+                        "content": "More",
+                        "html": null
+                    },
+                    "children": [],
+                    "deps": []
+                }
+            ],
+            "deps": []
+        }
+    ]
+}

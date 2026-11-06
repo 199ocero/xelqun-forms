@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\HtmlString;
 use Xelqun\Forms\Components\Checkbox;
 use Xelqun\Forms\Components\CheckboxList;
 use Xelqun\Forms\Components\ColorPicker;
@@ -21,12 +22,20 @@ use Xelqun\Forms\Components\Toggle;
 use Xelqun\Forms\Components\ToggleButtons;
 use Xelqun\Forms\Conditions\When;
 use Xelqun\Forms\Form;
+use Xelqun\Forms\Layouts\Callout;
+use Xelqun\Forms\Layouts\EmptyState;
 use Xelqun\Forms\Layouts\Fieldset;
+use Xelqun\Forms\Layouts\Flex;
+use Xelqun\Forms\Layouts\FusedGroup;
 use Xelqun\Forms\Layouts\Grid;
 use Xelqun\Forms\Layouts\Group;
+use Xelqun\Forms\Layouts\Icon;
+use Xelqun\Forms\Layouts\Image;
 use Xelqun\Forms\Layouts\Section;
 use Xelqun\Forms\Layouts\Tab;
 use Xelqun\Forms\Layouts\Tabs;
+use Xelqun\Forms\Layouts\Text;
+use Xelqun\Forms\Layouts\UnorderedList;
 
 /**
  * A snapshot diff is a change to the JSON contract: decide whether the
@@ -87,6 +96,18 @@ it('serializes each component to a stable node', function (object $component) {
     'grid' => fn () => Grid::make(['default' => 2, 'lg' => 4])->schema([TextInput::make('a'), TextInput::make('b')->columnSpanFull()]),
     'fieldset' => fn () => Fieldset::make('Address')->schema([TextInput::make('city')]),
     'tabs' => fn () => Tabs::make()->tabs([Tab::make('One')->schema([TextInput::make('a')]), Tab::make('Two')->schema([TextInput::make('b')])]),
+    'flex' => fn () => Flex::make([TextInput::make('a'), TextInput::make('b')->grow(false)])->from('md'),
+    'fused group' => fn () => FusedGroup::make([TextInput::make('city')->placeholder('City'), TextInput::make('zip')])->label('Location')->columns(2),
+    'callout' => fn () => Callout::make('Heads up')->description('Read this')->warning()->footer([Text::make('More')]),
+    'empty state' => fn () => EmptyState::make('Nothing yet')->description('Add one')->icon('inbox')->contained(false),
+    'text' => fn () => Text::make('Note')->color('danger')->size('lg')->weight('bold')->fontFamily('mono')->tooltip('Why'),
+    'badge text' => fn () => Text::make('New')->badge()->icon('star'),
+    'html text' => fn () => Text::make(new HtmlString('<strong>Bold</strong>')),
+    'icon' => fn () => Icon::make('star')->color('warning')->size('lg')->tooltip('Starred'),
+    'image' => fn () => Image::make('/logo.png', 'Logo')->imageSize(40)->alignCenter(),
+    'unordered list' => fn () => UnorderedList::make(['One', Text::make('Two')])->size('xs'),
+    'field with slots' => fn () => TextInput::make('name')->afterLabel('Optional')->beforeContent(Icon::make('user'))->belowErrorMessage([Text::make('Help')]),
+    'toggle with slots' => fn () => Toggle::make('active')->aboveContent('Above')->belowContent('Below'),
     'repeater' => fn () => Repeater::make('items')->itemLabel('Line')->columns(2)->minItems(1)->maxItems(3)->default([['qty' => 2]])->schema([
         TextInput::make('qty')->numeric()->default(1),
         TextInput::make('subtotal')->computed('qty * 2'),

@@ -19,7 +19,9 @@ import { cn } from '../lib/utils';
 import type { SelectMessages, SelectOption } from '../schema/types';
 import { controlClass, groupLabelClass, optionClass, popoverClass, spinnerClass } from './classes';
 import { groupOptions } from './options';
+import { useTranslator } from '../composables/context';
 
+const t = useTranslator();
 const props = defineProps<{
     id?: string;
     options: SelectOption[];
@@ -50,7 +52,7 @@ const groups = computed(() => groupOptions(props.options));
                 )
             "
         >
-            <SelectValue :placeholder="placeholder ?? 'Select an option'" class="truncate" />
+            <SelectValue :placeholder="placeholder ?? t('Select an option')" class="truncate" />
             <LoaderCircle v-if="loading" :class="spinnerClass" aria-hidden="true" />
             <ChevronDown v-else class="size-4 shrink-0 opacity-60" />
         </SelectTrigger>
@@ -86,8 +88,8 @@ const groups = computed(() => groupOptions(props.options));
                     >
                         {{
                             loading
-                                ? (messages?.loading ?? 'Loading…')
-                                : (messages?.noOptions ?? 'No options')
+                                ? (messages?.loading ?? t('Loading…'))
+                                : (messages?.noOptions ?? t('No options'))
                         }}
                     </div>
                 </SelectViewport>

@@ -8,7 +8,7 @@ export { createRegistry, defaultComponents } from './components/defaults';
 
 export { useXqForm } from './composables/useXqForm';
 export { useField } from './composables/useField';
-export { useFormStore } from './composables/context';
+export { useFormStore, useTranslator } from './composables/context';
 export { gridStyle, spanStyle } from './composables/layout';
 export type { ComponentRegistry, ComponentResolver } from './composables/registry';
 

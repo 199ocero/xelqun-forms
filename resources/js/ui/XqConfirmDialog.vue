@@ -10,7 +10,9 @@ import {
     AlertDialogTitle,
 } from 'reka-ui';
 import XqButton from './XqButton.vue';
+import { useTranslator } from '../composables/context';
 
+const t = useTranslator();
 defineProps<{ title: string; message: string; confirmLabel?: string; cancelLabel?: string }>();
 defineEmits<{ confirm: [] }>();
 const open = defineModel<boolean>('open', { default: false });
@@ -30,7 +32,7 @@ const open = defineModel<boolean>('open', { default: false });
                 <div class="gap-2 flex justify-end">
                     <AlertDialogCancel as-child>
                         <XqButton type="button" variant="outline" size="sm">
-                            {{ cancelLabel ?? 'Cancel' }}
+                            {{ cancelLabel ?? t('Cancel') }}
                         </XqButton>
                     </AlertDialogCancel>
                     <AlertDialogAction as-child>
@@ -40,7 +42,7 @@ const open = defineModel<boolean>('open', { default: false });
                             size="sm"
                             @click="$emit('confirm')"
                         >
-                            {{ confirmLabel ?? 'Delete' }}
+                            {{ confirmLabel ?? t('Delete') }}
                         </XqButton>
                     </AlertDialogAction>
                 </div>

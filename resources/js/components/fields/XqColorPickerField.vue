@@ -23,7 +23,9 @@ import type { SchemaNode } from '../../schema/types';
 import { controlClass, popoverClass } from '../../ui/classes';
 import XqInput from '../../ui/XqInput.vue';
 import XqFieldWrapper from '../XqFieldWrapper.vue';
+import { useTranslator } from '../../composables/context';
 
+const t = useTranslator();
 const props = defineProps<{ node: SchemaNode }>();
 const { value, error, placeholder, describedBy, required, disabled, id, onBlur } = useField<
     string | null
@@ -74,7 +76,9 @@ function type(text: string | number | null | undefined): void {
                     <button
                         type="button"
                         :disabled="disabled"
-                        :aria-label="`Choose a color, currently ${value ?? 'none'}`"
+                        :aria-label="
+                            t('Choose a color, currently :value', { value: value ?? t('none') })
+                        "
                         :class="
                             cn(
                                 controlClass,

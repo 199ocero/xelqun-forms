@@ -14,3 +14,29 @@ export const groupLabelClass = 'px-2 py-1.5 text-xs font-medium text-xq-muted-fo
 
 export const optionClass =
     'relative flex w-full cursor-default items-center gap-2 rounded-xq-sm py-1.5 pr-8 pl-2 text-sm outline-none select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[highlighted]:bg-xq-accent data-[highlighted]:text-xq-accent-foreground';
+
+/** Text colors the PHP side can name. */
+export const toneClasses: Record<string, string> = {
+    neutral: 'text-xq-foreground',
+    primary: 'text-xq-primary',
+    danger: 'text-xq-destructive',
+    info: 'text-xq-info',
+    success: 'text-xq-success',
+    warning: 'text-xq-warning',
+};
+
+export const textSizeClasses: Record<string, string> = {
+    xs: 'text-xs',
+    sm: 'text-sm',
+    md: 'text-base',
+    lg: 'text-lg',
+};
+
+export const iconSizeClasses: Record<string, string> = {
+    xs: 'size-3',
+    sm: 'size-4',
+    md: 'size-5',
+    lg: 'size-6',
+    xl: 'size-8',
+    '2xl': 'size-10',
+};

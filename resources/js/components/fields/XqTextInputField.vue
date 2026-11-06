@@ -9,7 +9,9 @@ import type { SchemaNode } from '../../schema/types';
 import { controlClass, spinnerClass } from '../../ui/classes';
 import XqIcon from '../../ui/XqIcon.vue';
 import XqFieldWrapper from '../XqFieldWrapper.vue';
+import { useTranslator } from '../../composables/context';
 
+const t = useTranslator();
 const props = defineProps<{ node: SchemaNode }>();
 const {
     path,
@@ -178,7 +180,7 @@ onBeforeUnmount(() => {
                 v-if="options.revealable"
                 type="button"
                 class="mr-2 size-6 rounded-sm flex cursor-pointer items-center justify-center text-xq-muted-foreground hover:text-xq-foreground"
-                :aria-label="revealed ? 'Hide password' : 'Show password'"
+                :aria-label="revealed ? t('Hide password') : t('Show password')"
                 :aria-pressed="revealed"
                 @click="revealed = !revealed"
             >
@@ -188,7 +190,7 @@ onBeforeUnmount(() => {
                 v-if="options.copyable"
                 type="button"
                 class="mr-2 size-6 rounded-sm flex cursor-pointer items-center justify-center text-xq-muted-foreground hover:text-xq-foreground"
-                aria-label="Copy"
+                :aria-label="t('Copy')"
                 @click="copy"
             >
                 <component :is="copied ? Check : Copy" class="size-4" />

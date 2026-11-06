@@ -1,6 +1,14 @@
 import { computed } from 'vue';
 import type { SchemaNode } from '../schema/types';
+import type { FormStore } from '../core/store';
 import { useFormStore } from './context';
+
+/**
+ * The id of a field's control. Its error and hint hang off this.
+ */
+export function fieldId(store: FormStore, path: string): string {
+    return `xq-${store.id}-${path}`.replace(/[^\w-]/g, '-');
+}
 
 /**
  * Everything a field component needs: a writable value bound to the form
@@ -10,7 +18,7 @@ export function useField<T = any>(nodeOrPath: SchemaNode | string) {
     const store = useFormStore();
     const node = typeof nodeOrPath === 'string' ? store.nodes.get(nodeOrPath)! : nodeOrPath;
     const path = node.path ?? node.key;
-    const id = `xq-${store.id}-${path}`.replace(/[^\w-]/g, '-');
+    const id = fieldId(store, path);
     const error = computed(() => store.errors[path] ?? null);
     const hint = computed(() => store.text(node, 'hint'));
 

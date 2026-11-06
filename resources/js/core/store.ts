@@ -21,6 +21,8 @@ import { clone, deletePath, getPath, overlaps, replaceRow, setPath, startsWithPa
 import { RequestLog } from './log';
 import { RequestQueue } from './queue';
 import { newRowKey } from './rows';
+import { translate } from './translate';
+import type { Replacements } from './translate';
 import { isPlainObject } from './values';
 
 export type SetSource = 'user' | 'server' | 'computed';
@@ -87,6 +89,22 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
     const root: Ref<HTMLElement | null> = ref(null);
     const uploads = new Set<Promise<unknown>>();
     const uploading = ref(0);
+    let cleanState: string | null = null;
+
+    function t(text: string, replacements?: Replacements): string {
+        return translate(schema.messages, text, replacements);
+    }
+
+    /**
+     * Treat the current values as saved.
+     */
+    function markClean(): void {
+        cleanState = JSON.stringify(state.data);
+    }
+
+    function isDirty(): boolean {
+        return cleanState !== null && JSON.stringify(state.data) !== cleanState;
+    }
 
     function get(path: string): any {
         return getPath(state, path);
@@ -447,10 +465,11 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
         },
         onError: (error) => {
             if (error instanceof HttpError && error.status === 419) {
-                fatalError.value = 'This form has expired. Reload the page to continue.';
+                fatalError.value = t('This form has expired. Reload the page to continue.');
             } else {
-                liveError.value =
-                    'Some fields could not be updated. Check your connection and try again.';
+                liveError.value = t(
+                    'Some fields could not be updated. Check your connection and try again.',
+                );
             }
 
             console.error('[xelqun] Live update failed.', error);
@@ -587,6 +606,7 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
             },
             onSuccess: (page) => {
                 clearErrors();
+                markClean();
                 submitOptions.onSuccess?.(page);
             },
             onFinish: () => {
@@ -672,6 +692,7 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
 
     return {
         id: schema.id,
+        locale: schema.locale,
         schema,
         components,
         state,
@@ -685,6 +706,9 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
         root,
         queue,
         log: requests.entries,
+        t,
+        markClean,
+        isDirty,
         get,
         set,
         blur,

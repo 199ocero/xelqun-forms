@@ -55,6 +55,8 @@ class Form
 
     private ?string $formId = null;
 
+    private bool $hasUnsavedChangesAlerts = false;
+
     private readonly string $operation;
 
     /** @var array<string, Model> The record each row or related group was filled from, by container. */
@@ -124,6 +126,17 @@ class Form
     public function id(string $id): static
     {
         $this->formId = $id;
+
+        return $this;
+    }
+
+    /**
+     * Warn before the user leaves with changes that aren't saved. For a form
+     * class, call this from boot().
+     */
+    public function unsavedChangesAlerts(bool $condition = true): static
+    {
+        $this->hasUnsavedChangesAlerts = $condition;
 
         return $this;
     }
@@ -499,8 +512,6 @@ class Form
                         return $this->findComponent($key, $component->getRowComponents($rowKey));
                     }
                 }
-
-                continue;
             }
 
             $found = $this->findComponent($key, $component->getChildComponents());
@@ -570,9 +581,29 @@ class Form
                 'upload' => route('xelqun.forms.upload', absolute: false),
                 'search' => route('xelqun.forms.search', absolute: false),
             ],
+            // Laravel writes pt_BR, and browsers throw on anything but pt-BR.
+            'locale' => str_replace('_', '-', app()->getLocale()),
+            ...$this->getClientMessages(),
+            ...($this->hasUnsavedChangesAlerts ? ['unsavedChangesAlert' => true] : []),
             'state' => [StatePath::ROOT => $this->getJsonData()],
             'components' => $components,
         ];
+    }
+
+    /**
+     * Text the browser shows, in this locale. It is written in English and uses
+     * that as the key, so only lines that differ have to travel.
+     *
+     * @return array{messages?: array<string, string>}
+     */
+    private function getClientMessages(): array
+    {
+        $lines = trans('xelqun-forms::client');
+        $messages = is_array($lines)
+            ? array_filter($lines, fn (string $text, string $key): bool => $text !== $key, ARRAY_FILTER_USE_BOTH)
+            : [];
+
+        return $messages === [] ? [] : ['messages' => $messages];
     }
 
     /**
