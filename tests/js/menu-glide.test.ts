@@ -140,6 +140,10 @@ describe('XqMenuGlide', () => {
         });
     });
 
+    it('has a color of its own by default', () => {
+        expect(glide(mount(List)).classes()).toContain('bg-xq-accent');
+    });
+
     it('stays out of the way of screen readers and clicks', () => {
         const wrapper = mount(List);
 

@@ -122,7 +122,7 @@ const style = computed(() => ({
                 isGliding
                     ? 'transition-[transform,width,height,opacity] duration-(--xq-duration-base) ease-(--xq-ease-out)'
                     : 'transition-opacity duration-(--xq-duration-fast)',
-                props.class ?? 'rounded-xq-sm bg-xq-accent',
+                props.class || 'rounded-xq-sm bg-xq-accent',
             )
         "
         :style="style"
