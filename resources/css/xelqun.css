@@ -99,6 +99,42 @@
 }
 
 /*
+ * One quiet scrollbar everywhere. macOS can hide scrollbars until you scroll, so a wide
+ * table just looks cut off, and with them always on, the browser's default bars are
+ * heavy. Styling them is the only way to control both in Chrome and Safari, and setting
+ * scrollbar-width would switch this off, so that's for Firefox only. It's in a layer so
+ * that any rule of an app's own wins.
+ */
+@layer base {
+    ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+    }
+
+    ::-webkit-scrollbar-track,
+    ::-webkit-scrollbar-corner {
+        background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        border: 3px solid transparent;
+        border-radius: 9999px;
+        background: var(--xq-input) padding-box;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: var(--xq-muted-foreground) padding-box;
+    }
+
+    @supports not selector(::-webkit-scrollbar) {
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: var(--xq-input) transparent;
+        }
+    }
+}
+
+/*
  * Responsive grid driven by CSS variables set from the schema
  * (see gridStyle() and spanStyle() in composables/layout.ts).
  */

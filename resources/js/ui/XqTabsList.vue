@@ -12,7 +12,7 @@ const props = defineProps<{ class?: HTMLAttributes['class'] }>();
         data-slot="xq-tabs-list"
         :class="
             cn(
-                'h-9 gap-1 p-1 relative inline-flex w-fit max-w-full items-center overflow-x-auto rounded-xq-lg bg-xq-muted text-xq-muted-foreground',
+                'h-9 gap-1 p-1 relative inline-flex w-fit max-w-full [scrollbar-width:none] items-center overflow-x-auto rounded-xq-lg bg-xq-muted text-xq-muted-foreground',
                 props.class,
             )
         "

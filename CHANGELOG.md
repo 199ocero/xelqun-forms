@@ -2,6 +2,27 @@
 
 Xelqun Forms is pre-alpha. Until 1.0, a minor version can break existing code, and each break is listed here.
 
+## Unreleased
+
+### Added
+
+- **`Tabs::persistTabInQueryString()`** keeps the open tab in the URL, as `?tab=pricing`, so a link can open it. Pass a key when a page has more than one set of tabs.
+
+### Changed
+
+- **One quiet scrollbar everywhere.** `@xelqun/forms/style.css` now styles every scrollbar on the page, thin and always visible, including those of tables and panels. It sits in a CSS layer, so any scrollbar rule of an app's own wins. Tab strips scroll without a bar.
+- **The wizard draws a line between its steps**, colored up to the current step. An invalid step is marked on its circle, and its icon keeps its own color.
+
+### Fixed
+
+- **Icons no longer go missing in dev mode when the packages come from npm.** Vite pre-bundled their TypeScript but not their `.vue` files, so the two read separate copies of shared state. `xelqun-forms:install` now adds `optimizeDeps.exclude` to the Vite config. An app that's already installed needs this by hand:
+
+    ```ts
+    optimizeDeps: {
+        exclude: ['@xelqun/forms', '@xelqun/tables', '@xelqun/panels'],
+    },
+    ```
+
 ## 0.7.0 - 2026-11-07
 
 ### Added
