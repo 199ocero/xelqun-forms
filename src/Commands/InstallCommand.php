@@ -17,6 +17,12 @@ class InstallCommand extends Command
 
     private const string PLUGIN_CALL = 'createXelqunForms()';
 
+    /**
+     * All three, so installing tables or panels later needs no second edit. A name
+     * Vite can't find here is ignored.
+     */
+    private const string VITE_EXCLUDE = "exclude: ['@xelqun/forms', '@xelqun/tables', '@xelqun/panels'],";
+
     protected $signature = 'xelqun-forms:install
         {--config : Publish the config file}
         {--without-node : Do not install the npm package}';
@@ -29,7 +35,11 @@ class InstallCommand extends Command
             return self::FAILURE;
         }
 
-        $manualSteps = array_filter([$this->registerPlugin(), $this->importStylesheet(self::STYLESHEET)]);
+        $manualSteps = array_filter([
+            $this->registerPlugin(),
+            $this->importStylesheet(self::STYLESHEET),
+            $this->excludeFromPreBundling(),
+        ]);
 
         if ($this->option('config')) {
             $this->callSilently('vendor:publish', ['--tag' => 'xelqun-forms-config']);
@@ -73,6 +83,48 @@ class InstallCommand extends Command
         }
 
         File::put($path, $this->addImport($patched, "import { createXelqunForms } from '".self::NPM_PACKAGE."';"));
+
+        return null;
+    }
+
+    /**
+     * Vite pre-bundles the packages' TypeScript but can't bundle their .vue files, so in
+     * dev mode those files read a second copy of shared state, such as the icon registry.
+     *
+     * @return string|null The step left for the developer, or null when none remains.
+     */
+    private function excludeFromPreBundling(): ?string
+    {
+        $manualStep = 'Add `optimizeDeps: { '.self::VITE_EXCLUDE.' }` to your Vite config. Without it, icons and other shared state break in dev mode.';
+
+        $path = array_find([base_path('vite.config.ts'), base_path('vite.config.js')], fn (string $path): bool => File::exists($path));
+
+        if ($path === null) {
+            return $manualStep;
+        }
+
+        $source = File::get($path);
+
+        if (str_contains($source, 'optimizeDeps')) {
+            return str_contains($source, self::NPM_PACKAGE) ? null : $manualStep;
+        }
+
+        $patched = preg_replace_callback('/defineConfig\(\{[ \t]*\r?\n([ \t]+)/', fn (array $match): string => sprintf(
+            "%s// Pre-bundling these would split them from their .vue files.\n%soptimizeDeps: {\n%s%s%s\n%s},\n%s",
+            $match[0],
+            $match[1],
+            $match[1],
+            $match[1],
+            self::VITE_EXCLUDE,
+            $match[1],
+            $match[1],
+        ), $source, 1, $replacements);
+
+        if ($replacements === 0) {
+            return $manualStep;
+        }
+
+        File::put($path, $patched);
 
         return null;
     }

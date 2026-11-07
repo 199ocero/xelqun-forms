@@ -53,6 +53,8 @@ Without `extra.xelqun`, `acme/rating` means `ratingPlugin()` from `@acme/rating`
 }
 ```
 
+Your package ships `.vue` files, which Vite can't pre-bundle, so if it keeps shared state, ask users to add it to `optimizeDeps.exclude` next to the Xelqun packages.
+
 No plugin class is needed on the PHP side. Your service provider is enough.
 
 ## A field

@@ -83,6 +83,52 @@ it('skips the npm install with --without-node', function (): void {
     expect(File::get("{$this->appPath}/resources/css/app.css"))->toContain('@xelqun/forms/style.css');
 });
 
+it('keeps the packages out of Vite pre-bundling', function (): void {
+    Process::fake();
+    File::put("{$this->appPath}/vite.config.ts", <<<'TS'
+    import { defineConfig } from 'vite';
+
+    export default defineConfig({
+        plugins: [],
+    });
+    TS);
+
+    $this->artisan('xelqun-forms:install')->assertSuccessful();
+    $this->artisan('xelqun-forms:install')->assertSuccessful();
+
+    expect(File::get("{$this->appPath}/vite.config.ts"))->toBe(<<<'TS'
+    import { defineConfig } from 'vite';
+
+    export default defineConfig({
+        // Pre-bundling these would split them from their .vue files.
+        optimizeDeps: {
+            exclude: ['@xelqun/forms', '@xelqun/tables', '@xelqun/panels'],
+        },
+        plugins: [],
+    });
+    TS);
+});
+
+it('prints the Vite step when it cannot edit the config with confidence', function (?string $config): void {
+    Process::fake();
+
+    if ($config !== null) {
+        File::put("{$this->appPath}/vite.config.js", $config);
+    }
+
+    $this->artisan('xelqun-forms:install')
+        ->expectsOutputToContain('optimizeDeps')
+        ->assertSuccessful();
+
+    if ($config !== null) {
+        expect(File::get("{$this->appPath}/vite.config.js"))->toBe($config);
+    }
+})->with([
+    'no config' => [null],
+    'a function config' => ["export default defineConfig(({ mode }) => ({\n    plugins: [],\n}));\n"],
+    'an optimizeDeps of its own' => ["export default defineConfig({\n    optimizeDeps: { include: ['x'] },\n});\n"],
+]);
+
 it('registers the plugin in the Inertia entry file', function (string $source, string $expected): void {
     Process::fake();
     File::put("{$this->appPath}/resources/js/app.ts", $source);

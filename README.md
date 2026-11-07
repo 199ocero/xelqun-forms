@@ -50,7 +50,7 @@ class OrderForm extends Form
 composer require xelqun/forms && php artisan xelqun-forms:install
 ```
 
-The installer adds the matching `@xelqun/forms` npm package and sets up `resources/js/app.ts` and `resources/css/app.css`.
+The installer adds the matching `@xelqun/forms` npm package and sets up `resources/js/app.ts`, `resources/css/app.css` and your Vite config.
 
 ## Usage
 
