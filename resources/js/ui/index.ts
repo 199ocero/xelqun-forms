@@ -18,6 +18,7 @@ export { default as XqSelect } from './XqSelect.vue';
 export { default as XqSwitch } from './XqSwitch.vue';
 export { default as XqTabs } from './XqTabs.vue';
 export { default as XqTabsContent } from './XqTabsContent.vue';
+export { default as XqTabGlide } from './XqTabGlide.vue';
 export { default as XqTabsList } from './XqTabsList.vue';
 export { default as XqTabsTrigger } from './XqTabsTrigger.vue';
 export { default as XqTextarea } from './XqTextarea.vue';
