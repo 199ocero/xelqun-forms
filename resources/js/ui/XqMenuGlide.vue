@@ -12,7 +12,7 @@ import { cn } from '../lib/utils';
 const props = defineProps<{ hoverItems?: string; class?: HTMLAttributes['class'] }>();
 
 const element = ref<HTMLElement>();
-const box = ref({ top: 0, left: 0, width: 0, height: 0 });
+const box = ref({ top: 0, left: 0, right: 0, height: 0 });
 const isVisible = ref(false);
 const isGliding = ref(false);
 
@@ -51,7 +51,13 @@ function follow(): void {
 
     isGliding.value = isVisible.value;
     isVisible.value = true;
-    box.value = { top, left, width: item.offsetWidth, height: item.offsetHeight };
+    // Edges in place of a width, because a list can settle its width after the first highlight.
+    box.value = {
+        top,
+        left,
+        right: list.clientWidth - left - item.offsetWidth,
+        height: item.offsetHeight,
+    };
 }
 
 function hoverItem(event: Event): void {
@@ -105,8 +111,9 @@ onBeforeUnmount(() => {
 });
 
 const style = computed(() => ({
-    transform: `translate(${box.value.left}px, ${box.value.top}px)`,
-    width: `${box.value.width}px`,
+    transform: `translateY(${box.value.top}px)`,
+    left: `${box.value.left}px`,
+    right: `${box.value.right}px`,
     height: `${box.value.height}px`,
     opacity: isVisible.value ? 1 : 0,
 }));
@@ -118,9 +125,9 @@ const style = computed(() => ({
         aria-hidden="true"
         :class="
             cn(
-                'top-0 left-0 pointer-events-none absolute',
+                'top-0 pointer-events-none absolute',
                 isGliding
-                    ? 'transition-[transform,width,height,opacity] duration-(--xq-duration-base) ease-(--xq-ease-out)'
+                    ? 'transition-[transform,left,right,height,opacity] duration-(--xq-duration-base) ease-(--xq-ease-out)'
                     : 'transition-opacity duration-(--xq-duration-fast)',
                 props.class || 'rounded-xq-sm bg-xq-accent',
             )
