@@ -36,7 +36,7 @@ const handles = computed<number[]>({
                     v-for="(_, index) in handles"
                     :key="index"
                     :aria-label="label ?? undefined"
-                    class="size-4 shadow-xs block cursor-pointer rounded-full border border-xq-primary bg-xq-background outline-none focus-visible:ring-[3px] focus-visible:ring-xq-ring/30"
+                    class="size-4 shadow-xs block cursor-pointer rounded-full border border-xq-primary bg-xq-card outline-none focus-visible:ring-[3px] focus-visible:ring-xq-ring/30"
                 />
             </SliderRoot>
             <output v-if="options.tooltips" class="text-sm text-right tabular-nums">

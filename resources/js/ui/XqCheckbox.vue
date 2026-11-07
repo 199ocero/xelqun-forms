@@ -22,7 +22,7 @@ const model = defineModel<boolean>({ default: false });
         @update:model-value="model = $event === true"
         :class="
             cn(
-                'peer size-4 shadow-xs shrink-0 cursor-pointer rounded-[4px] border border-xq-input bg-xq-background transition-shadow outline-none focus-visible:ring-[3px] focus-visible:ring-xq-ring/30 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-xq-destructive data-[state=checked]:border-xq-primary data-[state=checked]:bg-xq-primary data-[state=checked]:text-xq-primary-foreground data-[state=indeterminate]:border-xq-primary data-[state=indeterminate]:bg-xq-primary data-[state=indeterminate]:text-xq-primary-foreground',
+                'peer size-4 shadow-xs shrink-0 cursor-pointer rounded-[4px] border border-xq-input bg-xq-card transition-shadow outline-none focus-visible:ring-[3px] focus-visible:ring-xq-ring/30 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-xq-destructive data-[state=checked]:border-xq-primary data-[state=checked]:bg-xq-primary data-[state=checked]:text-xq-primary-foreground data-[state=indeterminate]:border-xq-primary data-[state=indeterminate]:bg-xq-primary data-[state=indeterminate]:text-xq-primary-foreground',
                 props.class,
             )
         "

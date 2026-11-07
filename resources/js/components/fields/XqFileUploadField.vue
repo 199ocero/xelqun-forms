@@ -416,7 +416,7 @@ onBeforeUnmount(() => {
                     v-for="(file, index) in files"
                     :key="file.value"
                     :data-xq-file="file.value"
-                    class="gap-3 p-2 pr-3 flex items-center rounded-xq-md border border-xq-border bg-xq-background"
+                    class="gap-3 p-2 pr-3 flex items-center rounded-xq-md border border-xq-border bg-xq-card"
                 >
                     <span
                         v-if="canReorder && files.length > 1"
@@ -521,7 +521,7 @@ onBeforeUnmount(() => {
             <div
                 v-for="item in pending"
                 :key="item.id"
-                class="gap-3 p-2 pr-3 flex items-center rounded-xq-md border border-dashed border-xq-border bg-xq-background"
+                class="gap-3 p-2 pr-3 flex items-center rounded-xq-md border border-dashed border-xq-border bg-xq-card"
             >
                 <LoaderCircle class="size-5 motion-safe:animate-spin shrink-0 text-xq-primary" />
                 <div class="min-w-0 gap-1 grid flex-1">
@@ -555,7 +555,7 @@ onBeforeUnmount(() => {
                 :for="id"
                 :class="
                     cn(
-                        'gap-1.5 px-4 py-5 flex cursor-pointer flex-col items-center justify-center border border-dashed border-xq-input bg-xq-background text-center transition-[color,background-color,border-color,box-shadow] outline-none hover:bg-xq-muted/50 has-[input:focus-visible]:border-xq-ring has-[input:focus-visible]:ring-[3px] has-[input:focus-visible]:ring-xq-ring/25',
+                        'gap-1.5 px-4 py-5 flex cursor-pointer flex-col items-center justify-center border border-dashed border-xq-input bg-xq-card text-center transition-[color,background-color,border-color,box-shadow] outline-none hover:bg-xq-muted/50 has-[input:focus-visible]:border-xq-ring has-[input:focus-visible]:ring-[3px] has-[input:focus-visible]:ring-xq-ring/25',
                         isAvatar ? 'size-24 rounded-full' : 'rounded-xq-md',
                         dragging && 'border-xq-primary bg-xq-primary/5',
                         (error || uploadError) && 'border-xq-destructive',

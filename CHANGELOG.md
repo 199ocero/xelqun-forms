@@ -26,6 +26,7 @@ Update both halves together: `composer update xelqun/forms` and `npm install @xe
 
 ### Fixed
 
+- **Fields stand out from the page.** Inputs, selects, checkboxes, radios, toggle buttons, sliders and file rows took the page's background, so only a thin border marked them. They take the card color now.
 - **A failed submit no longer writes the password to the session.** Forms post under `data`, and Laravel's `dontFlash` list only covers top-level keys, so every field's value landed in `_old_input`.
 - **An edit page no longer sends a stored password hash to the browser.** `$hidden` doesn't apply when a field reads an attribute directly. An empty password field also no longer overwrites the stored value.
 - **Type checking passes in an app that types its flash data.**

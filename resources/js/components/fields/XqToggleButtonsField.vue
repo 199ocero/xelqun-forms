@@ -59,7 +59,7 @@ const model = computed<any>({
                 :disabled="option.disabled"
                 :class="
                     cn(
-                        'gap-2 h-9 px-3 text-sm font-medium inline-flex cursor-pointer items-center justify-center border border-xq-input bg-xq-background text-xq-foreground transition-colors outline-none hover:bg-xq-accent focus-visible:ring-[3px] focus-visible:ring-xq-ring/25 disabled:cursor-not-allowed disabled:opacity-50',
+                        'gap-2 h-9 px-3 text-sm font-medium inline-flex cursor-pointer items-center justify-center border border-xq-input bg-xq-card text-xq-foreground transition-colors outline-none hover:bg-xq-accent focus-visible:ring-[3px] focus-visible:ring-xq-ring/25 disabled:cursor-not-allowed disabled:opacity-50',
                         isGrouped
                             ? 'first:ml-0 -ml-px first:rounded-l-xq-md last:rounded-r-xq-md'
                             : 'rounded-xq-md',
