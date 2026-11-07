@@ -2,11 +2,20 @@
 
 Xelqun Forms is pre-alpha. Until 1.0, a minor version can break existing code, and each break is listed here.
 
-## Unreleased
+## 0.7.0 - 2026-11-07
+
+### Added
+
+- **`XqMenuGlide` and `XqTabGlide`.** The sliding highlight and tab mark, exported for your own menus and tabs. `XqMenuGlide` takes `hover-items` for a grid of cards.
+- **`preserveState` takes a function.** A form can decide from each response whether to keep the page.
 
 ### Changed
 
 - **Motion.** One set of `--xq-*` tokens drives every animation, and reduced motion is handled in one place. Menus and popovers grow from what opened them, dialogs and toasts arrive with a soft blur, tabs slide, buttons press, switches spring, check marks draw on, fields shake on an error, and sections fold open. One highlight glides between the items of selects and menus, by pointer or arrow keys, or across a grid of cards with `hover-items`, and the tab pill leans over to a hovered tab and settles back. An action's button shows the whole run: its icon lifts on hover, a press, a spinner if it takes a while, then a check that draws on, or a shake if it fails.
+
+### Fixed
+
+- **Fields stand out from the page.** Inputs, selects, checkboxes, radios, toggle buttons, sliders and file rows took the page's background, so only a thin border marked them. They take the card color now.
 
 ## 0.6.0 - 2026-11-06
 
@@ -26,7 +35,6 @@ Update both halves together: `composer update xelqun/forms` and `npm install @xe
 
 ### Fixed
 
-- **Fields stand out from the page.** Inputs, selects, checkboxes, radios, toggle buttons, sliders and file rows took the page's background, so only a thin border marked them. They take the card color now.
 - **A failed submit no longer writes the password to the session.** Forms post under `data`, and Laravel's `dontFlash` list only covers top-level keys, so every field's value landed in `_old_input`.
 - **An edit page no longer sends a stored password hash to the browser.** `$hidden` doesn't apply when a field reads an attribute directly. An empty password field also no longer overwrites the stored value.
 - **Type checking passes in an app that types its flash data.**
