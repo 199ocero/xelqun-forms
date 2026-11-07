@@ -6,12 +6,18 @@
 @source "../js";
 
 @theme inline {
-    --animate-xq-fade-in: xq-fade-in 150ms ease-out;
-    --animate-xq-fade-out: xq-fade-out 100ms ease-in forwards;
-    --animate-xq-toast-in: xq-toast-in 200ms cubic-bezier(0.16, 1, 0.3, 1);
-    --animate-xq-toast-out: xq-toast-out 150ms ease-in forwards;
-    --animate-xq-dialog-in: xq-dialog-in 180ms cubic-bezier(0.16, 1, 0.3, 1);
-    --animate-xq-dialog-out: xq-dialog-out 100ms ease-in forwards;
+    --animate-xq-fade-in: xq-fade-in var(--xq-duration-base) var(--xq-ease-out);
+    --animate-xq-fade-out: xq-fade-out var(--xq-duration-fast) var(--xq-ease-in) forwards;
+    --animate-xq-toast-in: xq-toast-in var(--xq-duration-slow) var(--xq-ease-out);
+    --animate-xq-toast-out: xq-toast-out var(--xq-duration-base) var(--xq-ease-in) forwards;
+    --animate-xq-dialog-in: xq-dialog-in var(--xq-duration-slow) var(--xq-ease-out);
+    --animate-xq-dialog-out: xq-dialog-out var(--xq-duration-fast) var(--xq-ease-in) forwards;
+    --animate-xq-pop-in: xq-pop-in var(--xq-duration-base) var(--xq-ease-out);
+    --animate-xq-pop-out: xq-pop-out var(--xq-duration-fast) var(--xq-ease-in) forwards;
+    --animate-xq-rise-in: xq-rise-in var(--xq-duration-slow) var(--xq-ease-out) both;
+    --animate-xq-error-in: xq-error-in var(--xq-duration-base) var(--xq-ease-out);
+    --animate-xq-shake: xq-shake var(--xq-duration-slow) var(--xq-ease-out);
+    --animate-xq-check-draw: xq-check-draw var(--xq-duration-base) var(--xq-ease-out) both;
     --color-xq-background: var(--xq-background);
     --color-xq-foreground: var(--xq-foreground);
     --color-xq-card: var(--xq-card);
@@ -288,6 +294,31 @@
     height: auto;
 }
 
+/*
+ * Motion, in one place. Everything that moves reads these, across forms, tables
+ * and panels, so a calmer app changes four lines. Things leave faster than they
+ * arrive, and only opacity, transform and filter animate, so nothing reflows.
+ */
+:root {
+    --xq-duration-fast: 120ms;
+    --xq-duration-base: 200ms;
+    --xq-duration-slow: 320ms;
+    --xq-stagger: 45ms;
+    --xq-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --xq-ease-in: cubic-bezier(0.4, 0, 1, 1);
+    --xq-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* One guard for all of it. Not zero, so the events that close a dialog still fire. */
+@media (prefers-reduced-motion: reduce) {
+    :root {
+        --xq-duration-fast: 1ms;
+        --xq-duration-base: 1ms;
+        --xq-duration-slow: 1ms;
+        --xq-stagger: 0ms;
+    }
+}
+
 @keyframes xq-fade-in {
     from {
         opacity: 0;
@@ -303,7 +334,9 @@
 @keyframes xq-toast-in {
     from {
         opacity: 0;
-        translate: 0 -0.5rem;
+        translate: 0 -0.75rem;
+        scale: 0.96;
+        filter: blur(4px);
     }
 }
 
@@ -311,19 +344,77 @@
     to {
         opacity: 0;
         translate: 1rem 0;
+        filter: blur(2px);
     }
 }
 
 @keyframes xq-dialog-in {
     from {
         opacity: 0;
-        scale: 0.96;
+        scale: 0.94;
+        filter: blur(6px);
     }
 }
 
 @keyframes xq-dialog-out {
     to {
         opacity: 0;
+        scale: 0.97;
+        filter: blur(2px);
+    }
+}
+
+/* Grows from whatever opened it, as long as the element sets its transform-origin. */
+@keyframes xq-pop-in {
+    from {
+        opacity: 0;
+        scale: 0.95;
+        filter: blur(3px);
+    }
+}
+
+@keyframes xq-pop-out {
+    to {
+        opacity: 0;
         scale: 0.98;
+    }
+}
+
+@keyframes xq-rise-in {
+    from {
+        opacity: 0;
+        translate: 0 0.5rem;
+        filter: blur(3px);
+    }
+}
+
+@keyframes xq-error-in {
+    from {
+        opacity: 0;
+        translate: 0 -0.25rem;
+    }
+}
+
+@keyframes xq-shake {
+    20% {
+        translate: -5px 0;
+    }
+
+    45% {
+        translate: 4px 0;
+    }
+
+    70% {
+        translate: -2px 0;
+    }
+}
+
+@keyframes xq-check-draw {
+    from {
+        stroke-dashoffset: 24;
+    }
+
+    to {
+        stroke-dashoffset: 0;
     }
 }

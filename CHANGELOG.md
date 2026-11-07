@@ -2,6 +2,12 @@
 
 Xelqun Forms is pre-alpha. Until 1.0, a minor version can break existing code, and each break is listed here.
 
+## Unreleased
+
+### Changed
+
+- **Motion.** One set of `--xq-*` tokens drives every animation, and reduced motion is handled in one place. Menus and popovers grow from what opened them, dialogs and toasts arrive with a soft blur, tabs slide, buttons press, switches spring, check marks draw on, fields shake on an error, and sections fold open.
+
 ## 0.6.0 - 2026-11-06
 
 This release fixes two ways a password could leak, and adds what `xelqun/panels` needs to protect its endpoints. The schema version (`$xq`) stays 1.

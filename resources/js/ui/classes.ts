@@ -15,7 +15,7 @@ export const actionVariants: Record<string, 'default' | 'destructive' | 'outline
 export const spinnerClass = 'size-4 shrink-0 motion-safe:animate-spin text-xq-muted-foreground';
 
 export const popoverClass =
-    'z-50 overflow-hidden rounded-xq-md border border-xq-border bg-xq-popover text-xq-popover-foreground shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0';
+    'z-50 overflow-hidden rounded-xq-md border border-xq-border bg-xq-popover text-xq-popover-foreground shadow-lg origin-(--reka-popper-transform-origin) data-[state=open]:animate-xq-pop-in data-[state=closed]:animate-xq-pop-out';
 
 export const groupLabelClass = 'px-2 py-1.5 text-xs font-medium text-xq-muted-foreground';
 
@@ -23,10 +23,10 @@ export const optionClass =
     'relative flex w-full cursor-default items-center gap-2 rounded-xq-sm py-1.5 pr-8 pl-2 text-sm outline-none select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[highlighted]:bg-xq-accent data-[highlighted]:text-xq-accent-foreground';
 
 export const dialogOverlayClass =
-    'inset-0 bg-black/50 fixed z-50 backdrop-blur-[2px] motion-safe:data-[state=open]:animate-xq-fade-in motion-safe:data-[state=closed]:animate-xq-fade-out';
+    'inset-0 bg-black/50 fixed z-50 backdrop-blur-[2px] data-[state=open]:animate-xq-fade-in data-[state=closed]:animate-xq-fade-out';
 
 export const dialogContentClass =
-    'shadow-xl fixed top-1/2 left-1/2 z-50 flex max-h-[85vh] w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xq-xl border border-xq-border bg-xq-popover text-xq-popover-foreground outline-none motion-safe:data-[state=open]:animate-xq-dialog-in motion-safe:data-[state=closed]:animate-xq-dialog-out';
+    'shadow-xl fixed top-1/2 left-1/2 z-50 flex max-h-[85vh] w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xq-xl border border-xq-border bg-xq-popover text-xq-popover-foreground outline-none data-[state=open]:animate-xq-dialog-in data-[state=closed]:animate-xq-dialog-out';
 
 /** The tinted circle behind a dialog's icon. */
 export const dialogIconClasses: Record<string, string> = {

@@ -50,15 +50,23 @@ provide(HEADING_LEVEL, Math.min(headingLevel + 1, 6));
                 <ChevronDown
                     :class="
                         cn(
-                            'size-4 transition-transform motion-reduce:transition-none',
+                            'size-4 transition-transform duration-(--xq-duration-slow) ease-(--xq-ease-out)',
                             collapsed && '-rotate-90',
                         )
                     "
                 />
             </button>
         </header>
-        <div v-show="!collapsed" class="xq-grid p-5" :style="gridStyle(options.columns)">
-            <XqNode v-for="child in node.children ?? []" :key="child.key" :node="child" />
+        <div
+            class="grid transition-[grid-template-rows] duration-(--xq-duration-slow) ease-(--xq-ease-out)"
+            :class="collapsed ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]'"
+            :inert="collapsed"
+        >
+            <div class="min-h-0 overflow-hidden">
+                <div class="xq-grid p-5" :style="gridStyle(options.columns)">
+                    <XqNode v-for="child in node.children ?? []" :key="child.key" :node="child" />
+                </div>
+            </div>
         </div>
     </section>
 </template>

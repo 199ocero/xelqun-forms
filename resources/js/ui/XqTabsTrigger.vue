@@ -17,7 +17,7 @@ const props = defineProps<{
         :disabled="disabled"
         :class="
             cn(
-                'gap-1.5 px-3 text-sm font-medium data-[state=active]:shadow-sm inline-flex h-full cursor-pointer items-center justify-center rounded-xq-md whitespace-nowrap transition-[color,box-shadow] outline-none hover:text-xq-foreground focus-visible:ring-[3px] focus-visible:ring-xq-ring/30 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-xq-background data-[state=active]:text-xq-foreground',
+                'gap-1.5 px-3 text-sm font-medium relative z-10 inline-flex h-full cursor-pointer items-center justify-center rounded-xq-md whitespace-nowrap transition-[color,box-shadow] outline-none hover:text-xq-foreground focus-visible:ring-[3px] focus-visible:ring-xq-ring/30 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:text-xq-foreground',
                 props.class,
             )
         "

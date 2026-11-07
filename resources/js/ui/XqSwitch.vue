@@ -21,7 +21,7 @@ const model = defineModel<boolean>({ default: false });
         "
     >
         <SwitchThumb
-            class="size-4 shadow-sm data-[state=unchecked]:translate-x-0.5 pointer-events-none block rounded-full bg-xq-background ring-0 transition-transform data-[state=checked]:translate-x-[calc(100%-1px)] motion-reduce:transition-none"
+            class="size-4 shadow-sm data-[state=unchecked]:translate-x-0.5 pointer-events-none block rounded-full bg-xq-background ring-0 transition-transform duration-(--xq-duration-slow) ease-(--xq-ease-spring) data-[state=checked]:translate-x-[calc(100%-1px)] motion-reduce:transition-none"
         />
     </SwitchRoot>
 </template>

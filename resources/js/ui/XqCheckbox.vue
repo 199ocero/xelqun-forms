@@ -29,7 +29,11 @@ const model = defineModel<boolean>({ default: false });
     >
         <CheckboxIndicator class="flex items-center justify-center text-current">
             <Minus v-if="indeterminate" class="size-3.5" :stroke-width="3" />
-            <Check v-else class="size-3.5" :stroke-width="3" />
+            <Check
+                v-else
+                class="size-3.5 [&_path]:animate-xq-check-draw [&_path]:[stroke-dasharray:24]"
+                :stroke-width="3"
+            />
         </CheckboxIndicator>
     </CheckboxRoot>
 </template>

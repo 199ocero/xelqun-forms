@@ -44,7 +44,12 @@ const hasContentSlots = computed(() =>
 
 <template>
     <div
-        :class="cn('gap-2 grid', inlineLabel && 'sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]')"
+        :class="
+            cn(
+                'gap-2 grid data-invalid:animate-xq-shake',
+                inlineLabel && 'sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]',
+            )
+        "
         :data-xq-path="node.path"
         :data-invalid="error ? '' : undefined"
         :aria-busy="loading || undefined"
@@ -93,7 +98,7 @@ const hasContentSlots = computed(() =>
                 v-if="error && !fused"
                 :id="`${id}-error`"
                 :role="announceError ? 'alert' : undefined"
-                class="text-xs font-medium text-xq-destructive"
+                class="text-xs font-medium animate-xq-error-in text-xq-destructive"
             >
                 {{ error }}
             </p>
