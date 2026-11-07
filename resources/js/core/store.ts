@@ -42,7 +42,10 @@ export const LOADING_INDICATOR_DELAY = 200;
 export interface SubmitOptions {
     method?: 'post' | 'put' | 'patch';
     data?: Record<string, unknown>;
-    preserveState?: boolean | 'errors';
+    preserveState?:
+        | boolean
+        | 'errors'
+        | ((page: { url: string; props: Record<string, unknown> }) => boolean);
     onSuccess?: (page: unknown) => void;
     onError?: (errors: Record<string, string>) => void;
     onFinish?: () => void;

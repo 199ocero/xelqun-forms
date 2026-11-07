@@ -5,7 +5,7 @@ import { FUSED_GROUP, HEADING_LEVEL, provideFormStore } from '../composables/con
 import { REGISTRY } from '../composables/registry';
 import { useUnsavedChangesAlert } from '../composables/useUnsavedChangesAlert';
 import { useXqForm } from '../composables/useXqForm';
-import type { FormStore } from '../core/store';
+import type { FormStore, SubmitOptions } from '../core/store';
 import { cn } from '../lib/utils';
 import type { FormSchema } from '../schema/types';
 import XqButton from '../ui/XqButton.vue';
@@ -18,7 +18,7 @@ const props = withDefaults(
         action?: string;
         method?: 'post' | 'put' | 'patch';
         submitLabel?: string;
-        preserveState?: boolean | 'errors';
+        preserveState?: SubmitOptions['preserveState'];
         /** Heading level of top-level section titles. Set it to fit the page around the form. */
         headingLevel?: 2 | 3 | 4 | 5 | 6;
         class?: string;
