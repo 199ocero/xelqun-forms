@@ -18,6 +18,7 @@ import type { HTMLAttributes } from 'vue';
 import { cn } from '../lib/utils';
 import type { SelectMessages, SelectOption } from '../schema/types';
 import { controlClass, groupLabelClass, optionClass, popoverClass, spinnerClass } from './classes';
+import XqMenuGlide from './XqMenuGlide.vue';
 import { groupOptions } from './options';
 import { useTranslator } from '../composables/context';
 
@@ -63,6 +64,7 @@ const groups = computed(() => groupOptions(props.options));
                 :class="cn(popoverClass, 'max-h-72 min-w-32 w-(--reka-select-trigger-width)')"
             >
                 <SelectViewport class="p-1">
+                    <XqMenuGlide />
                     <SelectGroup v-for="group in groups" :key="group.label ?? ''">
                         <SelectLabel v-if="group.label" :class="groupLabelClass">{{
                             group.label

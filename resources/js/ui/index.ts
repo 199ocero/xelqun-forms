@@ -13,6 +13,7 @@ export { default as XqLabel } from './XqLabel.vue';
 export { default as XqPopover } from './XqPopover.vue';
 export { default as XqRadioGroup } from './XqRadioGroup.vue';
 export { default as XqRadioGroupItem } from './XqRadioGroupItem.vue';
+export { default as XqMenuGlide } from './XqMenuGlide.vue';
 export { default as XqSelect } from './XqSelect.vue';
 export { default as XqSwitch } from './XqSwitch.vue';
 export { default as XqTabs } from './XqTabs.vue';

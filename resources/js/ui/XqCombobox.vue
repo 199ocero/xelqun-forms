@@ -20,6 +20,7 @@ import { useSortable } from '../composables/useSortable';
 import { cn } from '../lib/utils';
 import type { SelectMessages, SelectOption } from '../schema/types';
 import { controlClass, groupLabelClass, optionClass, popoverClass, spinnerClass } from './classes';
+import XqMenuGlide from './XqMenuGlide.vue';
 import { groupOptions, moveItem } from './options';
 import { useTranslator } from '../composables/context';
 
@@ -193,7 +194,8 @@ function clear(): void {
                 :side-offset="4"
                 :class="cn(popoverClass, 'max-h-72 min-w-40 w-(--reka-combobox-trigger-width)')"
             >
-                <ComboboxViewport class="p-1">
+                <ComboboxViewport class="p-1 relative">
+                    <XqMenuGlide />
                     <p
                         v-if="searchFailed"
                         role="status"

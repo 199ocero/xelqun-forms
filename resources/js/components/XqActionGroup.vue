@@ -15,6 +15,7 @@ import type { SchemaNode } from '../schema/types';
 import { actionVariants, optionClass, popoverClass } from '../ui/classes';
 import XqButton from '../ui/XqButton.vue';
 import XqIcon from '../ui/XqIcon.vue';
+import XqMenuGlide from '../ui/XqMenuGlide.vue';
 import XqAction from './XqAction.vue';
 import type { ActionOutcome } from './XqAction.vue';
 import XqActionContent from './XqActionContent.vue';
@@ -87,9 +88,10 @@ function openSelected(): void {
                 <DropdownMenuContent
                     align="end"
                     :side-offset="4"
-                    :class="cn(popoverClass, 'p-1 min-w-40')"
+                    :class="cn(popoverClass, 'p-1 min-w-40 relative')"
                     @close-auto-focus="openSelected"
                 >
+                    <XqMenuGlide />
                     <template v-for="item in items" :key="item.key">
                         <DropdownMenuItem
                             v-if="item.props?.url"

@@ -20,7 +20,7 @@ export const popoverClass =
 export const groupLabelClass = 'px-2 py-1.5 text-xs font-medium text-xq-muted-foreground';
 
 export const optionClass =
-    'relative flex w-full cursor-default items-center gap-2 rounded-xq-sm py-1.5 pr-8 pl-2 text-sm outline-none select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[highlighted]:bg-xq-accent data-[highlighted]:text-xq-accent-foreground';
+    'relative flex w-full cursor-default items-center gap-2 rounded-xq-sm py-1.5 pr-8 pl-2 text-sm outline-none select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[highlighted]:text-xq-accent-foreground';
 
 export const dialogOverlayClass =
     'inset-0 bg-black/50 fixed z-50 backdrop-blur-[2px] data-[state=open]:animate-xq-fade-in data-[state=closed]:animate-xq-fade-out';
