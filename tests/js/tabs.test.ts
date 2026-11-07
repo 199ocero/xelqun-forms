@@ -5,26 +5,39 @@ import { createFormStore } from '../../resources/js/core/store';
 import type { SchemaNode, UploadResult } from '../../resources/js/schema/types';
 import { field, schema } from './fixtures';
 
-function tabs(first: SchemaNode, second: SchemaNode): SchemaNode {
+const { replace } = vi.hoisted(() => ({ replace: vi.fn() }));
+
+vi.mock('@inertiajs/vue3', () => ({ router: { replace } }));
+
+function tabs(first: SchemaNode, second: SchemaNode, props = {}): SchemaNode {
     return {
         ...field('', 'tabs'),
         key: 'data#0',
         path: null,
+        props,
         children: [
-            { ...field('', 'tab'), key: 'data#0.0', path: null, label: 'First', children: [first] },
+            {
+                ...field('', 'tab'),
+                key: 'data#0.0',
+                path: null,
+                label: 'First',
+                props: { slug: 'first' },
+                children: [first],
+            },
             {
                 ...field('', 'tab'),
                 key: 'data#0.1',
                 path: null,
                 label: 'Second',
+                props: { slug: 'second' },
                 children: [second],
             },
         ],
     };
 }
 
-async function mountTabs(first: SchemaNode, second: SchemaNode) {
-    const store = createFormStore(schema([tabs(first, second)], {}, null));
+async function mountTabs(first: SchemaNode, second: SchemaNode, props = {}) {
+    const store = createFormStore(schema([tabs(first, second, props)], {}, null));
     const wrapper = mount(XqForm, { props: { form: store }, attachTo: document.body });
 
     await vi.dynamicImportSettled();
@@ -44,7 +57,45 @@ async function openTab(wrapper: Awaited<ReturnType<typeof mountTabs>>['wrapper']
 describe('tabs', () => {
     let mounted: ReturnType<typeof mount> | null = null;
 
-    afterEach(() => mounted?.unmount());
+    afterEach(() => {
+        mounted?.unmount();
+        replace.mockClear();
+        window.history.replaceState(null, '', '/');
+    });
+
+    it('opens the tab the server picked from the url', async () => {
+        const { wrapper } = await mountTabs(field('data.name'), field('data.city'), {
+            startKey: 'data#0.1',
+        });
+        mounted = wrapper;
+
+        expect(wrapper.findAll('[role="tab"]')[1].attributes('aria-selected')).toBe('true');
+    });
+
+    it('puts the open tab in the url and keeps what else is there', async () => {
+        window.history.replaceState(null, '', '/edit?page=2#notes');
+        const { wrapper } = await mountTabs(field('data.name'), field('data.city'), {
+            queryKey: 'tab',
+        });
+        mounted = wrapper;
+
+        await openTab(wrapper, 1);
+
+        expect(replace).toHaveBeenCalledWith({
+            url: '/edit?page=2&tab=second#notes',
+            preserveState: true,
+            preserveScroll: true,
+        });
+    });
+
+    it('leaves the url alone unless the tabs ask to be in it', async () => {
+        const { wrapper } = await mountTabs(field('data.name'), field('data.city'));
+        mounted = wrapper;
+
+        await openTab(wrapper, 1);
+
+        expect(replace).not.toHaveBeenCalled();
+    });
 
     it('keeps an upload running while another tab is open', async () => {
         const { store, wrapper } = await mountTabs(

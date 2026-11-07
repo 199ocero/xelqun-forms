@@ -358,6 +358,30 @@ describe('wizard', () => {
         wrapper.unmount();
     });
 
+    it('draws a line between steps, colored once the step before is done', async () => {
+        const { wrapper } = await mountWizard(wizard({ startKey: 'b' }));
+        const lines = wrapper.findAll('[data-xq-wizard-line]');
+
+        expect(lines).toHaveLength(2);
+        expect(lines[0].classes()).toContain('bg-xq-primary');
+        expect(lines[1].classes()).toContain('bg-xq-border');
+        wrapper.unmount();
+    });
+
+    it('marks an invalid step on its circle and leaves the icon its own color', async () => {
+        const { store, wrapper } = await mountWizard();
+
+        store.errors['data.name'] = 'Required';
+        await flushPromises();
+
+        const circle = wrapper.find('[aria-current="step"] span');
+
+        expect(circle.classes()).toContain('border-xq-destructive');
+        expect(circle.classes()).toContain('text-xq-primary-foreground');
+        expect(circle.classes()).not.toContain('text-xq-destructive');
+        wrapper.unmount();
+    });
+
     it('keeps the step in the URL', async () => {
         const { wrapper } = await mountWizard(wizard({ queryKey: 'page' }));
 

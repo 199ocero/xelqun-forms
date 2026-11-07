@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { router } from '@inertiajs/vue3';
 import { Check, ChevronLeft, ChevronRight, LoaderCircle } from 'lucide-vue-next';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useFormStore } from '../../composables/context';
 import { gridStyle } from '../../composables/layout';
 import { usePanelErrors } from '../../composables/usePanelErrors';
+import { useQueryStringPanel } from '../../composables/useQueryStringPanel';
 import { cn } from '../../lib/utils';
 import type { SchemaNode } from '../../schema/types';
 import XqButton from '../../ui/XqButton.vue';
@@ -31,20 +31,7 @@ watch(steps, (visible) => {
     }
 });
 
-watch(active, (key) => {
-    const slug = steps.value.find((step) => step.key === key)?.props?.slug;
-
-    if (options.value.queryKey && slug) {
-        const url = new URL(window.location.href);
-
-        url.searchParams.set(options.value.queryKey, slug);
-        router.replace({
-            url: `${url.pathname}${url.search}`,
-            preserveState: true,
-            preserveScroll: true,
-        });
-    }
-});
+useQueryStringPanel(active, steps, () => options.value.queryKey);
 
 async function show(key: string): Promise<void> {
     active.value = key;
@@ -83,10 +70,14 @@ onBeforeUnmount(() => store.steppers.delete(stepper));
 <template>
     <div class="gap-5 grid">
         <ol class="gap-2 sm:flex-row sm:gap-4 flex flex-col">
-            <li v-for="(step, index) in steps" :key="step.key" class="min-w-0 flex-1">
+            <li
+                v-for="(step, index) in steps"
+                :key="step.key"
+                class="gap-4 min-w-0 sm:last:flex-initial flex flex-1 items-center"
+            >
                 <button
                     type="button"
-                    class="gap-2.5 flex w-full cursor-pointer items-center rounded-xq-md text-start disabled:cursor-default"
+                    class="gap-2.5 min-w-0 sm:w-auto flex w-full cursor-pointer items-center rounded-xq-md text-start disabled:cursor-default"
                     :aria-current="step.key === active ? 'step' : undefined"
                     :disabled="!canOpen(index)"
                     @click="show(step.key)"
@@ -98,7 +89,7 @@ onBeforeUnmount(() => store.steppers.delete(stepper));
                                 step.key === active &&
                                     'border-xq-primary bg-xq-primary text-xq-primary-foreground',
                                 index < activeIndex && 'border-xq-primary text-xq-primary',
-                                errorCount(step) > 0 && 'border-xq-destructive text-xq-destructive',
+                                errorCount(step) > 0 && 'border-xq-destructive',
                             )
                         "
                     >
@@ -120,6 +111,17 @@ onBeforeUnmount(() => store.steppers.delete(stepper));
                         </span>
                     </span>
                 </button>
+                <span
+                    v-if="index < steps.length - 1"
+                    aria-hidden="true"
+                    :class="
+                        cn(
+                            'min-w-6 sm:block hidden h-px flex-1 bg-xq-border transition-colors duration-(--xq-duration-base)',
+                            index < activeIndex && 'bg-xq-primary',
+                        )
+                    "
+                    data-xq-wizard-line
+                ></span>
             </li>
         </ol>
         <section

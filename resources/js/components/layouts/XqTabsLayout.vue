@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue';
 import { useFormStore } from '../../composables/context';
 import { gridStyle } from '../../composables/layout';
 import { usePanelErrors } from '../../composables/usePanelErrors';
+import { useQueryStringPanel } from '../../composables/useQueryStringPanel';
 import type { SchemaNode } from '../../schema/types';
 import XqTabs from '../../ui/XqTabs.vue';
 import XqTabsContent from '../../ui/XqTabsContent.vue';
@@ -13,7 +14,11 @@ import XqNode from '../XqNode.vue';
 const props = defineProps<{ node: SchemaNode }>();
 const store = useFormStore();
 const tabs = computed(() => (props.node.children ?? []).filter((tab) => store.isVisible(tab)));
-const active = ref<string>(tabs.value[0]?.key ?? '');
+const active = ref<string>(
+    tabs.value.find((tab) => tab.key === props.node.props?.startKey)?.key ??
+        tabs.value[0]?.key ??
+        '',
+);
 
 watch(tabs, (visible) => {
     if (!visible.some((tab) => tab.key === active.value)) {
@@ -22,6 +27,7 @@ watch(tabs, (visible) => {
 });
 
 const { errorCount } = usePanelErrors(tabs, (tab) => (active.value = tab.key));
+useQueryStringPanel(active, tabs, () => props.node.props?.queryKey);
 </script>
 
 <template>

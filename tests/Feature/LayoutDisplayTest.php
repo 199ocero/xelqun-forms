@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\HtmlString;
 use Illuminate\Validation\ValidationException;
 use Xelqun\Forms\Components\Repeater;
@@ -11,6 +12,8 @@ use Xelqun\Forms\Layouts\Flex;
 use Xelqun\Forms\Layouts\FusedGroup;
 use Xelqun\Forms\Layouts\Group;
 use Xelqun\Forms\Layouts\Section;
+use Xelqun\Forms\Layouts\Tab;
+use Xelqun\Forms\Layouts\Tabs;
 use Xelqun\Forms\Layouts\Text;
 use Xelqun\Forms\Layouts\UnorderedList;
 use Xelqun\Forms\Live\UpdateProcessor;
@@ -31,6 +34,19 @@ function displayForm(array $components): Form
 
     return $form::make();
 }
+
+it('opens the tab the URL names, and falls back to the first', function () {
+    Route::get('/tabs', fn () => displayForm([
+        Tabs::make()->persistTabInQueryString('section')->tabs([Tab::make('One'), Tab::make('Contact details')]),
+    ])->toSchema()['components'][0]);
+
+    $this->getJson('/tabs?section=contact-details')
+        ->assertJsonPath('props.queryKey', 'section')
+        ->assertJsonPath('props.startKey', 'data#0.1')
+        ->assertJsonPath('children.1.props.slug', 'contact-details');
+    $this->getJson('/tabs?section=nope')->assertJsonPath('props.startKey', null);
+    $this->getJson('/tabs')->assertJsonPath('props.startKey', null);
+});
 
 it('sends slots as children that name their slot', function () {
     $node = displayForm([TextInput::make('name')->afterLabel('Optional')])->toSchema()['components'][0];
