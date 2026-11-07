@@ -82,6 +82,64 @@ describe('XqMenuGlide', () => {
         expect(glide(wrapper).attributes('style')).toContain('opacity: 1');
     });
 
+    describe('with hover items', () => {
+        function mountCards() {
+            return mount(
+                defineComponent({
+                    setup: () => () =>
+                        h('div', [
+                            h(XqMenuGlide, { hoverItems: 'a', class: 'bg-xq-primary' }),
+                            h('a', { id: 'one' }, [h('span', { id: 'label' })]),
+                            h('a', { id: 'two' }),
+                            h('p', { id: 'plain' }),
+                        ]),
+                }),
+            );
+        }
+
+        it('slides from card to card, starting from what is inside one', async () => {
+            const wrapper = mountCards();
+
+            await wrapper.find('#label').trigger('pointerover');
+            expect(glide(wrapper).attributes('style')).toContain('opacity: 1');
+            expect(glide(wrapper).classes().join(' ')).not.toContain('[transform');
+
+            await wrapper.find('#two').trigger('pointerover');
+            expect(glide(wrapper).classes().join(' ')).toContain('[transform');
+        });
+
+        it('holds on across the gap between cards', async () => {
+            const wrapper = mountCards();
+
+            await wrapper.find('#one').trigger('pointerover');
+            await wrapper.trigger('pointerover');
+            await settle();
+
+            expect(glide(wrapper).attributes('style')).toContain('opacity: 1');
+        });
+
+        it('fades on a card that goes nowhere, and when the pointer leaves', async () => {
+            const wrapper = mountCards();
+
+            await wrapper.find('#one').trigger('pointerover');
+            await wrapper.find('#plain').trigger('pointerover');
+            await settle();
+            expect(glide(wrapper).attributes('style')).toContain('opacity: 0');
+
+            await wrapper.find('#two').trigger('focusin');
+            expect(glide(wrapper).attributes('style')).toContain('opacity: 1');
+
+            wrapper.element.dispatchEvent(new Event('pointerleave'));
+            await settle();
+            expect(glide(wrapper).attributes('style')).toContain('opacity: 0');
+        });
+
+        it('takes a different color', () => {
+            expect(glide(mountCards()).classes()).toContain('bg-xq-primary');
+            expect(glide(mountCards()).classes()).not.toContain('bg-xq-accent');
+        });
+    });
+
     it('stays out of the way of screen readers and clicks', () => {
         const wrapper = mount(List);
 

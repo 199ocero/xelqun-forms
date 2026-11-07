@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import type { HTMLAttributes } from 'vue';
 import { cn } from '../lib/utils';
 
 /**
  * One highlight that slides between a list's items, passing over the ones
  * between. Put it first inside a `relative` list. It follows `data-highlighted`,
- * so the arrow keys move it the same as the pointer.
+ * so the arrow keys move it the same as the pointer. A list without a highlight
+ * of its own, such as a grid of cards, passes `hover-items` instead.
  */
+const props = defineProps<{ hoverItems?: string; class?: HTMLAttributes['class'] }>();
+
 const element = ref<HTMLElement>();
 const box = ref({ top: 0, left: 0, width: 0, height: 0 });
 const isVisible = ref(false);
@@ -16,10 +20,11 @@ const HIDE_DELAY = 60;
 
 let observer: MutationObserver | undefined;
 let hideTimer: ReturnType<typeof setTimeout> | undefined;
+let hoveredItem: HTMLElement | undefined;
 
 function follow(): void {
     const list = element.value?.parentElement;
-    const item = list?.querySelector<HTMLElement>('[data-highlighted]');
+    const item = hoveredItem ?? list?.querySelector<HTMLElement>('[data-highlighted]');
 
     clearTimeout(hideTimer);
 
@@ -49,11 +54,33 @@ function follow(): void {
     box.value = { top, left, width: item.offsetWidth, height: item.offsetHeight };
 }
 
+function hoverItem(event: Event): void {
+    const target = event.target as HTMLElement;
+
+    // Crossing the gap between two cards shouldn't drop the highlight.
+    if (target !== event.currentTarget) {
+        hoveredItem = target.closest<HTMLElement>(props.hoverItems!) ?? undefined;
+        follow();
+    }
+}
+
+function leaveItems(): void {
+    hoveredItem = undefined;
+    follow();
+}
+
 onMounted(() => {
     const list = element.value?.parentElement;
 
     if (!list) {
         return;
+    }
+
+    if (props.hoverItems) {
+        list.addEventListener('pointerover', hoverItem);
+        list.addEventListener('pointerleave', leaveItems);
+        list.addEventListener('focusin', hoverItem);
+        list.addEventListener('focusout', leaveItems);
     }
 
     observer = new MutationObserver(follow);
@@ -67,6 +94,12 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+    const list = element.value?.parentElement;
+
+    list?.removeEventListener('pointerover', hoverItem);
+    list?.removeEventListener('pointerleave', leaveItems);
+    list?.removeEventListener('focusin', hoverItem);
+    list?.removeEventListener('focusout', leaveItems);
     observer?.disconnect();
     clearTimeout(hideTimer);
 });
@@ -85,10 +118,11 @@ const style = computed(() => ({
         aria-hidden="true"
         :class="
             cn(
-                'top-0 left-0 pointer-events-none absolute rounded-xq-sm bg-xq-accent',
+                'top-0 left-0 pointer-events-none absolute',
                 isGliding
                     ? 'transition-[transform,width,height,opacity] duration-(--xq-duration-base) ease-(--xq-ease-out)'
                     : 'transition-opacity duration-(--xq-duration-fast)',
+                props.class ?? 'rounded-xq-sm bg-xq-accent',
             )
         "
         :style="style"
