@@ -6,7 +6,7 @@ Xelqun Forms is pre-alpha. Until 1.0, a minor version can break existing code, a
 
 ### Changed
 
-- **Motion.** One set of `--xq-*` tokens drives every animation, and reduced motion is handled in one place. Menus and popovers grow from what opened them, dialogs and toasts arrive with a soft blur, tabs slide, buttons press, switches spring, check marks draw on, fields shake on an error, and sections fold open.
+- **Motion.** One set of `--xq-*` tokens drives every animation, and reduced motion is handled in one place. Menus and popovers grow from what opened them, dialogs and toasts arrive with a soft blur, tabs slide, buttons press, switches spring, check marks draw on, fields shake on an error, and sections fold open. An action's button shows the whole run: its icon lifts on hover, a press, a spinner if it takes a while, then a check that draws on, or a shake if it fails.
 
 ## 0.6.0 - 2026-11-06
 

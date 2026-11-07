@@ -7,7 +7,7 @@ import type { HTMLAttributes } from 'vue';
 import { cn } from '../lib/utils';
 
 const buttonVariants = cva(
-    'gap-2 text-sm font-medium [&_svg:not([class*=size-])]:size-4 inline-flex shrink-0 cursor-pointer items-center justify-center rounded-xq-md whitespace-nowrap transition-[color,background-color,box-shadow,opacity,scale] duration-(--xq-duration-fast) outline-none focus-visible:ring-[3px] focus-visible:ring-xq-ring/40 enabled:active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0',
+    'gap-2 text-sm font-medium [&_svg:not([class*=size-])]:size-4 inline-flex shrink-0 cursor-pointer items-center justify-center rounded-xq-md whitespace-nowrap transition-[color,background-color,box-shadow,opacity,scale] duration-(--xq-duration-fast) outline-none focus-visible:ring-[3px] focus-visible:ring-xq-ring/40 not-disabled:active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg]:transition-transform [&_svg]:duration-(--xq-duration-base) [&_svg]:ease-(--xq-ease-spring) not-disabled:hover:[&_svg]:scale-110',
     {
         variants: {
             variant: {

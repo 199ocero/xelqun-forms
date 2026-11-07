@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import { LoaderCircle } from 'lucide-vue-next';
 import {
     DropdownMenuContent,
     DropdownMenuItem,
@@ -17,6 +16,8 @@ import { actionVariants, optionClass, popoverClass } from '../ui/classes';
 import XqButton from '../ui/XqButton.vue';
 import XqIcon from '../ui/XqIcon.vue';
 import XqAction from './XqAction.vue';
+import type { ActionOutcome } from './XqAction.vue';
+import XqActionContent from './XqActionContent.vue';
 import type { ActionRunner } from './XqAction.vue';
 
 /**
@@ -33,6 +34,7 @@ const items = computed(() =>
 const headlessActions = computed(() => items.value.filter((item) => !item.props?.url));
 const hasLabel = computed(() => !!options.value.label);
 const showsSpinner = ref(false);
+const outcome = ref<ActionOutcome>(null);
 const actions = new Map<string, { open: () => Promise<void> }>();
 let selected: string | null = null;
 
@@ -64,23 +66,21 @@ function openSelected(): void {
                     type="button"
                     :variant="hasLabel ? (actionVariants[options.color] ?? 'outline') : 'ghost'"
                     :size="hasLabel ? 'sm' : 'icon-sm'"
-                    :class="showsSpinner && 'pointer-events-none'"
+                    :class="
+                        cn(
+                            showsSpinner && 'pointer-events-none',
+                            outcome === 'failed' && 'animate-xq-shake',
+                        )
+                    "
                     :disabled="store.processing.value"
                     :title="options.tooltip"
                     :aria-label="hasLabel ? undefined : store.t('Actions')"
                     :aria-busy="showsSpinner || undefined"
                 >
-                    <span
-                        :class="cn('gap-1.5 inline-flex items-center', showsSpinner && 'invisible')"
-                    >
+                    <XqActionContent :spinning="showsSpinner" :done="outcome === 'done'">
                         <XqIcon :name="options.icon ?? 'ellipsis-vertical'" />
                         <template v-if="hasLabel">{{ options.label }}</template>
-                    </span>
-                    <LoaderCircle
-                        v-if="showsSpinner"
-                        class="motion-safe:animate-spin absolute"
-                        aria-hidden="true"
-                    />
+                    </XqActionContent>
                 </XqButton>
             </DropdownMenuTrigger>
             <DropdownMenuPortal>
@@ -139,6 +139,7 @@ function openSelected(): void {
                 :runner="store"
                 headless
                 @spinner="showsSpinner = $event"
+                @outcome="outcome = $event"
             />
         </div>
     </div>

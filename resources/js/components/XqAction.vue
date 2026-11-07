@@ -5,6 +5,9 @@ import type { FormStore } from '../core/store';
  * What the button needs from whatever holds it. Outside a form, pass your own.
  */
 export type ActionRunner = Pick<FormStore, 'mountAction' | 'runAction' | 'processing' | 't'>;
+
+/** How the last run went, for as long as the button shows it. */
+export type ActionOutcome = 'done' | 'failed' | null;
 </script>
 
 <script setup lang="ts">
@@ -21,6 +24,7 @@ import XqConfirmDialog from '../ui/XqConfirmDialog.vue';
 import XqDialog from '../ui/XqDialog.vue';
 import XqDialogFooter from '../ui/XqDialogFooter.vue';
 import XqIcon from '../ui/XqIcon.vue';
+import XqActionContent from './XqActionContent.vue';
 import XqForm from './XqForm.vue';
 
 const props = defineProps<{
@@ -29,7 +33,7 @@ const props = defineProps<{
     /** Keep the dialogs and leave the button out, for a menu that has its own. */
     headless?: boolean;
 }>();
-const emit = defineEmits<{ spinner: [showsSpinner: boolean] }>();
+const emit = defineEmits<{ spinner: [showsSpinner: boolean]; outcome: [outcome: ActionOutcome] }>();
 const store = props.runner ?? useFormStore();
 const options = computed(() => props.node.props ?? {});
 const running = ref(false);
@@ -37,6 +41,7 @@ const showsSpinner = ref(false);
 const confirming = ref(false);
 const modalOpen = ref(false);
 const modal = shallowRef<FormStore | null>(null);
+const outcome = ref<ActionOutcome>(null);
 
 const variant = computed(() =>
     options.value.style === 'link'
@@ -49,7 +54,21 @@ const variant = computed(() =>
 // A new tab isn't a visit.
 const isVisit = computed(() => !options.value.openInNewTab && isOwnUrl(options.value.url));
 
+/** Long enough to register, and short enough to be ready for another click. */
+const OUTCOME_DURATION = 1000;
+
 let spinnerTimer: ReturnType<typeof setTimeout> | undefined;
+let outcomeTimer: ReturnType<typeof setTimeout> | undefined;
+
+function showOutcome(next: ActionOutcome): void {
+    clearTimeout(outcomeTimer);
+    outcome.value = next;
+    emit('outcome', next);
+    outcomeTimer = setTimeout(() => {
+        outcome.value = null;
+        emit('outcome', null);
+    }, OUTCOME_DURATION);
+}
 
 // A quick action changes nothing on screen until it's done, so it can't flicker.
 watch(running, (isRunning) => {
@@ -70,6 +89,11 @@ async function run(): Promise<void> {
     running.value = true;
 
     const result = await store.runAction(props.node, modal.value ?? undefined);
+
+    // A modal keeps its failure to itself, on the field or message that explains it.
+    if (result || !modalOpen.value) {
+        showOutcome(result ? 'done' : 'failed');
+    }
 
     if (result) {
         modalOpen.value = false;
@@ -131,6 +155,7 @@ defineExpose({ open });
 
 onScopeDispose(() => {
     clearTimeout(spinnerTimer);
+    clearTimeout(outcomeTimer);
     closeModal();
 });
 </script>
@@ -161,22 +186,22 @@ onScopeDispose(() => {
                 type="button"
                 :variant="variant"
                 :size="options.style === 'icon' ? 'icon-sm' : 'sm'"
-                :class="showsSpinner && 'pointer-events-none'"
+                :class="
+                    cn(
+                        showsSpinner && 'pointer-events-none',
+                        outcome === 'failed' && 'animate-xq-shake',
+                    )
+                "
                 :disabled="!!options.disabled || store.processing.value"
                 :title="options.tooltip"
                 :aria-label="options.style === 'icon' ? options.label : undefined"
                 :aria-busy="running || undefined"
                 @click="open"
             >
-                <span :class="cn('gap-1.5 inline-flex items-center', showsSpinner && 'invisible')">
+                <XqActionContent :spinning="showsSpinner" :done="outcome === 'done'">
                     <XqIcon v-if="options.icon" :name="options.icon" />
                     <template v-if="options.style !== 'icon'">{{ options.label }}</template>
-                </span>
-                <LoaderCircle
-                    v-if="showsSpinner"
-                    class="motion-safe:animate-spin absolute"
-                    aria-hidden="true"
-                />
+                </XqActionContent>
             </XqButton>
         </template>
         <XqConfirmDialog

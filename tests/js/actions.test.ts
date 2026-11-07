@@ -440,9 +440,69 @@ describe('actions', () => {
             await vi.advanceTimersByTimeAsync(200);
 
             expect(button.attributes('disabled')).toBeUndefined();
-            expect(button.find(spinner).classes()).toContain('absolute');
-            expect(button.find('span').classes()).toContain('invisible');
+            expect(button.find(spinner).exists()).toBe(true);
+            expect(button.find('span span').classes()).toContain('opacity-0');
             wrapper.unmount();
+        });
+
+        it('draws a check when it finishes, then goes back to its label', async () => {
+            fetchMock.mockImplementationOnce(() => respond(patch()));
+            const { button, wrapper } = await mountAction();
+
+            await button.trigger('click');
+            await vi.advanceTimersByTimeAsync(50);
+
+            expect(button.find('[data-xq-action-done]').exists()).toBe(true);
+
+            await vi.advanceTimersByTimeAsync(1000);
+
+            expect(button.find('[data-xq-action-done]').exists()).toBe(false);
+            wrapper.unmount();
+        });
+
+        it('shakes when it fails, and shows no check', async () => {
+            fetchMock.mockImplementationOnce(() => respond({ message: 'Nope' }, 500));
+            const { button, wrapper } = await mountAction();
+
+            await button.trigger('click');
+            await vi.advanceTimersByTimeAsync(50);
+
+            expect(button.classes()).toContain('animate-xq-shake');
+            expect(button.find('[data-xq-action-done]').exists()).toBe(false);
+
+            await vi.advanceTimersByTimeAsync(1000);
+
+            expect(button.classes()).not.toContain('animate-xq-shake');
+            wrapper.unmount();
+        });
+
+        it('leaves the button alone when a modal refuses, as the modal says why', async () => {
+            fetchMock.mockImplementationOnce(() => respond({ form: modalSchema }));
+            fetchMock.mockImplementationOnce(() =>
+                respond({ message: 'Nope', errors: { 'data.amount': ['Bad'] } }, 422),
+            );
+            const { button, wrapper } = await mountAction(action({ hasForm: true }));
+
+            await button.trigger('click');
+            await vi.advanceTimersByTimeAsync(50);
+            submitModal();
+            await vi.advanceTimersByTimeAsync(50);
+
+            expect(button.classes()).not.toContain('animate-xq-shake');
+            wrapper.unmount();
+        });
+
+        it('can be unmounted while it shows its outcome', async () => {
+            fetchMock.mockImplementationOnce(() => respond(patch()));
+            const { button, wrapper } = await mountAction();
+
+            await button.trigger('click');
+            await vi.advanceTimersByTimeAsync(50);
+            wrapper.unmount();
+
+            await vi.advanceTimersByTimeAsync(2000);
+
+            expect(wrapper.exists()).toBe(false);
         });
 
         it('sends a modal once, however often it is submitted', async () => {
