@@ -34,7 +34,15 @@ class Select extends Field implements HasSearchResults, PersistsItself
 
     protected bool $isMultiple = false;
 
+    /**
+     * Past this many related records, a relationship select searches on the
+     * server rather than sending them all, unless preload() asks for them.
+     */
+    public const int PRELOAD_LIMIT = 500;
+
     protected ?bool $preload = null;
+
+    private ?bool $hasTooManyRecords = null;
 
     protected ?Closure $searchResultsUsing = null;
 
@@ -78,6 +86,8 @@ class Select extends Field implements HasSearchResults, PersistsItself
     /**
      * Filter options while typing. Options load from the server when
      * getSearchResultsUsing() is set, or for relationships unless preload() is used.
+     * A relationship with more than PRELOAD_LIMIT records searches on the server
+     * even without this.
      */
     public function searchable(bool $condition = true): static
     {
@@ -310,11 +320,20 @@ class Select extends Field implements HasSearchResults, PersistsItself
     public function isAsync(): bool
     {
         if (! $this->isSearchable) {
-            return false;
+            return $this->relationship !== null && $this->options === null && $this->preload === null
+                && $this->searchResultsUsing === null && $this->hasTooManyRecords();
         }
 
         return $this->searchResultsUsing !== null
             || ($this->relationship !== null && $this->preload !== true);
+    }
+
+    /**
+     * One row past the limit is enough to know, without counting the table.
+     */
+    private function hasTooManyRecords(): bool
+    {
+        return $this->hasTooManyRecords ??= $this->getRelationshipQuery()->toBase()->offset(self::PRELOAD_LIMIT)->limit(1)->exists();
     }
 
     /**
@@ -512,7 +531,7 @@ class Select extends Field implements HasSearchResults, PersistsItself
                 $this->relationship !== null && $this->options === null => $this->toOptionList($this->getOptions()),
                 default => $this->getOptionList(),
             },
-            'searchable' => $this->isSearchable,
+            'searchable' => $this->isSearchable || $isAsync,
             'multiple' => $this->isMultiple,
             'async' => $isAsync,
             'searchDebounce' => $this->searchDebounce,

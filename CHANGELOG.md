@@ -7,6 +7,7 @@ Xelqun Forms is pre-alpha. Until 1.0, a minor version can break existing code, a
 ### Changed
 
 - **Icons come from `@lucide/vue`**, the new name of `lucide-vue-next`, which is deprecated. Laravel's starter kits already use it, so an app now ships one copy.
+- **A relationship select with more than 500 related records searches on the server** instead of sending them all, as if it were `searchable()`. Call `preload()` to send them all anyway. At 100,000 records the page was 4.8 MB and took 350 MB of PHP memory.
 - **A select with more than 100 options gets a search box**, and any searchable list draws its first 100 matches, with a line saying to type for the rest. A list of thousands froze the page for seconds when it opened.
 - The testing helpers take a field's name as well as its path, so `searchForm($form, 'country_id')` works, and `updateForm()` sends the dependencies from the form's schema, as the browser does.
 

@@ -703,3 +703,37 @@ describe('repeater relationship hooks', function () {
         expect($calls)->toBe(0);
     });
 });
+
+describe('a long list of related records', function () {
+    $selectProps = function (Closure $select): array {
+        $form = new class extends OrderForm
+        {
+            public static Closure $select;
+
+            public function schema(): array
+            {
+                return [(self::$select)()];
+            }
+        };
+        $form::$select = $select;
+
+        return (array) json_decode(json_encode($form::make()->toSchema()['components'][0]['props']), true);
+    };
+
+    it('searches on the server past the limit, instead of sending every record', function () use ($selectProps) {
+        Country::query()->insert(array_map(fn (int $index): array => ['name' => "Country {$index}"], range(1, Select::PRELOAD_LIMIT + 1)));
+
+        $props = $selectProps(fn () => Select::make('country_id')->relationship('country', 'name'));
+
+        expect($props)->toMatchArray(['async' => true, 'searchable' => true, 'options' => []])
+            ->and($selectProps(fn () => Select::make('country_id')->relationship('country', 'name')->preload())['options'])->toHaveCount(Select::PRELOAD_LIMIT + 1);
+    });
+
+    it('sends them all up to the limit', function () use ($selectProps) {
+        Country::query()->insert(array_map(fn (int $index): array => ['name' => "Country {$index}"], range(1, Select::PRELOAD_LIMIT)));
+
+        expect($selectProps(fn () => Select::make('country_id')->relationship('country', 'name')))
+            ->toMatchArray(['async' => false, 'searchable' => false])
+            ->and($selectProps(fn () => Select::make('country_id')->relationship('country', 'name'))['options'])->toHaveCount(Select::PRELOAD_LIMIT);
+    });
+});
