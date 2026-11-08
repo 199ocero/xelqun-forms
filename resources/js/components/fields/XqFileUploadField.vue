@@ -10,7 +10,7 @@ import {
     Pencil,
     UploadCloud,
     X,
-} from 'lucide-vue-next';
+} from '@lucide/vue';
 import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, ref } from 'vue';
 import { useField } from '../../composables/useField';
 import { prepareImage } from '../../core/images';
@@ -175,17 +175,51 @@ function collectFinished(): void {
     }
 }
 
+/** Resolves after the wait, or early when the upload is cancelled. */
+function pause(seconds: number, signal: AbortSignal): Promise<void> {
+    return new Promise((resolve) => {
+        const timer = setTimeout(resolve, seconds * 1000);
+
+        signal.addEventListener('abort', () => {
+            clearTimeout(timer);
+            resolve();
+        });
+    });
+}
+
+/**
+ * The upload route allows so many files a minute, so a big batch waits as long
+ * as the server asks and tries again, rather than dropping the rest.
+ */
+async function sendWithRetry(item: PendingFile, file: File) {
+    for (let attempt = 1; ; attempt++) {
+        try {
+            return await store.upload(
+                path,
+                file,
+                (percent) => (item.percent = percent),
+                item.controller.signal,
+            );
+        } catch (failure) {
+            if (!(failure instanceof HttpError) || failure.status !== 429 || attempt === 3) {
+                throw failure;
+            }
+
+            await pause(failure.retryAfter ?? 5, item.controller.signal);
+
+            if (item.controller.signal.aborted) {
+                throw failure;
+            }
+        }
+    }
+}
+
 async function uploadOne(item: PendingFile): Promise<void> {
     item.status = 'uploading';
 
     try {
         const file = await prepareImage(item.file, options.value.imageResize);
-        const result = await store.upload(
-            path,
-            file,
-            (percent) => (item.percent = percent),
-            item.controller.signal,
-        );
+        const result = await sendWithRetry(item, file);
 
         uploaded.value.set(result.token, {
             name: result.name,
@@ -195,10 +229,13 @@ async function uploadOne(item: PendingFile): Promise<void> {
         item.token = result.token;
     } catch (failure) {
         if (!item.controller.signal.aborted) {
-            uploadError.value =
+            const message =
                 failure instanceof HttpError
                     ? (failure.validationErrors.file?.[0] ?? failure.message)
                     : t('The upload failed. Please try again.');
+
+            // Named, so in a batch it is clear which file to pick again.
+            uploadError.value = isMultiple.value ? `${item.file.name}: ${message}` : message;
         }
     } finally {
         item.status = 'finished';

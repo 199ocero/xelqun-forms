@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { router } from '@inertiajs/vue3';
-import { CircleAlert } from 'lucide-vue-next';
+import { CircleAlert } from '@lucide/vue';
 import { computed, onScopeDispose, shallowRef, watch } from 'vue';
 import { createFormStore } from '../core/store';
 import type { FormSchema } from '../schema/types';

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Check, ChevronLeft, ChevronRight, ChevronsUpDown, LoaderCircle, X } from 'lucide-vue-next';
+import { Check, ChevronLeft, ChevronRight, ChevronsUpDown, LoaderCircle, X } from '@lucide/vue';
 import {
     ComboboxAnchor,
     ComboboxContent,
@@ -21,7 +21,7 @@ import { cn } from '../lib/utils';
 import type { SelectMessages, SelectOption } from '../schema/types';
 import { controlClass, groupLabelClass, optionClass, popoverClass, spinnerClass } from './classes';
 import XqMenuGlide from './XqMenuGlide.vue';
-import { groupOptions, moveItem } from './options';
+import { groupOptions, moveItem, OPTION_LIMIT } from './options';
 import { useTranslator } from '../composables/context';
 
 const t = useTranslator();
@@ -46,8 +46,32 @@ const props = defineProps<{
 const emit = defineEmits<{ search: [term: string]; blur: [] }>();
 const model = defineModel<Value | Value[] | null>();
 const searchTerm = ref('');
+/** What was typed, apart from the label the input shows for a choice. */
+const typed = ref('');
 const labels = reactive(new Map<string, string>());
-const groups = computed(() => groupOptions(props.options));
+
+// Filtered here rather than by the combobox, so only the first matches are drawn.
+const matches = computed(() => {
+    const term = typed.value.trim().toLocaleLowerCase();
+
+    return props.remote || term === ''
+        ? props.options
+        : props.options.filter((option) => option.label.toLocaleLowerCase().includes(term));
+});
+const groups = computed(() => groupOptions(matches.value.slice(0, OPTION_LIMIT)));
+const hiddenCount = computed(() => Math.max(0, matches.value.length - OPTION_LIMIT));
+
+function onInput(event: Event): void {
+    typed.value = (event.target as HTMLInputElement).value;
+    emit('search', typed.value);
+}
+
+function onOpenChange(open: boolean): void {
+    if (!open) {
+        typed.value = '';
+        emit('blur');
+    }
+}
 
 watch(
     () => props.options,
@@ -92,6 +116,7 @@ useSortable(chipList, {
 function clear(): void {
     model.value = props.multiple ? [] : null;
     searchTerm.value = '';
+    typed.value = '';
 }
 </script>
 
@@ -100,10 +125,10 @@ function clear(): void {
         v-model="model as any"
         :multiple="multiple"
         :disabled="disabled"
-        :ignore-filter="remote"
+        ignore-filter
         open-on-click
         :reset-search-term-on-blur="!multiple"
-        @update:open="(open) => !open && emit('blur')"
+        @update:open="onOpenChange"
     >
         <ComboboxAnchor
             data-slot="xq-combobox"
@@ -163,7 +188,7 @@ function clear(): void {
             <ComboboxInput
                 :id="id"
                 v-model="searchTerm"
-                @input="emit('search', ($event.target as HTMLInputElement).value)"
+                @input="onInput"
                 :display-value="multiple ? undefined : labelFor"
                 :placeholder="
                     selectedValues.length && multiple ? '' : (placeholder ?? t('Search…'))
@@ -236,6 +261,19 @@ function clear(): void {
                             </ComboboxItemIndicator>
                         </ComboboxItem>
                     </ComboboxGroup>
+                    <p
+                        v-if="hiddenCount > 0"
+                        role="status"
+                        class="px-2 py-1.5 text-xs text-xq-muted-foreground"
+                        data-xq-more-options
+                    >
+                        {{
+                            t('Showing :shown of :total. Type to narrow it down.', {
+                                shown: OPTION_LIMIT,
+                                total: matches.length,
+                            })
+                        }}
+                    </p>
                 </ComboboxViewport>
             </ComboboxContent>
         </ComboboxPortal>

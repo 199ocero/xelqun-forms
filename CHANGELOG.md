@@ -2,6 +2,29 @@
 
 Xelqun Forms is pre-alpha. Until 1.0, a minor version can break existing code, and each break is listed here.
 
+## Unreleased
+
+### Changed
+
+- **Icons come from `@lucide/vue`**, the new name of `lucide-vue-next`, which is deprecated. Laravel's starter kits already use it, so an app now ships one copy.
+- **A select with more than 100 options gets a search box**, and any searchable list draws its first 100 matches, with a line saying to type for the rest. A list of thousands froze the page for seconds when it opened.
+- The testing helpers take a field's name as well as its path, so `searchForm($form, 'country_id')` works, and `updateForm()` sends the dependencies from the form's schema, as the browser does.
+
+### Fixed
+
+- A closure in `rules()` that builds a rule, such as `fn () => function (...) {...}` or `fn (Get $get) => ...`, now runs. It was handed to Laravel as the rule itself and never checked anything.
+- A computed `TextInput` without `numeric()` no longer fails with "must be a string" on submit, because the server works the value out again as a number.
+- `createOptionForm()` asks the related model's `create` policy on an edit page too. It asked about the form's record, so the button vanished from edit pages.
+- Each endpoint has its own rate limit. They shared one counter per user, so a burst of searches or uploads blocked live updates and actions.
+- An upload refused for too many requests waits as long as the server asks and tries again, so a big batch no longer drops the files past the limit. A file that still fails is named in the error.
+- A server error in a modal or a live update says the server went wrong, not "check your connection", and a 403 says "You are not allowed to do that."
+- The code editor follows the theme's colors, so it is readable in dark mode, and `disabled` changes reach it after it loads.
+- An integer field opens the number keypad on phones.
+- A tag that breaks a rule is named in the message, as `The Tags "x" field...`, not `tags.1`.
+- Checking a list of many choices is fast: a 1,000-option checkbox list took most of a second to validate.
+- `make:xelqun-field` writes a Vue file that passes a fresh Laravel app's formatter.
+- A form with no `model()` that uses `unique()` or `exists()` says so, instead of talking about relationships.
+
 ## 0.7.1 - 2026-11-07
 
 ### Added

@@ -112,3 +112,35 @@ describe('server-searched select', () => {
         wrapper.unmount();
     });
 });
+
+describe('a long list', () => {
+    it('draws the first matches only, searches the rest as you type, and offers a search box for a plain select', async () => {
+        const options = Array.from({ length: 5000 }, (_, index) => ({
+            value: index,
+            label: `Company ${index}`,
+        }));
+        const store = createFormStore(
+            schema([field('data.company', 'select', { props: { options } })], { company: null }),
+        );
+        const wrapper = mount(XqForm, { props: { form: store }, attachTo: document.body });
+        const input = wrapper.find<HTMLInputElement>('input');
+
+        await input.trigger('click');
+        await vi.dynamicImportSettled();
+
+        expect(document.querySelectorAll('[role="option"]')).toHaveLength(100);
+        expect(document.querySelector('[data-xq-more-options]')?.textContent).toContain(
+            'Showing 100 of 5000.',
+        );
+
+        input.element.value = 'Company 4999';
+        await input.trigger('input');
+
+        expect(
+            [...document.querySelectorAll('[role="option"]')].map((option) =>
+                option.textContent?.trim(),
+            ),
+        ).toEqual(['Company 4999']);
+        wrapper.unmount();
+    });
+});

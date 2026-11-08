@@ -37,7 +37,7 @@ import {
     User,
     Users,
     X,
-} from 'lucide-vue-next';
+} from '@lucide/vue';
 import type { Component } from 'vue';
 
 /**

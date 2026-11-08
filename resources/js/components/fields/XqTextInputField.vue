@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Check, Copy, Eye, EyeOff, LoaderCircle } from 'lucide-vue-next';
+import { Check, Copy, Eye, EyeOff, LoaderCircle } from '@lucide/vue';
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useField } from '../../composables/useField';
 import { applyMask } from '../../core/mask';
@@ -144,7 +144,7 @@ onBeforeUnmount(() => {
                 :name="path"
                 :value="text"
                 :type="inputType"
-                :inputmode="options.numeric ? 'decimal' : undefined"
+                :inputmode="options.numeric ? (options.integer ? 'numeric' : 'decimal') : undefined"
                 :placeholder="placeholder ?? undefined"
                 :disabled="inputDisabled"
                 :readonly="readOnly"

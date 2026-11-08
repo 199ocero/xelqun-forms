@@ -137,6 +137,21 @@ describe('create an option', function () {
         expect(Country::query()->count())->toBe(0);
     });
 
+    it('asks the related model\'s policy on an edit page, not the record\'s', function () {
+        $order = Order::query()->create(['customer' => 'Ada']);
+
+        test()->postJson(route('xelqun.forms.action'), [
+            'token' => OptionForm::make($order)->makeToken(),
+            'action' => CREATE,
+            'phase' => 'run',
+            'state' => ['data' => []],
+            'data' => ['name' => 'Norway'],
+            'deps' => (object) [],
+        ])->assertOk();
+
+        expect(Country::query()->value('name'))->toBe('Norway');
+    });
+
     it('adds to a multiple select', function () {
         $first = Tag::query()->create(['name' => 'Old']);
 

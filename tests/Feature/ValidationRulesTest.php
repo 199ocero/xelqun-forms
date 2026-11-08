@@ -589,3 +589,19 @@ it('adds helpers to a repeater', function () {
 
     expect(errorsFor($form, ['extra' => 'x', 'rows' => []]))->toHaveKey('data.rows');
 });
+
+it('runs a rule built by a closure', function () {
+    $form = Form::make([
+        TextInput::make('slug')->rules([
+            fn () => function (string $attribute, mixed $value, Closure $fail): void {
+                if ($value === 'admin') {
+                    $fail('That name is taken.');
+                }
+            },
+        ]),
+        TextInput::make('code')->rules([fn (Get $get): string => $get('slug') === 'strict' ? 'min:5' : 'min:1']),
+    ]);
+
+    expect(errorsFor($form, ['slug' => 'admin', 'code' => 'ab']))->toBe(['data.slug' => ['That name is taken.']])
+        ->and(errorsFor($form, ['slug' => 'strict', 'code' => 'ab']))->toHaveKey('data.code');
+});

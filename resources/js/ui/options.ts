@@ -1,5 +1,11 @@
 import type { SelectOption } from '../schema/types';
 
+/**
+ * The most options a list draws at once. Thousands would freeze the page, and
+ * nobody scrolls that far, so the rest are found by typing.
+ */
+export const OPTION_LIMIT = 100;
+
 export interface OptionGroup {
     label: string | null;
     options: SelectOption[];

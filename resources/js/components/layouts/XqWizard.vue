@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Check, ChevronLeft, ChevronRight, LoaderCircle } from 'lucide-vue-next';
+import { Check, ChevronLeft, ChevronRight, LoaderCircle } from '@lucide/vue';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useFormStore } from '../../composables/context';
 import { gridStyle } from '../../composables/layout';

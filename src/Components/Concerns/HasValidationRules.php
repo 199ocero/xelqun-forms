@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use ReflectionFunction;
 use UnitEnum;
 use Xelqun\Forms\Components\Field;
 use Xelqun\Forms\Contracts\ContainsRows;
@@ -57,7 +58,7 @@ trait HasValidationRules
      */
     protected function getCustomRules(): array
     {
-        $rules = $this->rules;
+        $rules = array_merge(...array_map(fn (mixed $rule): array => $this->resolveRule($rule), $this->rules));
 
         foreach ($this->ruleMakers as $maker) {
             $rule = $maker($this);
@@ -68,6 +69,25 @@ trait HasValidationRules
         }
 
         return $rules;
+    }
+
+    /**
+     * Laravel runs a closure that takes ($attribute, $value, $fail) as the rule
+     * itself. Any other closure, such as fn () => function (...) {...} or
+     * fn (Get $get) => ..., builds the rule, so it runs here and its result is
+     * the rule. Passed straight to Laravel, it would never check anything.
+     *
+     * @return array<int, mixed>
+     */
+    private function resolveRule(mixed $rule): array
+    {
+        if (! $rule instanceof Closure || (new ReflectionFunction($rule))->getNumberOfParameters() >= 3) {
+            return [$rule];
+        }
+
+        $built = $this->evaluate($rule);
+
+        return $built === null ? [] : (is_array($built) ? array_values($built) : [$built]);
     }
 
     /**

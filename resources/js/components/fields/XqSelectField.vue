@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { X } from 'lucide-vue-next';
+import { X } from '@lucide/vue';
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useField } from '../../composables/useField';
 import type { SchemaNode, SelectOption } from '../../schema/types';
 import XqCombobox from '../../ui/XqCombobox.vue';
 import XqSelect from '../../ui/XqSelect.vue';
+import { OPTION_LIMIT } from '../../ui/options';
 import XqFieldWrapper from '../XqFieldWrapper.vue';
 import { useTranslator } from '../../composables/context';
 
@@ -24,7 +25,12 @@ const {
     onBlur,
 } = useField(props.node);
 const options = computed<SelectOption[]>(() => props.node.props?.options ?? []);
-const useCombobox = computed(() => !!(props.node.props?.searchable || props.node.props?.multiple));
+// A long list gets a search box, since nobody can scroll to an option among thousands.
+const useCombobox = computed(
+    () =>
+        !!(props.node.props?.searchable || props.node.props?.multiple) ||
+        options.value.length > OPTION_LIMIT,
+);
 const isRemote = computed(() => !!props.node.props?.async);
 
 const remoteOptions = ref<SelectOption[]>([]);

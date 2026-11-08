@@ -569,6 +569,23 @@ describe('actions', () => {
         wrapper.unmount();
     });
 
+    it('blames the server, not the connection, when the server fails', async () => {
+        fetchMock
+            .mockImplementationOnce(() => respond({ form: modalSchema }))
+            .mockImplementationOnce(() => respond({ message: 'Server Error' }, 500));
+
+        const { wrapper, button } = await mountAction(action({ hasForm: true }));
+
+        await button.trigger('click');
+        await flushPromises();
+        submitModal();
+        await flushPromises();
+
+        expect(inModal()!.textContent).toContain('Something went wrong on the server.');
+        expect(inModal()!.textContent).not.toContain('connection');
+        wrapper.unmount();
+    });
+
     it('takes the failure message away when a retry works', async () => {
         fetchMock
             .mockImplementationOnce(() => Promise.reject(new TypeError('offline')))

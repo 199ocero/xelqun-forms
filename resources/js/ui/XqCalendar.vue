@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { DateValue } from '@internationalized/date';
-import { ChevronLeft, ChevronRight } from 'lucide-vue-next';
+import { ChevronLeft, ChevronRight } from '@lucide/vue';
 import {
     CalendarCell,
     CalendarCellTrigger,

@@ -133,3 +133,18 @@ it('never returns keys that are not in the schema', function () {
         ->and($data['items'][0])->not->toHaveKey('injected')
         ->and(array_keys($data['items'][0]))->toBe(['product', 'qty', 'price', 'subtotal', 'attachment']);
 });
+
+it('takes a computed number in a text input that is not numeric()', function () {
+    $form = new class extends Form
+    {
+        public function schema(): array
+        {
+            return [
+                TextInput::make('qty')->numeric()->default(2),
+                TextInput::make('total')->computed('qty * 3')->disabled(),
+            ];
+        }
+    };
+
+    expect($form::make()->validate(['qty' => 2])['total'])->toBe(6);
+});

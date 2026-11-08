@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronDown } from 'lucide-vue-next';
+import { ChevronDown } from '@lucide/vue';
 import { computed, inject, provide, ref } from 'vue';
 import { HEADING_LEVEL } from '../../composables/context';
 import { gridStyle } from '../../composables/layout';

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { GripVertical, Plus } from 'lucide-vue-next';
+import { GripVertical, Plus } from '@lucide/vue';
 import { computed, nextTick, ref, watch } from 'vue';
 import { gridStyle } from '../../composables/layout';
 import { useField } from '../../composables/useField';

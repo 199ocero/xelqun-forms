@@ -4,6 +4,8 @@ export class HttpError extends Error {
     constructor(
         public readonly status: number,
         public readonly body: any,
+        /** Seconds the server asked to wait, from a 429's Retry-After header. */
+        public readonly retryAfter: number | null = null,
     ) {
         super(body?.message ?? `Request failed with status ${status}.`);
     }
@@ -88,7 +90,15 @@ export function uploadFile(
             if (request.status >= 200 && request.status < 300) {
                 resolve(request.response as UploadResult);
             } else {
-                reject(new HttpError(request.status, request.response));
+                const retryAfter = Number(request.getResponseHeader('Retry-After'));
+
+                reject(
+                    new HttpError(
+                        request.status,
+                        request.response,
+                        Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter : null,
+                    ),
+                );
             }
         });
         request.addEventListener('error', () =>

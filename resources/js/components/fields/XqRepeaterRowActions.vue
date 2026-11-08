@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowDown, ArrowUp, ChevronDown, Copy, Trash2 } from 'lucide-vue-next';
+import { ArrowDown, ArrowUp, ChevronDown, Copy, Trash2 } from '@lucide/vue';
 import { cn } from '../../lib/utils';
 import XqButton from '../../ui/XqButton.vue';
 import { useTranslator } from '../../composables/context';

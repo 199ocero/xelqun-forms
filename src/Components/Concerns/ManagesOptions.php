@@ -4,6 +4,7 @@ namespace Xelqun\Forms\Components\Concerns;
 
 use Closure;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Gate;
 use LogicException;
 use Xelqun\Actions\Action;
 use Xelqun\Forms\Components\Component;
@@ -174,7 +175,9 @@ trait ManagesOptions
             ->icon('plus')
             ->iconButton()
             ->model(fn (): ?string => $this->getOptionModel())
-            ->authorize('create')
+            // Asked of the option's model by name, because on an edit page an ability
+            // string would go to the form's record, a post where an author is created.
+            ->authorize(fn (): bool => ($model = $this->getOptionModel()) !== null && Gate::allows('create', $model))
             ->disabled(fn (): bool => $this->isDisabled())
             ->modalHeading($this->createOptionModalHeading)
             ->schema($this->createOptionForm)

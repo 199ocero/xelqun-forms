@@ -141,7 +141,10 @@ class TagsInput extends Field
         return [
             'array',
             function (string $attribute, mixed $value, Closure $fail): void {
-                $validator = Validator::make(['tags' => (array) $value], ['tags.*' => ['string', ...$this->tagRules]]);
+                $tags = array_values((array) $value);
+                // Each tag is named, so a message says which one, not "tags.1".
+                $names = array_map(fn (mixed $tag): string => $this->getValidationAttribute().' "'.(is_scalar($tag) ? $tag : '').'"', $tags);
+                $validator = Validator::make(['tags' => $tags], ['tags.*' => ['string', ...$this->tagRules]], attributes: array_combine(array_map(fn (int $index): string => "tags.{$index}", array_keys($tags)), $names));
 
                 if ($validator->fails()) {
                     $fail($validator->errors()->first());

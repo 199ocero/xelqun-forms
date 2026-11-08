@@ -335,7 +335,10 @@ class TextInput extends Field
             return $rules;
         }
 
-        $rules[] = 'string';
+        // A computed value is worked out again on the server, and a sum comes back as a number.
+        if ($this->computed === null) {
+            $rules[] = 'string';
+        }
 
         if ($this->length !== null) {
             $rules[] = 'size:'.$this->length;

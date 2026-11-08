@@ -4,12 +4,13 @@ import type { SchemaNode } from '@xelqun/forms';
 import { computed, ref } from 'vue';
 
 const props = defineProps<{ node: SchemaNode }>();
-const { store, path, value, error, describedBy, required, disabled, id } = useField<string | null>(
-    props.node,
-);
+const { store, path, value, error, describedBy, required, disabled, id } =
+    useField<string | null>(props.node);
 const uploadError = ref<string | null>(null);
 const fileName = ref<string | null>(null);
-const shownName = computed(() => fileName.value ?? value.value?.split('/').pop() ?? null);
+const shownName = computed(
+    () => fileName.value ?? value.value?.split('/').pop() ?? null,
+);
 
 async function upload(event: Event): Promise<void> {
     const file = (event.target as HTMLInputElement).files?.[0];
@@ -35,7 +36,12 @@ async function upload(event: Event): Promise<void> {
 </script>
 
 <template>
-    <XqFieldWrapper :node="node" :id="id" :error="error ?? uploadError" :required="required">
+    <XqFieldWrapper
+        :node="node"
+        :id="id"
+        :error="error ?? uploadError"
+        :required="required"
+    >
         <input
             :id="id"
             type="file"
@@ -46,6 +52,8 @@ async function upload(event: Event): Promise<void> {
             :aria-describedby="uploadError ? `${id}-error` : describedBy"
             @change="upload"
         />
-        <p v-if="shownName" class="text-sm text-xq-foreground">{{ shownName }}</p>
+        <p v-if="shownName" class="text-sm text-xq-foreground">
+            {{ shownName }}
+        </p>
     </XqFieldWrapper>
 </template>

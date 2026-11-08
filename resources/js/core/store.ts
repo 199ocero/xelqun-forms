@@ -82,6 +82,11 @@ export function reportRequestFailure(
         target.focusFirstError();
     } else if (error instanceof HttpError && error.status === 419) {
         target.fatalError.value = t('This form has expired. Reload the page to continue.');
+    } else if (error instanceof HttpError && error.status === 403) {
+        target.liveError.value = t('You are not allowed to do that.');
+    } else if (error instanceof HttpError) {
+        // The server answered, so the connection is fine and saying otherwise would mislead.
+        target.liveError.value = t('Something went wrong on the server. Try again.');
     } else {
         target.liveError.value = t(
             'Some fields could not be updated. Check your connection and try again.',

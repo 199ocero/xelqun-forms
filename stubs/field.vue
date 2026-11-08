@@ -3,9 +3,16 @@ import { useField, XqFieldWrapper, XqInput } from '@xelqun/forms';
 import type { SchemaNode } from '@xelqun/forms';
 
 const props = defineProps<{ node: SchemaNode }>();
-const { value, error, placeholder, describedBy, required, disabled, id, onBlur } = useField<
-    string | null
->(props.node);
+const {
+    value,
+    error,
+    placeholder,
+    describedBy,
+    required,
+    disabled,
+    id,
+    onBlur,
+} = useField<string | null>(props.node);
 </script>
 
 <template>

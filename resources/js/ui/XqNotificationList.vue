@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { router } from '@inertiajs/vue3';
-import { X } from 'lucide-vue-next';
+import { X } from '@lucide/vue';
 import { ToastClose, ToastDescription, ToastRoot, ToastTitle, useToastManager } from 'reka-ui';
 import type { ToastObject } from 'reka-ui';
 import { reactive } from 'vue';

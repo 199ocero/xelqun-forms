@@ -12,7 +12,7 @@ import {
     Quote,
     Strikethrough,
     Table,
-} from 'lucide-vue-next';
+} from '@lucide/vue';
 import type { Component } from 'vue';
 import { computed, nextTick, ref } from 'vue';
 import { useField } from '../../composables/useField';

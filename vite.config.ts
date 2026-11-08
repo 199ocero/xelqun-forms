@@ -37,6 +37,8 @@ export default defineConfig({
             'composer.json',
             'docs/**',
             'tests/Fixtures/**',
+            // Written into the app, so they follow the 80 columns of a fresh Laravel app.
+            'stubs/**',
         ],
         sortTailwindcss: {
             functions: ['clsx', 'cn', 'cva'],

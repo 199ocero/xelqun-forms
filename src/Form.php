@@ -271,7 +271,7 @@ class Form
             return $this->record;
         }
 
-        $model = $this->model() ?? throw new FormDefinitionException(static::class.' must define model() to use relationships.');
+        $model = $this->model() ?? throw new FormDefinitionException(static::class.' must define model(). Relationships, unique() and exists() read its table.');
 
         return new $model;
     }

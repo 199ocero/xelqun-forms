@@ -4,9 +4,8 @@ import type { SchemaNode, SelectOption } from '@xelqun/forms';
 import { computed, ref } from 'vue';
 
 const props = defineProps<{ node: SchemaNode }>();
-const { store, path, value, error, describedBy, required, disabled, id } = useField<string | null>(
-    props.node,
-);
+const { store, path, value, error, describedBy, required, disabled, id } =
+    useField<string | null>(props.node);
 const results = ref<SelectOption[]>([]);
 const failed = ref(false);
 const selected = computed(() =>
@@ -16,7 +15,9 @@ const selected = computed(() =>
 );
 let controller: AbortController | null = null;
 
-async function search(input: string | number | null | undefined): Promise<void> {
+async function search(
+    input: string | number | null | undefined,
+): Promise<void> {
     const term = String(input ?? '').trim();
 
     controller?.abort();
@@ -24,7 +25,10 @@ async function search(input: string | number | null | undefined): Promise<void> 
     failed.value = false;
 
     try {
-        results.value = term === '' ? [] : await store.search(path, term, controller.signal);
+        results.value =
+            term === ''
+                ? []
+                : await store.search(path, term, controller.signal);
     } catch {
         failed.value = !controller.signal.aborted;
     }
@@ -40,8 +44,12 @@ async function search(input: string | number | null | undefined): Promise<void> 
             :aria-describedby="describedBy"
             @update:model-value="search"
         />
-        <p v-if="selected" class="text-sm text-xq-foreground">{{ selected.label }}</p>
-        <p v-if="failed" class="text-xs text-xq-destructive">The search failed.</p>
+        <p v-if="selected" class="text-sm text-xq-foreground">
+            {{ selected.label }}
+        </p>
+        <p v-if="failed" class="text-xs text-xq-destructive">
+            The search failed.
+        </p>
         <ul v-if="results.length" class="gap-1 grid">
             <li v-for="option in results" :key="option.value">
                 <button

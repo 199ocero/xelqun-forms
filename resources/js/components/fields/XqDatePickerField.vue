@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { getLocalTimeZone, parseDate } from '@internationalized/date';
 import type { DateValue } from '@internationalized/date';
-import { CalendarDays, LoaderCircle, X } from 'lucide-vue-next';
+import { CalendarDays, LoaderCircle, X } from '@lucide/vue';
 import { PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from 'reka-ui';
 import { computed, ref } from 'vue';
 import { useField } from '../../composables/useField';

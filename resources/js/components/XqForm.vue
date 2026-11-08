@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CircleAlert } from 'lucide-vue-next';
+import { CircleAlert } from '@lucide/vue';
 import { computed, inject, onMounted, provide, ref } from 'vue';
 import { FUSED_GROUP, HEADING_LEVEL, provideFormStore } from '../composables/context';
 import { REGISTRY } from '../composables/registry';

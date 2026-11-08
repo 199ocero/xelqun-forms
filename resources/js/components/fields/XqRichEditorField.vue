@@ -34,7 +34,7 @@ import {
     Table,
     Underline,
     Undo,
-} from 'lucide-vue-next';
+} from '@lucide/vue';
 import type { Component } from 'vue';
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useField } from '../../composables/useField';

@@ -150,7 +150,7 @@ describe('TagsInput', function () {
         $make = fn (): TagsInput => TagsInput::make('v')->nestedRecursiveRules(['min:3']);
 
         expect(validated($make(), ['abc']))->toBe(['abc'])
-            ->and(fieldErrors($make(), ['abc', 'x']))->toHaveKey('data.v');
+            ->and(fieldErrors($make(), ['abc', 'x'])['data.v'])->toBe(['The V "x" field must be at least 3 characters.']);
     });
 
     it('sends its options', function () {

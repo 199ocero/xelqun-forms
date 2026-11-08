@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Cropper from 'cropperjs';
 import 'cropperjs/dist/cropper.css';
-import { FlipHorizontal, FlipVertical, RotateCcw, RotateCw, Undo2 } from 'lucide-vue-next';
+import { FlipHorizontal, FlipVertical, RotateCcw, RotateCw, Undo2 } from '@lucide/vue';
 import { computed, onBeforeUnmount, ref } from 'vue';
 import { useTranslator } from '../../composables/context';
 import { toolbarButtonClass } from '../../ui/classes';

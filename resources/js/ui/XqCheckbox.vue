@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Check, Minus } from 'lucide-vue-next';
+import { Check, Minus } from '@lucide/vue';
 import { CheckboxIndicator, CheckboxRoot } from 'reka-ui';
 import type { HTMLAttributes } from 'vue';
 import { cn } from '../lib/utils';

@@ -12,7 +12,7 @@ export type ActionOutcome = 'done' | 'failed' | null;
 
 <script setup lang="ts">
 import { Link, router } from '@inertiajs/vue3';
-import { LoaderCircle } from 'lucide-vue-next';
+import { LoaderCircle } from '@lucide/vue';
 import { computed, onScopeDispose, ref, shallowRef, watch } from 'vue';
 import { useFormStore } from '../composables/context';
 import { createFormStore, LOADING_INDICATOR_DELAY } from '../core/store';

@@ -470,3 +470,27 @@ describe('stored files', () => {
         wrapper.unmount();
     });
 });
+
+describe('a busy server', () => {
+    afterEach(() => vi.useRealTimers());
+
+    it('waits as long as a 429 asks and tries the file again', async () => {
+        const { store, pick } = await render({ multiple: true }, []);
+        const { HttpError } = await import('../../resources/js/core/http');
+        const upload = vi
+            .spyOn(store, 'upload')
+            .mockRejectedValueOnce(new HttpError(429, { message: 'Too Many Attempts.' }, 2))
+            .mockResolvedValueOnce({ token: 't1', name: 'a.pdf', size: 10, mime: null } as any);
+
+        vi.useFakeTimers();
+        await pick(pdf('a.pdf'));
+        await vi.advanceTimersByTimeAsync(1999);
+        expect(upload).toHaveBeenCalledTimes(1);
+
+        await vi.advanceTimersByTimeAsync(1);
+        await flushPromises();
+        expect(upload).toHaveBeenCalledTimes(2);
+        expect(store.get('data.v')).toEqual(['t1']);
+        expect(document.body.textContent).not.toContain('Too Many Attempts');
+    });
+});

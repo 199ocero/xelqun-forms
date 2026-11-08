@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { LoaderCircle } from 'lucide-vue-next';
+import { LoaderCircle } from '@lucide/vue';
 import { computed, inject } from 'vue';
 import XqFieldSlot from '../XqFieldSlot.vue';
 import { FUSED_GROUP } from '../../composables/context';

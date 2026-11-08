@@ -329,6 +329,16 @@ describe('MorphToSelect', function () {
         expect($response->json('schema')['data.owner_id']['props']['options'])->toBe([['value' => $this->area->id, 'label' => 'MADRID']]);
     });
 
+    it('takes field names and the schema\'s own dependencies in the testing helpers', function () {
+        $form = RelationsForm::make();
+
+        expect($this->formNode($form, 'owner_id')['key'])->toBe('data.owner_id');
+
+        $response = $this->updateForm($form, ['owner_type'], [...$form->getData(), 'owner_type' => Region::class]);
+
+        expect($response->json('schema')['data.owner_id']['props']['options'])->toBe([['value' => $this->area->id, 'label' => 'MADRID']]);
+    });
+
     it('searches on the server and checks the result', function () {
         $form = new class extends OrderForm
         {

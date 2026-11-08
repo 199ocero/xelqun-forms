@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Check, LoaderCircle } from 'lucide-vue-next';
+import { Check, LoaderCircle } from '@lucide/vue';
 import { computed } from 'vue';
 import { cn } from '../lib/utils';
 

@@ -181,10 +181,10 @@ trait HasOptions
      */
     protected function getOptionRules(bool $multiple = false): array
     {
-        $allowed = Rule::in(array_map('strval', array_keys($this->getOptions())));
+        $allowed = array_map('strval', array_keys($this->getOptions()));
 
         return [
-            ...($multiple ? ['array', $this->eachRule($allowed)] : [$allowed]),
+            ...($multiple ? ['array', $this->eachIn($allowed)] : [Rule::in($allowed)]),
             ...$this->getDisabledOptionRules(),
         ];
     }
@@ -212,13 +212,23 @@ trait HasOptions
         }];
     }
 
-    private function eachRule(mixed $rule): Closure
+    /**
+     * One lookup per value, as Laravel's `in` compares them. A rule per value made
+     * a list of a thousand choices take most of a second to check.
+     *
+     * @param  array<int, string>  $allowed
+     */
+    private function eachIn(array $allowed): Closure
     {
-        return function (string $attribute, mixed $value, Closure $fail) use ($rule): void {
-            $validator = validator(['items' => (array) $value], ['items.*' => [$rule]]);
+        $known = array_flip($allowed);
 
-            if ($validator->fails()) {
-                $fail($this->getFailureMessage('in'));
+        return function (string $attribute, mixed $value, Closure $fail) use ($known): void {
+            foreach ((array) $value as $item) {
+                if (! is_scalar($item) || ! isset($known[(string) $item])) {
+                    $fail($this->getFailureMessage('in'));
+
+                    return;
+                }
             }
         };
     }

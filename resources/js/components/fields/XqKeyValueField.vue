@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronDown, ChevronUp, GripVertical, Plus, X } from 'lucide-vue-next';
+import { ChevronDown, ChevronUp, GripVertical, Plus, X } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import { useField } from '../../composables/useField';
 import { useSortable } from '../../composables/useSortable';
