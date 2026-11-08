@@ -86,6 +86,14 @@ class PolicyTestActions extends ActionSet
     }
 }
 
+class GateTestActions extends ActionSet
+{
+    public function actions(): array
+    {
+        return [Action::make('export')->authorize('export')];
+    }
+}
+
 class DuplicateTestActions extends ActionSet
 {
     public function actions(): array
@@ -195,6 +203,14 @@ it('asks a policy about the model of the set when there is no record', function 
     Gate::define('create-country', fn (?User $user, string $model): bool => $model === Country::class);
 
     expect(PolicyTestActions::make()->toSchema()['components'][0]['hidden'])->toBeFalse();
+});
+
+it('asks a plain gate when there is no model or record to ask a policy about', function () {
+    expect(GateTestActions::make()->toSchema()['components'][0]['hidden'])->toBeTrue();
+
+    Gate::define('export', fn (?User $user): bool => true);
+
+    expect(GateTestActions::make()->toSchema()['components'][0]['hidden'])->toBeFalse();
 });
 
 it('fails on the page, not the click, when a record has no model', function () {

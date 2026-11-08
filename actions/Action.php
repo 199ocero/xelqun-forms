@@ -442,9 +442,16 @@ class Action extends Component implements NeedsServer
     public function isAuthorized(): bool
     {
         if (is_string($this->authorization)) {
-            $subject = $this->getRecord() ?? ($this->recordUsing === null ? $this->getModel() : null);
+            if ($this->recordUsing !== null) {
+                $record = $this->getRecord();
 
-            return $subject !== null && Gate::allows($this->authorization, $subject);
+                return $record !== null && Gate::allows($this->authorization, $record);
+            }
+
+            $subject = $this->getRecord() ?? $this->getModel();
+
+            // With nothing to ask a policy about, as on a page of its own, the ability is a plain gate.
+            return $subject === null ? Gate::allows($this->authorization) : Gate::allows($this->authorization, $subject);
         }
 
         return (bool) $this->evaluate($this->authorization);

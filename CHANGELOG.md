@@ -15,6 +15,7 @@ Xelqun Forms is pre-alpha. Until 1.0, a minor version can break existing code, a
 
 - A closure in `rules()` that builds a rule, such as `fn () => function (...) {...}` or `fn (Get $get) => ...`, now runs. It was handed to Laravel as the rule itself and never checked anything.
 - A computed `TextInput` without `numeric()` no longer fails with "must be a string" on submit, because the server works the value out again as a number.
+- An action whose `authorize()` names an ability, with no record or model to ask a policy about, asks a plain gate, so `authorize('export')` works on a page of its own. It was always hidden.
 - `createOptionForm()` asks the related model's `create` policy on an edit page too. It asked about the form's record, so the button vanished from edit pages.
 - Each endpoint has its own rate limit. They shared one counter per user, so a burst of searches or uploads blocked live updates and actions.
 - An upload refused for too many requests waits as long as the server asks and tries again, so a big batch no longer drops the files past the limit. A file that still fails is named in the error.
