@@ -53,7 +53,9 @@ class Type
     /**
      * Build each option's label from its record.
      *
-     * @param  Closure(Model): string  $callback
+     * @template TModel of Model
+     *
+     * @param  Closure(TModel): string  $callback
      */
     public function getOptionLabelFromRecordUsing(Closure $callback): static
     {

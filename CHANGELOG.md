@@ -2,6 +2,13 @@
 
 Xelqun Forms is pre-alpha. Until 1.0, a minor version can break existing code, and each break is listed here.
 
+## Unreleased
+
+### Changed
+
+- A repeater's cards skip layout and paint while they're off screen. Typing in a 500-row repeater went from about 54 ms a keystroke to one frame, and resizing the page from 148 ms of layout to 18 ms.
+- `MorphToSelect\Type::getOptionLabelFromRecordUsing()` takes a closure typed for your model, such as `fn (Post $post) => $post->title`, without a Larastan error.
+
 ## 0.8.0 - 2026-11-08
 
 The schema version (`$xq`) stays 1.

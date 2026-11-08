@@ -262,6 +262,7 @@ useSortable(rowList, {
                 </table>
             </div>
             <div v-else ref="rowList" class="xq-grid gap-3" :style="gridStyle(options.grid)">
+                <!-- A card off screen skips layout and paint, so typing in one row doesn't lay out hundreds. -->
                 <div
                     v-for="(key, index) in keys"
                     :key="key"
@@ -271,7 +272,7 @@ useSortable(rowList, {
                     :class="
                         cn(
                             !isSimple &&
-                                'shadow-xs rounded-xq-lg border border-xq-border bg-xq-card',
+                                'shadow-xs rounded-xq-lg border border-xq-border bg-xq-card [contain-intrinsic-size:auto_10rem] [content-visibility:auto]',
                             isSimple && 'gap-2 flex items-start',
                         )
                     "
