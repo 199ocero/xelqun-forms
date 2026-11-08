@@ -2,7 +2,13 @@
 
 Xelqun Forms is pre-alpha. Until 1.0, a minor version can break existing code, and each break is listed here.
 
-## Unreleased
+## 0.8.0 - 2026-11-08
+
+The schema version (`$xq`) stays 1.
+
+### Upgrading
+
+Update both halves together: `composer update xelqun/forms` and `npm install @xelqun/forms@0.8.0`. Icons now come from `@lucide/vue`; an app that imported icons from `lucide-vue-next` through this package should install `@lucide/vue` itself.
 
 ### Changed
 

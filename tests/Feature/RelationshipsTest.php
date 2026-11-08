@@ -725,6 +725,16 @@ describe('a long list of related records', function () {
 
         $props = $selectProps(fn () => Select::make('country_id')->relationship('country', 'name'));
 
+        $form = new class extends OrderForm
+        {
+            public function schema(): array
+            {
+                return [Select::make('country_id')->relationship('country', 'name')];
+            }
+        };
+
+        $this->searchForm($form::make(), 'country_id', 'Country 50')->assertOk()->assertJsonPath('options.0.label', 'Country 50');
+
         expect($props)->toMatchArray(['async' => true, 'searchable' => true, 'options' => []])
             ->and($selectProps(fn () => Select::make('country_id')->relationship('country', 'name')->preload())['options'])->toHaveCount(Select::PRELOAD_LIMIT + 1);
     });

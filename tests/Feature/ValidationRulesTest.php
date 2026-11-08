@@ -599,7 +599,7 @@ it('runs a rule built by a closure', function () {
                 }
             },
         ]),
-        TextInput::make('code')->rules([fn (Get $get): string => $get('slug') === 'strict' ? 'min:5' : 'min:1']),
+        TextInput::make('code')->rules([fn (Get $get): string => $get('slug') === 'strict' ? 'min:5|max:9' : 'min:1']),
     ]);
 
     expect(errorsFor($form, ['slug' => 'admin', 'code' => 'ab']))->toBe(['data.slug' => ['That name is taken.']])

@@ -451,7 +451,12 @@ class Action extends Component implements NeedsServer
             $subject = $this->getRecord() ?? $this->getModel();
 
             // With nothing to ask a policy about, as on a page of its own, the ability is a plain gate.
-            return $subject === null ? Gate::allows($this->authorization) : Gate::allows($this->authorization, $subject);
+            if ($subject !== null) {
+                return Gate::allows($this->authorization, $subject);
+            }
+
+            // A gate that wants a model can't be asked without one, and that means no, not a crash.
+            return rescue(fn (): bool => Gate::allows($this->authorization), false, report: false);
         }
 
         return (bool) $this->evaluate($this->authorization);

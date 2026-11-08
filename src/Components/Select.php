@@ -312,9 +312,13 @@ class Select extends Field implements HasSearchResults, PersistsItself
         return $this->isMultiple;
     }
 
+    /**
+     * Also true for a long relationship that searches on the server by itself,
+     * so the search endpoint answers it.
+     */
     public function isSearchable(): bool
     {
-        return $this->isSearchable;
+        return $this->isSearchable || $this->isAsync();
     }
 
     public function isAsync(): bool

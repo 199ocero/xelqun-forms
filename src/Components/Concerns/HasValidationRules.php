@@ -87,7 +87,12 @@ trait HasValidationRules
 
         $built = $this->evaluate($rule);
 
-        return $built === null ? [] : (is_array($built) ? array_values($built) : [$built]);
+        return match (true) {
+            $built === null => [],
+            is_array($built) => array_values($built),
+            is_string($built) => explode('|', $built),
+            default => [$built],
+        };
     }
 
     /**

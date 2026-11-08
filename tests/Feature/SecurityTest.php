@@ -1,8 +1,12 @@
 <?php
 
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Routing\RouteCollection;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -604,3 +608,13 @@ it('finds a token\'s record through the form\'s own query', function () {
 
     app(FormTokenEncrypter::class)->resolveForm($token($outside));
 })->throws(ModelNotFoundException::class);
+
+it('uses a named rate limiter as it is', function () {
+    RateLimiter::for('xelqun-test', fn () => Limit::perMinute(1));
+    config(['xelqun-forms.routes.throttle.search' => 'xelqun-test']);
+    Route::setRoutes(new RouteCollection);
+    require __DIR__.'/../../routes/xelqun-forms.php';
+    app('router')->getRoutes()->refreshNameLookups();
+
+    expect(app('router')->getRoutes()->getByName('xelqun.forms.search')->middleware())->toContain('throttle:xelqun-test');
+});

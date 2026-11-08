@@ -213,6 +213,12 @@ it('asks a plain gate when there is no model or record to ask a policy about', f
     expect(GateTestActions::make()->toSchema()['components'][0]['hidden'])->toBeFalse();
 });
 
+it('hides, rather than fails, when the gate wants a model it can\'t have', function () {
+    Gate::define('export', fn (User $user, Country $country): bool => true);
+
+    expect(GateTestActions::make()->toSchema()['components'][0]['hidden'])->toBeTrue();
+});
+
 it('fails on the page, not the click, when a record has no model', function () {
     NoModelTestActions::make(Country::create(['name' => 'Atlantis']))->toSchema();
 })->throws(FormDefinitionException::class, 'must define model()');
