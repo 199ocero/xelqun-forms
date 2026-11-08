@@ -1,6 +1,6 @@
 # Changelog
 
-Xelqun Forms is pre-alpha. Until 1.0, a minor version can break existing code, and each break is listed here.
+Xelqun Forms is alpha. Until 1.0, a minor version can break existing code, and each break is listed here.
 
 ## 0.8.1 - 2026-11-08
 

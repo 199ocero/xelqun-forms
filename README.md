@@ -10,7 +10,7 @@
 
 Describe a form in PHP and generic Vue components render it. Normal forms need no Vue at all.
 
-> **Pre-alpha:** the API will change. Requires Laravel 13, Inertia 3, Vue 3.5 and Tailwind 4.
+> **Alpha:** the API will change. Requires Laravel 13, Inertia 3, Vue 3.5 and Tailwind 4.
 
 ## Example
 
