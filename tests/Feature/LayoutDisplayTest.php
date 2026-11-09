@@ -222,3 +222,38 @@ it('asks the browser to warn about unsaved changes only when told to', function 
     expect(displayForm([])->toSchema())->not->toHaveKey('unsavedChangesAlert')
         ->and(displayForm([])->unsavedChangesAlerts()->toSchema()['unsavedChangesAlert'])->toBeTrue();
 });
+
+it('sends how a section looks, and puts actions in its header and footer', function () {
+    $node = json_decode(json_encode(displayForm([
+        Section::make('Billing')->icon('credit-card')->aside()->compact()->collapsed(fn (): bool => true)->persistCollapsed()
+            ->afterHeader([Text::make('Paid')])->footer(Text::make('Due monthly'))
+            ->schema([TextInput::make('card')]),
+    ])->toSchema()['components'][0]), true);
+
+    expect($node['props'])->toMatchArray([
+        'icon' => 'credit-card', 'aside' => true, 'compact' => true, 'collapsible' => true, 'collapsed' => true, 'persistCollapsed' => true,
+    ])->and(collect($node['children'])->pluck('slot')->all())->toBe([null, 'afterHeader', 'footer']);
+});
+
+it('keeps fields out of a section header and footer', function () {
+    Section::make('Billing')->footer([TextInput::make('card')]);
+})->throws(FormDefinitionException::class);
+
+it('sends tab icons and badges, and opens the tab asked for', function () {
+    Route::get('/tabs-look', fn () => displayForm([
+        Tabs::make()->activeTab(2)->persistTab()->vertical()->contained()->persistTabInQueryString('t')->tabs([
+            Tab::make('One')->icon('user')->badge(3)->badgeColor('danger'),
+            Tab::make('Two'),
+        ]),
+    ])->toSchema()['components'][0]);
+
+    $this->getJson('/tabs-look')
+        ->assertJsonPath('props.startKey', 'data#0.1')
+        ->assertJsonPath('props.persistTab', true)
+        ->assertJsonPath('props.vertical', true)
+        ->assertJsonPath('props.contained', true)
+        ->assertJsonPath('children.0.props.icon', 'user')
+        ->assertJsonPath('children.0.props.badge', 3)
+        ->assertJsonPath('children.0.props.badgeColor', 'danger');
+    $this->getJson('/tabs-look?t=one')->assertJsonPath('props.startKey', 'data#0.0');
+});

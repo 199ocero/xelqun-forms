@@ -7,11 +7,13 @@ import { cn } from '../lib/utils';
  * The mark on the current tab, which leans over to whichever tab is hovered or
  * focused and settles back after. Put it first inside a `relative` tab list.
  */
-const props = defineProps<{ class?: HTMLAttributes['class'] }>();
+const props = defineProps<{ class?: HTMLAttributes['class']; vertical?: boolean }>();
 
 const element = ref<HTMLElement>();
 const left = ref(0);
 const width = ref(0);
+const top = ref(0);
+const height = ref(0);
 const isVisible = ref(false);
 const isGliding = ref(false);
 
@@ -32,6 +34,8 @@ function measure(canGlide = true): void {
     if (tab) {
         left.value = tab.offsetLeft;
         width.value = tab.offsetWidth;
+        top.value = tab.offsetTop;
+        height.value = tab.offsetHeight;
     }
 }
 
@@ -88,11 +92,22 @@ onBeforeUnmount(() => {
     sizeObserver?.disconnect();
 });
 
-const style = computed(() => ({
-    transform: `translateX(${left.value}px)`,
-    width: `${width.value}px`,
-    opacity: isVisible.value ? 1 : 0,
-}));
+// Vertical tabs stack only on wider screens, so follow the tab both ways there.
+const style = computed(() =>
+    props.vertical
+        ? {
+              transform: `translate(${left.value}px, ${top.value}px)`,
+              width: `${width.value}px`,
+              height: `${height.value}px`,
+              top: '0px',
+              opacity: isVisible.value ? 1 : 0,
+          }
+        : {
+              transform: `translateX(${left.value}px)`,
+              width: `${width.value}px`,
+              opacity: isVisible.value ? 1 : 0,
+          },
+);
 </script>
 
 <template>
@@ -103,7 +118,7 @@ const style = computed(() => ({
             cn(
                 'left-0 pointer-events-none absolute',
                 isGliding
-                    ? 'transition-[transform,width,opacity] duration-(--xq-duration-base) ease-(--xq-ease-out)'
+                    ? 'transition-[transform,width,height,opacity] duration-(--xq-duration-base) ease-(--xq-ease-out)'
                     : 'transition-opacity duration-(--xq-duration-fast)',
                 props.class,
             )

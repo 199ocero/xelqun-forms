@@ -7,6 +7,7 @@ Xelqun Forms is alpha. Until 1.0, a minor version can break existing code, and e
 ### Upgrading
 
 - **`hint()` now sits beside the label**, as in Filament. For text under the field, which is what `hint()` did before, use **`helperText()`**. A plugin field that reads `hint` from `useField()` for that text should read `helperText`, and the id its control is described by now ends in `-helper`.
+- `Section::collapsible()` and `collapsed()` take a closure too, and a section now renders inside a wrapper element.
 - A Toggle's track color comes from `onColor()` and `offColor()`, so `data-[state=checked]:bg-xq-primary` is no longer on the switch.
 
 ### Added
@@ -27,6 +28,8 @@ Xelqun Forms is alpha. Until 1.0, a minor version can break existing code, and e
 - **`Toggle::onIcon()`**, **`offIcon()`**, **`onColor()`** and **`offColor()`**.
 - **`Select::allowHtml()`** draws option labels as HTML, cleaned on the server like a rich editor's content. **`optionsLimit()`** sets how many options draw at once and how many a search finds. **`minItems()`** and **`maxItems()`** check a multiple select.
 - **`FileUpload::preserveFilenames()`** stores each file under its original name, with a random suffix when the name is taken. **`storeFileNamesIn()`** saves the original names in another field, such as a `Hidden` one, and the upload shows them. A plugin upload field can implement the new `NamesStoredFiles` contract to get both, since `HandlesUploads` has its methods.
+- **`Section::icon()`**, **`aside()`** (heading in a column beside the card), **`compact()`**, **`persistCollapsed()`**, and **`afterHeader()`** and **`footer()`** for actions or text.
+- **`Tab::icon()`**, **`badge()`** and **`badgeColor()`**. **`Tabs::activeTab()`** opens a tab counting from 1, **`persistTab()`** remembers the open one in the browser, **`vertical()`** puts the tabs in a column, and **`contained()`** puts them in a card.
 
 ## 0.8.1 - 2026-11-08
 

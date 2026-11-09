@@ -373,3 +373,44 @@ describe('translations', () => {
         expect(store.t('Move :name up', { name: 'a$&b.png' })).toBe('Move a$&b.png up');
     });
 });
+
+describe('section', () => {
+    function section(props = {}, children: SchemaNode[] = []): SchemaNode {
+        return {
+            ...field('', 'section'),
+            key: 'data#0',
+            path: null,
+            label: 'Billing',
+            props: { collapsible: true, ...props },
+            children: [field('data.card'), ...children],
+        };
+    }
+
+    it('puts header and footer content outside the fields', () => {
+        const { wrapper } = render([
+            section({}, [
+                { ...text('Paid'), slot: 'afterHeader' },
+                { ...text('Due'), slot: 'footer' },
+            ]),
+        ]);
+
+        expect(wrapper.find('header').text()).toContain('Paid');
+        expect(wrapper.find('footer').text()).toBe('Due');
+        expect(wrapper.find('.xq-grid .xq-grid').text()).not.toContain('Paid');
+        wrapper.unmount();
+    });
+
+    it('remembers that it was collapsed', async () => {
+        const { wrapper: first } = render([section({ persistCollapsed: true })]);
+
+        await first.find('[aria-expanded]').trigger('click');
+        first.unmount();
+
+        const { wrapper } = render([section({ persistCollapsed: true })]);
+
+        await wrapper.vm.$nextTick();
+        expect(wrapper.find('[aria-expanded]').attributes('aria-expanded')).toBe('false');
+        wrapper.unmount();
+        localStorage.clear();
+    });
+});

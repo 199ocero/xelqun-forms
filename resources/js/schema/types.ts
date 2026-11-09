@@ -82,7 +82,7 @@ export interface SchemaNode {
     /** Rules the browser can check, on forms with frontendValidation(). */
     validation?: FieldValidation | null;
     /** The place around its field, or in its repeater row's header, this child renders in. */
-    slot?: FieldSlot | 'itemAction' | 'modalFooter';
+    slot?: FieldSlot | 'itemAction' | 'modalFooter' | 'afterHeader' | 'footer';
     props?: Record<string, any>;
     children?: SchemaNode[];
     deps?: string[];

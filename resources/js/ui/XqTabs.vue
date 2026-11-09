@@ -3,7 +3,11 @@ import { TabsRoot } from 'reka-ui';
 import type { HTMLAttributes } from 'vue';
 import { cn } from '../lib/utils';
 
-const props = defineProps<{ class?: HTMLAttributes['class']; unmountOnHide?: boolean }>();
+const props = defineProps<{
+    class?: HTMLAttributes['class'];
+    unmountOnHide?: boolean;
+    orientation?: 'horizontal' | 'vertical';
+}>();
 const model = defineModel<string | number>();
 </script>
 
@@ -12,6 +16,7 @@ const model = defineModel<string | number>();
         v-model="model"
         data-slot="xq-tabs"
         :unmount-on-hide="unmountOnHide"
+        :orientation="orientation"
         :class="cn('gap-3 flex flex-col', props.class)"
     >
         <slot />

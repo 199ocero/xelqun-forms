@@ -61,6 +61,37 @@ describe('tabs', () => {
         mounted?.unmount();
         replace.mockClear();
         window.history.replaceState(null, '', '/');
+        localStorage.clear();
+    });
+
+    it('shows a tab badge', async () => {
+        const store = createFormStore(
+            schema([tabs(field('data.name'), field('data.city'))], {}, null),
+        );
+        const node = store.components[0];
+
+        node.children![0].props = { slug: 'first', badge: 4, badgeColor: 'danger' };
+        mounted = mount(XqForm, { props: { form: store }, attachTo: document.body });
+        await flushPromises();
+
+        const badge = mounted.find('[data-xq-tab-badge]');
+
+        expect(badge.text()).toBe('4');
+        expect(badge.classes()).toContain('bg-xq-destructive');
+    });
+
+    it('remembers the open tab for the next visit', async () => {
+        const first = await mountTabs(field('data.name'), field('data.city'), { persistTab: true });
+
+        await openTab(first.wrapper, 1);
+        first.wrapper.unmount();
+
+        const { wrapper } = await mountTabs(field('data.name'), field('data.city'), {
+            persistTab: true,
+        });
+        mounted = wrapper;
+
+        expect(wrapper.findAll('[role="tab"]')[1].attributes('aria-selected')).toBe('true');
     });
 
     it('opens the tab the server picked from the url', async () => {
