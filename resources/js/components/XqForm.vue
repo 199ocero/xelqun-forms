@@ -96,7 +96,10 @@ function submit(): void {
         @submit.prevent="submit"
     >
         <div class="xq-grid">
-            <XqNode v-for="node in store.components" :key="node.key" :node="node" />
+            <!-- A node with a slot belongs elsewhere, as a modal's footer actions do. -->
+            <template v-for="node in store.components" :key="node.key">
+                <XqNode v-if="!node.slot" :node="node" />
+            </template>
         </div>
         <p role="status" class="sr-only">
             <template v-if="errorCount">

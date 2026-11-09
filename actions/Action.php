@@ -12,6 +12,8 @@ use Illuminate\Support\Str;
 use Xelqun\Forms\Components\Component;
 use Xelqun\Forms\Components\Field;
 use Xelqun\Forms\Contracts\NeedsServer;
+use Xelqun\Forms\Layouts\Step;
+use Xelqun\Forms\Layouts\Wizard;
 use Xelqun\Forms\Support\SafeUrl;
 use Xelqun\Forms\Support\StatePath;
 use Xelqun\Notifications\Notification;
@@ -92,6 +94,17 @@ class Action extends Component implements NeedsServer
     protected array|Closure|null $fillUsing = null;
 
     protected ?Closure $action = null;
+
+    protected ?Closure $before = null;
+
+    protected ?Closure $after = null;
+
+    /** @var array<int, Action>|Closure */
+    protected array|Closure $extraModalFooterActions = [];
+
+    protected bool|Closure $cancelsParentActions = false;
+
+    protected bool $keepsModalOpen = false;
 
     protected string|Closure|null $successRedirectUrl = null;
 
@@ -419,6 +432,47 @@ class Action extends Component implements NeedsServer
     }
 
     /**
+     * A wizard in the modal: one step at a time, with the submit button on the last.
+     *
+     * @param  array<int, Step>  $steps
+     */
+    public function steps(array $steps): static
+    {
+        return $this->schema([Wizard::make($steps)]);
+    }
+
+    /**
+     * More actions beside the modal's buttons. They run with the modal's state,
+     * which $get reads, and can open modals of their own.
+     *
+     * @param  array<int, Action>|Closure  $actions
+     */
+    public function extraModalFooterActions(array|Closure $actions): static
+    {
+        $this->extraModalFooterActions = $actions;
+
+        return $this;
+    }
+
+    /**
+     * @return array<int, Action>
+     */
+    public function getExtraModalFooterActions(): array
+    {
+        return array_map(fn (Action $action): Action => clone $action, $this->evaluate($this->extraModalFooterActions));
+    }
+
+    /**
+     * Close the modals this action sits in once it has run, as for a footer action.
+     */
+    public function cancelParentActions(bool|Closure $condition = true): static
+    {
+        $this->cancelsParentActions = $condition;
+
+        return $this;
+    }
+
+    /**
      * What the modal's fields start with. Runs on every request the modal makes,
      * so it must give the same result each time.
      *
@@ -441,6 +495,51 @@ class Action extends Component implements NeedsServer
         $this->action = $action;
 
         return $this;
+    }
+
+    /**
+     * Runs before action(), in the same transaction, with the same arguments.
+     */
+    public function before(?Closure $callback): static
+    {
+        $this->before = $callback;
+
+        return $this;
+    }
+
+    /**
+     * Runs after action(), in the same transaction. It also gets $result.
+     */
+    public function after(?Closure $callback): static
+    {
+        $this->after = $callback;
+
+        return $this;
+    }
+
+    /**
+     * Stop here from a closure that takes $action, keeping the modal open. What
+     * the action wrote is rolled back, and notifications sent so far still show.
+     */
+    public function halt(): never
+    {
+        throw new Halt(closesModal: false);
+    }
+
+    /**
+     * Stop here and close the modal, with what the action wrote rolled back.
+     */
+    public function cancel(): never
+    {
+        throw new Halt(closesModal: true);
+    }
+
+    /**
+     * Whether the last run() halted and the modal should stay open.
+     */
+    public function keepsModalOpen(): bool
+    {
+        return $this->keepsModalOpen;
     }
 
     /**
@@ -648,7 +747,7 @@ class Action extends Component implements NeedsServer
 
     public function hasModalForm(): bool
     {
-        return $this->modalComponents !== [];
+        return $this->modalComponents !== [] || $this->extraModalFooterActions !== [];
     }
 
     /**
@@ -674,7 +773,21 @@ class Action extends Component implements NeedsServer
 
         $data = $this->hasModalForm() ? $this->makeForm($parentData)->validate([StatePath::ROOT => $input]) : [];
 
-        $result = $this->evaluate($this->action, ['data' => $data]);
+        try {
+            // A savepoint of its own, so a halt undoes this and nothing around it.
+            $result = $this->getForm()->getConnection()->transaction(function () use ($data): mixed {
+                $this->evaluate($this->before, ['data' => $data]);
+                $result = $this->evaluate($this->action, ['data' => $data]);
+                $this->evaluate($this->after, ['data' => $data, 'result' => $result]);
+
+                return $result;
+            });
+        } catch (Halt $halt) {
+            $this->keepsModalOpen = ! $halt->closesModal;
+
+            return null;
+        }
+
         $notificationTitle = $this->evaluate($this->successNotificationTitle, ['data' => $data]);
 
         if ($notificationTitle !== null) {
@@ -707,7 +820,7 @@ class Action extends Component implements NeedsServer
 
     public function evaluate(mixed $value, array $parameters = []): mixed
     {
-        return parent::evaluate($value, ['record' => $this->getRecord(), ...$parameters]);
+        return parent::evaluate($value, ['record' => $this->getRecord(), 'action' => $this, self::class => $this, ...$parameters]);
     }
 
     protected function getProps(): array
@@ -744,6 +857,7 @@ class Action extends Component implements NeedsServer
             ]),
             ...($this->evaluate($this->isOutlined) ? ['outlined' => true] : []),
             ...($this->evaluate($this->isSlideOver) ? ['slideOver' => true] : []),
+            ...($this->evaluate($this->cancelsParentActions) ? ['cancelsParent' => true] : []),
             ...(($keys = $this->evaluate($this->keyBindings)) === [] ? [] : ['keyBindings' => array_values($keys)]),
             ...($this->evaluate($this->hasModalCloseButton) ? [] : ['closeButton' => false]),
             ...($this->evaluate($this->closesModalByClickingAway) ? [] : ['closeOnClickAway' => false]),

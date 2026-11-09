@@ -72,7 +72,7 @@ export interface SchemaNode {
     /** Rules the browser can check, on forms with frontendValidation(). */
     validation?: FieldValidation | null;
     /** The place around its field, or in its repeater row's header, this child renders in. */
-    slot?: FieldSlot | 'itemAction';
+    slot?: FieldSlot | 'itemAction' | 'modalFooter';
     props?: Record<string, any>;
     children?: SchemaNode[];
     deps?: string[];
@@ -202,6 +202,8 @@ export interface ActionResult extends UpdatePatch {
     result?: unknown;
     /** Where the action sends the user, in place of staying on the page. */
     redirect?: string | null;
+    /** The action stopped itself and wants its modal to stay open. */
+    halted?: boolean;
 }
 
 export interface SelectOption {

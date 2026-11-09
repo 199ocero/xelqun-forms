@@ -11,6 +11,9 @@ export const HEADING_LEVEL: InjectionKey<number> = Symbol('xelqun-heading-level'
 /** Set inside a FusedGroup, which lists its fields' errors below the whole group. */
 export const FUSED_GROUP: InjectionKey<boolean> = Symbol('xelqun-fused-group');
 
+/** Closes the modals an action sits in, for an action that cancels its parents. */
+export const CLOSE_PARENT_MODALS: InjectionKey<() => void> = Symbol('xelqun-close-parent-modals');
+
 export function provideFormStore(store: FormStore): void {
     provide(FORM_STORE, store);
 }

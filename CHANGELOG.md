@@ -12,6 +12,10 @@ Xelqun Forms is alpha. Until 1.0, a minor version can break existing code, and e
 - **`Action::keyBindings(['mod+s'])`** clicks the button from the keyboard. `mod` is Command on a Mac and Ctrl elsewhere.
 - **`Action::rateLimit(5)`** lets one user, or one address when signed out, run the action that many times a minute. Past that, the request gets a 429 and the form says to wait.
 - **`Action::authorizationTooltip()`** shows an action that `authorize()` refused as disabled, with the policy's message as its tooltip. A refusal with no message still hides it, and the server still refuses the click. `authorize()` closures can return a `Response` for the message.
+- **`Action::extraModalFooterActions()`** puts more actions beside a modal's buttons. They run with the modal's state, which `$get` reads, and can open modals of their own. **`cancelParentActions()`** closes the modals an action sits in once it has run.
+- **`Action::before()`** and **`after()`** run around `action()`, in its transaction. `after()` also gets `$result`.
+- **`$action->halt()`** stops an action from a closure that takes `$action`, keeping the modal open. **`$action->cancel()`** stops it and closes the modal. Both roll back what the action wrote, and notifications sent so far still show.
+- **`Action::steps()`** puts a wizard in the modal, with the submit button on the last step.
 
 ## 0.8.1 - 2026-11-08
 

@@ -17,6 +17,7 @@ use Xelqun\Forms\Exceptions\FormDefinitionException;
 use Xelqun\Forms\Form;
 use Xelqun\Forms\Layouts\Actions;
 use Xelqun\Forms\Layouts\Section;
+use Xelqun\Forms\Layouts\Step;
 use Xelqun\Forms\Security\FormToken;
 use Xelqun\Forms\Security\FormTokenEncrypter;
 use Xelqun\Forms\State\Get;
@@ -476,4 +477,103 @@ it('refuses an action past its rate limit', function () {
     callLookAction('data#0.3')->assertStatus(429)->assertHeader('Retry-After');
 
     expect(ActionLookTestForm::$runs)->toBe(2);
+});
+
+class ActionFlowTestForm extends Form
+{
+    public static array $calls = [];
+
+    public function schema(): array
+    {
+        return [
+            Actions::make([
+                Action::make('order')
+                    ->authorize(true)
+                    ->model(Country::class)
+                    ->schema([TextInput::make('name')])
+                    ->extraModalFooterActions([
+                        Action::make('draft')->authorize(true)->cancelParentActions()->action(fn (Get $get) => self::$calls[] = 'draft:'.$get('name')),
+                    ])
+                    ->before(fn () => self::$calls[] = 'before')
+                    ->after(fn (mixed $result) => self::$calls[] = 'after:'.$result)
+                    ->action(function (array $data, Action $action) {
+                        Country::create(['name' => $data['name']]);
+
+                        if ($data['name'] === 'stop') {
+                            $action->halt();
+                        }
+
+                        if ($data['name'] === 'cancel') {
+                            $action->cancel();
+                        }
+
+                        return 'done';
+                    }),
+                Action::make('wizard')->authorize(true)->steps([
+                    Step::make('One')->schema([TextInput::make('a')->required()]),
+                    Step::make('Two')->schema([TextInput::make('b')]),
+                ])->action(fn (array $data) => self::$calls[] = $data),
+            ]),
+        ];
+    }
+}
+
+function callFlowAction(string $key, string $phase, ?array $data = null, ?string $token = null): TestResponse
+{
+    return test()->postJson(route('xelqun.forms.action'), [
+        'token' => $token ?? ActionFlowTestForm::make()->makeToken(),
+        'action' => $key,
+        'phase' => $phase,
+        'state' => ['data' => $data ?? []],
+        'data' => $data,
+        'deps' => (object) [],
+    ]);
+}
+
+it('runs before and after around the action', function () {
+    ActionFlowTestForm::$calls = [];
+
+    callFlowAction('data#0.0', 'run', ['name' => 'Peru'])->assertOk()->assertJsonMissingPath('halted');
+
+    expect(ActionFlowTestForm::$calls)->toBe(['before', 'after:done'])
+        ->and(Country::query()->count())->toBe(1);
+});
+
+it('rolls back and keeps the modal open when an action halts, and closes it on cancel', function (string $name, bool $halted) {
+    ActionFlowTestForm::$calls = [];
+
+    $response = callFlowAction('data#0.0', 'run', ['name' => $name])->assertOk();
+
+    expect($response->json('halted'))->toBe($halted ? true : null)
+        ->and(ActionFlowTestForm::$calls)->toBe(['before'])
+        ->and(Country::query()->count())->toBe(0);
+})->with([
+    'halt' => ['stop', true],
+    'cancel' => ['cancel', false],
+]);
+
+it('puts extra footer actions in the modal, and runs them with its state', function () {
+    ActionFlowTestForm::$calls = [];
+
+    $modal = callFlowAction('data#0.0', 'mount')->assertOk()->json('form');
+    $footer = collect($modal['components'])->firstWhere('slot', 'modalFooter');
+
+    expect($footer['children'][0]['props'])->toMatchArray(['label' => 'Draft', 'cancelsParent' => true]);
+
+    callFlowAction($footer['children'][0]['key'], 'run', ['name' => 'Chile'], $modal['token'])->assertOk();
+
+    expect(ActionFlowTestForm::$calls)->toBe(['draft:Chile']);
+});
+
+it('puts steps in a wizard and checks every step on submit', function () {
+    ActionFlowTestForm::$calls = [];
+
+    $modal = callFlowAction('data#0.1', 'mount')->assertOk()->json('form');
+
+    expect($modal['components'][0]['type'])->toBe('wizard');
+
+    callFlowAction('data#0.1', 'run', ['b' => 'x'])->assertStatus(422)->assertJsonValidationErrors(['data.a']);
+    callFlowAction('data#0.1', 'run', ['a' => '1', 'b' => 'x'])->assertOk();
+
+    expect(ActionFlowTestForm::$calls)->toBe([['a' => '1', 'b' => 'x']]);
 });

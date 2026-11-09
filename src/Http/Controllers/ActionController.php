@@ -56,6 +56,7 @@ class ActionController
             ),
             'result' => $action->hasResult() ? $result : null,
             'redirect' => $action->getSuccessRedirectUrl(),
+            ...($action->keepsModalOpen() ? ['halted' => true] : []),
         ]);
     }
 }

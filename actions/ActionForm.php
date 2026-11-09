@@ -5,6 +5,7 @@ namespace Xelqun\Actions;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use Xelqun\Forms\Form;
+use Xelqun\Forms\Layouts\Actions;
 use Xelqun\Forms\Security\FormToken;
 
 /**
@@ -16,6 +17,9 @@ use Xelqun\Forms\Security\FormToken;
  */
 final class ActionForm extends Form
 {
+    /** Where the browser draws the extra footer actions, beside the modal's own buttons. */
+    public const string FOOTER_SLOT = 'modalFooter';
+
     private Action $action;
 
     /** @var array<string, mixed> */
@@ -35,7 +39,12 @@ final class ActionForm extends Form
 
     public function schema(): array
     {
-        return $this->action->getModalComponents();
+        $footerActions = $this->action->getExtraModalFooterActions();
+
+        return [
+            ...$this->action->getModalComponents(),
+            ...($footerActions === [] ? [] : [Actions::make($footerActions)->inSlot(self::FOOTER_SLOT)]),
+        ];
     }
 
     public function authorize(?Authenticatable $user, ?Model $record): bool

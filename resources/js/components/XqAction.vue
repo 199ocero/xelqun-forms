@@ -13,8 +13,18 @@ export type ActionOutcome = 'done' | 'failed' | null;
 <script setup lang="ts">
 import { Link, router } from '@inertiajs/vue3';
 import { LoaderCircle } from '@lucide/vue';
-import { computed, onBeforeUnmount, onMounted, onScopeDispose, ref, shallowRef, watch } from 'vue';
-import { useFormStore } from '../composables/context';
+import {
+    computed,
+    inject,
+    onBeforeUnmount,
+    onMounted,
+    onScopeDispose,
+    provide,
+    ref,
+    shallowRef,
+    watch,
+} from 'vue';
+import { CLOSE_PARENT_MODALS, useFormStore } from '../composables/context';
 import { createFormStore, LOADING_INDICATOR_DELAY } from '../core/store';
 import { cn, isOwnUrl } from '../lib/utils';
 import type { SchemaNode } from '../schema/types';
@@ -27,6 +37,7 @@ import XqIcon from '../ui/XqIcon.vue';
 import XqActionBadge from './XqActionBadge.vue';
 import XqActionContent from './XqActionContent.vue';
 import XqForm from './XqForm.vue';
+import XqNode from './XqNode.vue';
 
 const props = defineProps<{
     node: SchemaNode;
@@ -44,6 +55,20 @@ const modalOpen = ref(false);
 const modal = shallowRef<FormStore | null>(null);
 const outcome = ref<ActionOutcome>(null);
 const root = ref<HTMLElement | null>(null);
+const closeParentModals = inject(CLOSE_PARENT_MODALS, () => {});
+
+// Inside this action's modal, a footer action that cancels its parents closes this one, and so on up.
+provide(CLOSE_PARENT_MODALS, () => {
+    modalOpen.value = false;
+    closeParentModals();
+});
+
+const footerActions = computed(
+    () =>
+        modal.value?.components
+            .filter((node) => node.slot === 'modalFooter')
+            .flatMap((node) => node.children ?? []) ?? [],
+);
 
 const variant = computed(() =>
     options.value.style === 'link'
@@ -105,14 +130,19 @@ async function run(): Promise<void> {
     running.value = true;
 
     const result = await store.runAction(props.node, modal.value ?? undefined);
+    const halted = !!result?.halted;
 
     // A modal keeps its failure to itself, on the field or message that explains it.
-    if (result || !modalOpen.value) {
+    if (!halted && (result || !modalOpen.value)) {
         showOutcome(result ? 'done' : 'failed');
     }
 
-    if (result) {
+    if (result && !halted) {
         modalOpen.value = false;
+
+        if (options.value.cancelsParent) {
+            closeParentModals();
+        }
     }
 
     if (result?.redirect) {
@@ -316,8 +346,9 @@ onScopeDispose(() => {
             :slide-over="!!options.slideOver"
         >
             <XqForm :form="modal" @submit="run">
-                <template #actions>
+                <template #actions="{ hasNextStep }">
                     <XqDialogFooter sticky :alignment="options.footerAlignment">
+                        <XqNode v-for="node in footerActions" :key="node.key" :node="node" />
                         <XqButton
                             type="button"
                             variant="outline"
@@ -327,6 +358,7 @@ onScopeDispose(() => {
                             {{ options.cancelLabel ?? store.t('Cancel') }}
                         </XqButton>
                         <XqButton
+                            v-if="!hasNextStep"
                             type="submit"
                             size="sm"
                             :class="showsSpinner && 'pointer-events-none'"

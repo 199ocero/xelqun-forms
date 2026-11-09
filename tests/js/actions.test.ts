@@ -237,6 +237,60 @@ describe('actions', () => {
         wrapper.unmount();
     });
 
+    it('stays open when the action halts', async () => {
+        fetchMock
+            .mockImplementationOnce(() => respond({ form: modalSchema }))
+            .mockImplementationOnce(() => respond(patch({ halted: true })));
+
+        const { button, wrapper } = await mountAction(action({ hasForm: true }));
+
+        await button.trigger('click');
+        await flushPromises();
+        submitModal();
+        await flushPromises();
+
+        expect(inModal()).not.toBeNull();
+        wrapper.unmount();
+    });
+
+    it('puts footer actions beside the buttons, and one that cancels its parent closes it', async () => {
+        const footer: SchemaNode = {
+            key: 'data#1',
+            type: 'actions',
+            hidden: false,
+            path: null,
+            slot: 'modalFooter',
+            props: {},
+            deps: [],
+            children: [{ ...action({ label: 'Draft', cancelsParent: true }), key: 'data#1.0' }],
+        };
+
+        fetchMock
+            .mockImplementationOnce(() =>
+                respond({
+                    form: { ...modalSchema, components: [...modalSchema.components, footer] },
+                }),
+            )
+            .mockImplementationOnce(() => respond(patch()));
+
+        const { button, wrapper } = await mountAction(action({ hasForm: true }));
+
+        await button.trigger('click');
+        await flushPromises();
+
+        const draft = modalButton('Draft');
+
+        expect(draft.closest('[data-xq-dialog-footer]')).not.toBeNull();
+        expect(inModal()!.querySelectorAll('[data-xq-action]').length).toBe(1);
+
+        draft.click();
+        await flushPromises();
+
+        expect(sent(1)).toMatchObject({ action: 'data#1.0', token: 'modal-token' });
+        expect(inModal()).toBeNull();
+        wrapper.unmount();
+    });
+
     it('stays open and shows the errors the server finds', async () => {
         fetchMock
             .mockImplementationOnce(() => respond({ form: modalSchema }))
