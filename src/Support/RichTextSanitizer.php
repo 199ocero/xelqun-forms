@@ -33,6 +33,9 @@ final class RichTextSanitizer implements AttributeSanitizerInterface
             ->allowElement('img', ['src', 'alt', 'title', 'width', 'height', 'data-xq-upload'])
             ->allowElement('td', ['colspan', 'rowspan'])
             ->allowElement('th', ['colspan', 'rowspan'])
+            // A text color, a mention, and a custom block's placeholder. Data attributes run nothing.
+            ->allowElement('span', ['style', 'data-type', 'data-id', 'data-label', 'data-mention-suggestion-char'])
+            ->allowElement('div', ['data-type', 'data-id', 'data-config'])
             ->withAttributeSanitizer($this);
 
         foreach (self::BLOCKS as $element) {
@@ -51,7 +54,7 @@ final class RichTextSanitizer implements AttributeSanitizerInterface
      */
     public function getSupportedElements(): array
     {
-        return self::BLOCKS;
+        return [...self::BLOCKS, 'span'];
     }
 
     /**
@@ -63,12 +66,18 @@ final class RichTextSanitizer implements AttributeSanitizerInterface
     }
 
     /**
-     * The editor only writes text-align. Free CSS could cover the page or call
-     * out to another site.
+     * The editor only writes text-align on blocks and a hex color on spans. Free
+     * CSS could cover the page or call out to another site.
      */
     public function sanitizeAttribute(string $element, string $attribute, string $value, HtmlSanitizerConfig $config): ?string
     {
-        return preg_match('/^\s*text-align:\s*(left|center|right|justify)\s*;?\s*$/i', html_entity_decode($value), $matches) === 1
+        $value = html_entity_decode($value);
+
+        if ($element === 'span') {
+            return preg_match('/^\s*color:\s*(#[0-9a-f]{3,8})\s*;?\s*$/i', $value, $matches) === 1 ? 'color: '.strtolower($matches[1]) : null;
+        }
+
+        return preg_match('/^\s*text-align:\s*(left|center|right|justify)\s*;?\s*$/i', $value, $matches) === 1
             ? 'text-align: '.strtolower($matches[1])
             : null;
     }

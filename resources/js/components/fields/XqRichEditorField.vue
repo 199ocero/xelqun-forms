@@ -4,15 +4,21 @@ import { Subscript } from '@tiptap/extension-subscript';
 import { Superscript } from '@tiptap/extension-superscript';
 import { TableKit } from '@tiptap/extension-table';
 import { TextAlign } from '@tiptap/extension-text-align';
+import { Color, TextStyle } from '@tiptap/extension-text-style';
 import StarterKit from '@tiptap/starter-kit';
 import { EditorContent, useEditor } from '@tiptap/vue-3';
 import type { Editor } from '@tiptap/vue-3';
+import type { Editor as CoreEditor } from '@tiptap/core';
 import {
     AlignCenter,
     AlignJustify,
     AlignLeft,
     AlignRight,
+    BetweenHorizontalEnd,
+    BetweenVerticalEnd,
+    Blocks,
     Bold,
+    Braces,
     Code,
     Heading1,
     Heading2,
@@ -26,12 +32,17 @@ import {
     List,
     ListOrdered,
     Minus,
+    Palette,
+    PanelTop,
     Quote,
     Redo,
     Strikethrough,
     Subscript as SubscriptIcon,
     Superscript as SuperscriptIcon,
     Table,
+    TableCellsMerge,
+    TableCellsSplit,
+    Trash2,
     Underline,
     Undo,
 } from '@lucide/vue';
@@ -39,13 +50,17 @@ import type { Component } from 'vue';
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useField } from '../../composables/useField';
 import { cn } from '../../lib/utils';
-import type { SchemaNode } from '../../schema/types';
-import { controlClass, toolbarButtonClass } from '../../ui/classes';
+import type { SchemaNode, SelectOption } from '../../schema/types';
+import { controlClass, optionClass, popoverClass, toolbarButtonClass } from '../../ui/classes';
+import XqPopover from '../../ui/XqPopover.vue';
+import XqAction from '../XqAction.vue';
 import XqFieldWrapper from '../XqFieldWrapper.vue';
+import { customBlockNode, mentionExtension } from './richEditorExtensions';
+import type { MentionMenu, MentionProviderOptions } from './richEditorExtensions';
 
 const props = defineProps<{ node: SchemaNode }>();
 const { store, path, value, error, label, describedBy, required, disabled, id, onBlur } = useField<
-    string | null
+    string | Record<string, unknown> | null
 >(props.node);
 const { t } = store;
 const options = computed(() => props.node.props ?? {});
@@ -67,8 +82,38 @@ const UploadedImage = Image.extend({
     },
 });
 
+const isJson = !!options.value.json;
+const previews = ref<Record<string, string>>({ ...options.value.blockPreviews });
+const blockLabels = () =>
+    Object.fromEntries(
+        (options.value.blocks ?? []).map((block: { id: string; label: string }) => [
+            block.id,
+            block.label,
+        ]),
+    );
+const mentionMenu = ref<MentionMenu | null>(null);
+const mentionProviders: MentionProviderOptions[] = options.value.mentions ?? [];
+const blockActions = computed(
+    () => props.node.children?.filter((child) => child.slot === 'richBlock') ?? [],
+);
+const blockActionRefs: Array<InstanceType<typeof XqAction> | null> = [];
+const openMenu = ref<string | null>(null);
+
+/** What the editor holds, in the form the field keeps. */
+function contentOf(current: CoreEditor): string | Record<string, unknown> | null {
+    if (current.isEmpty) {
+        return null;
+    }
+
+    return isJson ? current.getJSON() : current.getHTML();
+}
+
+const sameContent = (left: unknown, right: unknown) =>
+    (isJson ? JSON.stringify(left ?? null) : (left ?? '')) ===
+    (isJson ? JSON.stringify(right ?? null) : (right ?? ''));
+
 const editor = useEditor({
-    content: value.value ?? '',
+    content: (value.value as any) ?? '',
     editable: !disabled.value,
     extensions: [
         StarterKit.configure({ link: { openOnClick: false } }),
@@ -77,6 +122,17 @@ const editor = useEditor({
         Superscript,
         TableKit,
         TextAlign.configure({ types: ['heading', 'paragraph'] }),
+        ...(options.value.textColors ? [TextStyle, Color] : []),
+        ...(options.value.blocks ? [customBlockNode(previews, blockLabels)] : []),
+        ...(mentionProviders.length
+            ? [
+                  mentionExtension(
+                      mentionProviders,
+                      (char, query) => store.search(path, `${char}${query}`),
+                      mentionMenu,
+                  ),
+              ]
+            : []),
     ],
     editorProps: {
         attributes: {
@@ -89,7 +145,7 @@ const editor = useEditor({
         },
     },
     onUpdate: ({ editor: current }) => {
-        value.value = current.isEmpty ? null : current.getHTML();
+        value.value = contentOf(current);
     },
     onBlur: () => onBlur(),
 });
@@ -97,8 +153,8 @@ const editor = useEditor({
 watch(value, (next) => {
     const current = editor.value;
 
-    if (current && (next ?? '') !== (current.isEmpty ? '' : current.getHTML())) {
-        current.commands.setContent(next ?? '', { emitUpdate: false });
+    if (current && !sameContent(next, contentOf(current))) {
+        current.commands.setContent((next as any) ?? '', { emitUpdate: false });
     }
 });
 
@@ -109,6 +165,23 @@ interface Tool {
     icon: Component;
     run: (editor: Editor) => void;
     active?: (editor: Editor) => boolean;
+    /** Shown only while this is true, as table tools are inside a table. */
+    shown?: (editor: Editor) => boolean;
+    /** Opens a list to choose from instead of running. */
+    menu?: boolean;
+}
+
+function tableTool(label: () => string, icon: Component, command: string): Tool {
+    return {
+        label,
+        icon,
+        run: (current) => (chain(current) as any)[command]().run(),
+        shown: (current) => current.isActive('table'),
+    };
+}
+
+function menuTool(label: () => string, icon: Component): Tool {
+    return { label, icon, run: () => {}, menu: true };
 }
 
 function chain(editor: Editor) {
@@ -195,6 +268,28 @@ const tools: Record<string, Tool> = {
         run: (current) =>
             chain(current).insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run(),
     },
+    tableAddRowBefore: tableTool(() => t('Add a row above'), BetweenHorizontalEnd, 'addRowBefore'),
+    tableAddRowAfter: tableTool(() => t('Add a row below'), BetweenHorizontalEnd, 'addRowAfter'),
+    tableAddColumnBefore: tableTool(
+        () => t('Add a column before'),
+        BetweenVerticalEnd,
+        'addColumnBefore',
+    ),
+    tableAddColumnAfter: tableTool(
+        () => t('Add a column after'),
+        BetweenVerticalEnd,
+        'addColumnAfter',
+    ),
+    tableDeleteRow: tableTool(() => t('Delete the row'), Minus, 'deleteRow'),
+    tableDeleteColumn: tableTool(() => t('Delete the column'), Minus, 'deleteColumn'),
+    tableMergeCells: tableTool(() => t('Merge cells'), TableCellsMerge, 'mergeCells'),
+    tableSplitCell: tableTool(() => t('Split the cell'), TableCellsSplit, 'splitCell'),
+    tableToggleHeaderRow: tableTool(() => t('Header row'), PanelTop, 'toggleHeaderRow'),
+    tableToggleHeaderCell: tableTool(() => t('Header cell'), PanelTop, 'toggleHeaderCell'),
+    tableDelete: tableTool(() => t('Delete the table'), Trash2, 'deleteTable'),
+    textColor: menuTool(() => t('Text color'), Palette),
+    mergeTags: menuTool(() => t('Insert a merge tag'), Braces),
+    customBlocks: menuTool(() => t('Insert a block'), Blocks),
     attachFiles: {
         label: () => t('Attach a file'),
         icon: ImagePlus,
@@ -220,6 +315,68 @@ async function attach(event: Event): Promise<void> {
             .focus()
             .setImage({ src, alt: file.name, upload: token } as any)
             .run();
+    }
+}
+
+function setColor(color: string | null): void {
+    openMenu.value = null;
+
+    if (editor.value) {
+        const next = chain(editor.value);
+
+        (color === null ? next.unsetColor() : next.setColor(color)).run();
+    }
+}
+
+function insertMergeTag(name: string): void {
+    openMenu.value = null;
+    editor.value?.chain().focus().insertContent(`{{ ${name} }}`).run();
+}
+
+function chooseBlock(index: number): void {
+    openMenu.value = null;
+    void blockActionRefs[index]?.open();
+}
+
+function insertBlock(result: unknown): void {
+    const block = result as { id: string; config: string; preview: string } | null;
+
+    if (!block) {
+        return;
+    }
+
+    previews.value[`${block.id}\n${block.config}`] = block.preview;
+    editor.value
+        ?.chain()
+        .focus()
+        .insertContent({ type: 'customBlock', attrs: { id: block.id, config: block.config } })
+        .run();
+}
+
+const menuItems = computed<Record<string, SelectOption[]>>(() => ({
+    textColor: Object.entries(options.value.textColors ?? {}).map(([color, name]) => ({
+        value: color,
+        label: String(name),
+    })),
+    mergeTags: Object.entries(options.value.mergeTags ?? {}).map(([name, tagLabel]) => ({
+        value: name,
+        label: String(tagLabel),
+    })),
+    customBlocks: (options.value.blocks ?? []).map(
+        (block: { id: string; label: string }, index: number) => ({
+            value: index,
+            label: block.label,
+        }),
+    ),
+}));
+
+function chooseFromMenu(name: string, item: SelectOption): void {
+    if (name === 'textColor') {
+        setColor(String(item.value));
+    } else if (name === 'mergeTags') {
+        insertMergeTag(String(item.value));
+    } else {
+        chooseBlock(Number(item.value));
     }
 }
 
@@ -250,8 +407,58 @@ onBeforeUnmount(() => objectUrls.forEach((url) => URL.revokeObjectURL(url)));
                     class="gap-0.5 flex"
                 >
                     <template v-for="name in group" :key="name">
+                        <XqPopover
+                            v-if="tools[name]?.menu"
+                            :open="openMenu === name"
+                            class="p-1 min-w-40"
+                            @update:open="(isOpen) => (openMenu = isOpen ? name : null)"
+                        >
+                            <template #trigger>
+                                <button
+                                    type="button"
+                                    :class="toolbarButtonClass"
+                                    :aria-label="tools[name].label()"
+                                    :title="tools[name].label()"
+                                    :data-xq-tool="name"
+                                >
+                                    <component
+                                        :is="tools[name].icon"
+                                        class="size-4"
+                                        aria-hidden="true"
+                                    />
+                                </button>
+                            </template>
+                            <div role="menu" :aria-label="tools[name].label()">
+                                <button
+                                    v-for="item in menuItems[name]"
+                                    :key="String(item.value)"
+                                    type="button"
+                                    role="menuitem"
+                                    :class="cn(optionClass, 'hover:bg-xq-accent')"
+                                    :data-xq-menu-item="item.value"
+                                    @click="chooseFromMenu(name, item)"
+                                >
+                                    <span
+                                        v-if="name === 'textColor'"
+                                        class="size-3 rounded-full"
+                                        :style="{ backgroundColor: String(item.value) }"
+                                        aria-hidden="true"
+                                    />
+                                    {{ item.label }}
+                                </button>
+                                <button
+                                    v-if="name === 'textColor'"
+                                    type="button"
+                                    role="menuitem"
+                                    :class="cn(optionClass, 'hover:bg-xq-accent')"
+                                    @click="setColor(null)"
+                                >
+                                    {{ t('Default color') }}
+                                </button>
+                            </div>
+                        </XqPopover>
                         <button
-                            v-if="tools[name]"
+                            v-else-if="tools[name] && (tools[name].shown?.(editor) ?? true)"
                             type="button"
                             :class="toolbarButtonClass"
                             :aria-label="tools[name].label()"
@@ -266,6 +473,38 @@ onBeforeUnmount(() => objectUrls.forEach((url) => URL.revokeObjectURL(url)));
                 </div>
             </div>
             <EditorContent :editor="editor" />
+            <XqAction
+                v-for="(action, index) in blockActions"
+                :key="action.key"
+                :ref="(element: any) => (blockActionRefs[index] = element)"
+                :node="action"
+                headless
+                @result="insertBlock"
+            />
+            <Teleport to="body">
+                <div
+                    v-if="mentionMenu && mentionMenu.items.length"
+                    role="listbox"
+                    :class="cn(popoverClass, 'p-1 min-w-40 fixed')"
+                    :style="{
+                        top: `${(mentionMenu.rect?.bottom ?? 0) + 4}px`,
+                        left: `${mentionMenu.rect?.left ?? 0}px`,
+                    }"
+                    data-xq-mentions
+                >
+                    <button
+                        v-for="(item, index) in mentionMenu.items"
+                        :key="String(item.value)"
+                        type="button"
+                        role="option"
+                        :aria-selected="index === mentionMenu.active"
+                        :class="cn(optionClass, index === mentionMenu.active && 'bg-xq-accent')"
+                        @mousedown.prevent="mentionMenu.choose(item)"
+                    >
+                        {{ item.label }}
+                    </button>
+                </div>
+            </Teleport>
             <input
                 ref="fileInput"
                 type="file"

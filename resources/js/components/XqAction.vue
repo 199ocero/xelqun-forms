@@ -45,7 +45,12 @@ const props = defineProps<{
     /** Keep the dialogs and leave the button out, for a menu that has its own. */
     headless?: boolean;
 }>();
-const emit = defineEmits<{ spinner: [showsSpinner: boolean]; outcome: [outcome: ActionOutcome] }>();
+const emit = defineEmits<{
+    spinner: [showsSpinner: boolean];
+    outcome: [outcome: ActionOutcome];
+    /** What the action sent back, for one that sends a result. */
+    result: [result: unknown];
+}>();
 const store = props.runner ?? useFormStore();
 const options = computed(() => props.node.props ?? {});
 const running = ref(false);
@@ -139,6 +144,7 @@ async function run(): Promise<void> {
 
     if (result && !halted) {
         modalOpen.value = false;
+        emit('result', result.result);
 
         if (options.value.cancelsParent) {
             closeParentModals();

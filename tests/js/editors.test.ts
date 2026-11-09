@@ -11,7 +11,7 @@ import { field, schema } from './fixtures';
 
 vi.mock('@inertiajs/vue3', () => ({ router: { visit: vi.fn() } }));
 
-async function mountField(component: any, node: SchemaNode, value: string | null = null) {
+async function mountField(component: any, node: SchemaNode, value: unknown = null) {
     const store = createFormStore(schema([node], { body: value }));
     const wrapper = mount(component, {
         props: { node: store.nodes.get('data.body')! },
@@ -254,6 +254,136 @@ describe('rich editor', () => {
 
         expect(wrapper.find('[role="toolbar"]').exists()).toBe(false);
         expect(wrapper.find('.xq-rich-content').attributes('contenteditable')).toBe('false');
+        wrapper.unmount();
+    });
+});
+
+describe('rich editor extras', () => {
+    const editorOf = (wrapper: any) =>
+        (wrapper.findComponent({ name: 'EditorContent' }).props() as any).editor;
+    const tools = (wrapper: any) =>
+        wrapper.findAll('[data-xq-tool]').map((tool: any) => tool.attributes('data-xq-tool'));
+
+    it('shows the table tools only inside a table', async () => {
+        const { wrapper } = await mountField(
+            XqRichEditorField,
+            field('data.body', 'rich-editor', {
+                props: { toolbar: [['table', 'tableAddRowAfter', 'tableDelete']] },
+            }),
+            '<p>Hi</p><table><tbody><tr><td><p>a</p></td></tr></tbody></table>',
+        );
+        const editor = editorOf(wrapper);
+
+        expect(tools(wrapper)).toEqual(['table']);
+
+        editor.commands.setTextSelection(editor.state.doc.content.size - 3);
+        // The editor tells Vue about a new selection on the next frame.
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+        await flushPromises();
+
+        expect(tools(wrapper)).toEqual(['table', 'tableAddRowAfter', 'tableDelete']);
+
+        await wrapper.find('[data-xq-tool="tableAddRowAfter"]').trigger('click');
+        await flushPromises();
+
+        expect(editor.getHTML().match(/<tr>/g)).toHaveLength(2);
+        wrapper.unmount();
+    });
+
+    it('keeps JSON instead of HTML when asked', async () => {
+        const doc = {
+            type: 'doc',
+            content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Hi' }] }],
+        };
+        const { store, wrapper } = await mountField(
+            XqRichEditorField,
+            field('data.body', 'rich-editor', { props: { toolbar: [['bold']], json: true } }),
+            doc as any,
+        );
+        const editor = editorOf(wrapper);
+
+        editor.commands.selectAll();
+        editor.commands.toggleBold();
+        await flushPromises();
+
+        const saved = store.get('data.body');
+
+        expect(saved.type).toBe('doc');
+        expect(saved.content[0].content).toEqual([
+            { type: 'text', text: 'Hi', marks: [{ type: 'bold' }] },
+        ]);
+        wrapper.unmount();
+    });
+
+    it('inserts a merge tag and colors text from its menus', async () => {
+        const { store, wrapper } = await mountField(
+            XqRichEditorField,
+            field('data.body', 'rich-editor', {
+                props: {
+                    toolbar: [['mergeTags', 'textColor']],
+                    mergeTags: { name: 'Full name' },
+                    textColors: { '#ef4444': 'Red' },
+                },
+            }),
+            '<p>Hi</p>',
+        );
+
+        await wrapper.find('[data-xq-tool="mergeTags"]').trigger('click');
+        await flushPromises();
+        document.querySelector<HTMLElement>('[data-xq-menu-item="name"]')!.click();
+        await flushPromises();
+
+        expect(store.get('data.body')).toContain('{{ name }}');
+
+        editorOf(wrapper).commands.selectAll();
+        await wrapper.find('[data-xq-tool="textColor"]').trigger('click');
+        await flushPromises();
+        document.querySelector<HTMLElement>('[data-xq-menu-item="#ef4444"]')!.click();
+        await flushPromises();
+
+        expect(store.get('data.body')).toContain('style="color: #ef4444');
+        wrapper.unmount();
+    });
+
+    it('keeps the mentions it loads, and offers the items after the character', async () => {
+        const { wrapper } = await mountField(
+            XqRichEditorField,
+            field('data.body', 'rich-editor', {
+                props: {
+                    toolbar: [['bold']],
+                    mentions: [{ char: '@', remote: false, items: [{ value: 1, label: 'Jane' }] }],
+                },
+            }),
+            '<p><span data-type="mention" data-id="1" data-label="Jane" data-mention-suggestion-char="@">@Jane</span> </p>',
+        );
+        const editor = editorOf(wrapper);
+
+        expect(editor.getHTML()).toContain('data-type="mention"');
+
+        editor.chain().focus('end').insertContent('@Ja').run();
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        await flushPromises();
+
+        expect(document.querySelector('[data-xq-mentions]')?.textContent).toContain('Jane');
+        wrapper.unmount();
+    });
+
+    it('draws a block from the preview the server sent', async () => {
+        const { wrapper } = await mountField(
+            XqRichEditorField,
+            field('data.body', 'rich-editor', {
+                props: {
+                    toolbar: [['customBlocks']],
+                    blocks: [{ id: 'hero', label: 'Hero' }],
+                    blockPreviews: { 'hero\n{"heading":"Hi"}': '<b>Hi</b>' },
+                },
+            }),
+            '<div data-type="customBlock" data-id="hero" data-config="{&quot;heading&quot;:&quot;Hi&quot;}"></div><div data-type="customBlock" data-id="hero" data-config="{}"></div>',
+        );
+        const blocks = wrapper.findAll('[data-xq-rich-block]');
+
+        expect(blocks[0].html()).toContain('<b>Hi</b>');
+        expect(blocks[1].text()).toBe('Hero');
         wrapper.unmount();
     });
 });

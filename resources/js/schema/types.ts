@@ -125,7 +125,8 @@ export type FieldSlot =
     | 'prefixAction'
     | 'suffixAction'
     | 'optionAction'
-    | 'markdownPreview';
+    | 'markdownPreview'
+    | 'richBlock';
 
 export interface FormEndpoints {
     update: string;

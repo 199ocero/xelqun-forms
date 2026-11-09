@@ -6,6 +6,8 @@ Xelqun Forms is alpha. Until 1.0, a minor version can break existing code, and e
 
 ### Upgrading
 
+- The rich editor's default toolbar has a group of table tools, and `textColor`, `mergeTags` and `customBlocks`, which show only once configured.
+
 - **`hint()` now sits beside the label**, as in Filament. For text under the field, which is what `hint()` did before, use **`helperText()`**. A plugin field that reads `hint` from `useField()` for that text should read `helperText`, and the id its control is described by now ends in `-helper`.
 - `Section::collapsible()` and `collapsed()` take a closure too, and a section now renders inside a wrapper element.
 - A Toggle's track color comes from `onColor()` and `offColor()`, so `data-[state=checked]:bg-xq-primary` is no longer on the switch.
@@ -29,6 +31,12 @@ Xelqun Forms is alpha. Until 1.0, a minor version can break existing code, and e
 - **`Select::allowHtml()`** draws option labels as HTML, cleaned on the server like a rich editor's content. **`optionsLimit()`** sets how many options draw at once and how many a search finds. **`minItems()`** and **`maxItems()`** check a multiple select.
 - **`FileUpload::preserveFilenames()`** stores each file under its original name, with a random suffix when the name is taken. **`storeFileNamesIn()`** saves the original names in another field, such as a `Hidden` one, and the upload shows them. A plugin upload field can implement the new `NamesStoredFiles` contract to get both, since `HandlesUploads` has its methods.
 - **`Section::icon()`**, **`aside()`** (heading in a column beside the card), **`compact()`**, **`persistCollapsed()`**, and **`afterHeader()`** and **`footer()`** for actions or text.
+- **RichEditor table tools**: `tableAddRowBefore`, `tableAddRowAfter`, `tableAddColumnBefore`, `tableAddColumnAfter`, `tableDeleteRow`, `tableDeleteColumn`, `tableMergeCells`, `tableSplitCell`, `tableToggleHeaderRow`, `tableToggleHeaderCell` and `tableDelete`. They show while the cursor is in a table, and the default toolbar has most of them.
+- **`RichEditor::json()`** keeps Tiptap's JSON instead of HTML. The server keeps only the nodes, marks and attributes the editor makes. File attachments are off in this mode.
+- **`RichEditor::textColors(['#ef4444' => 'Red'])`** adds a `textColor` button. The sanitizer keeps a hex color on a `span` and nothing else.
+- **`RichEditor::mergeTags()`** adds a `mergeTags` button that inserts `{{ name }}`. **`RichContentRenderer::make($html)->mergeTags([...])->toHtml()`** fills them in text only, never inside a tag, escaping all but `Htmlable` values.
+- **`RichEditor::mentions([MentionProvider::make('@')->items([...])])`** offers people or anything else after a character. `getSearchResultsUsing()` searches on the server instead.
+- **`RichEditor::customBlocks([HeroBlock::class])`** adds a `customBlocks` button. A block extends `CustomBlock`, can ask for values in a modal through `configureEditorAction()`, shows `toPreviewHtml()` in the editor, and `RichContentRenderer::customBlocks()` draws its `toHtml()` on the page. The server checks a posted block's config against its modal's rules on every save and drops a block that fails.
 - **`Tab::icon()`**, **`badge()`** and **`badgeColor()`**. **`Tabs::activeTab()`** opens a tab counting from 1, **`persistTab()`** remembers the open one in the browser, **`vertical()`** puts the tabs in a column, and **`contained()`** puts them in a card.
 
 ## 0.8.1 - 2026-11-08
