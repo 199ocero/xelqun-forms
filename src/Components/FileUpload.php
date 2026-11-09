@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use LogicException;
 use Xelqun\Forms\Components\Concerns\HandlesUploads;
-use Xelqun\Forms\Contracts\AcceptsUploads;
+use Xelqun\Forms\Contracts\NamesStoredFiles;
 use Xelqun\Forms\Contracts\PersistsItself;
 
 /**
@@ -17,7 +17,7 @@ use Xelqun\Forms\Contracts\PersistsItself;
  *
  * @api
  */
-class FileUpload extends Field implements AcceptsUploads, PersistsItself
+class FileUpload extends Field implements NamesStoredFiles, PersistsItself
 {
     use HandlesUploads;
 

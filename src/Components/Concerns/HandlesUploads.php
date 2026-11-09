@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use stdClass;
 use Throwable;
+use Xelqun\Forms\Support\StatePath;
 use Xelqun\Forms\Uploads\TemporaryUploadStore;
 
 /**
@@ -21,6 +22,42 @@ use Xelqun\Forms\Uploads\TemporaryUploadStore;
  */
 trait HandlesUploads
 {
+    protected bool $preservesFilenames = false;
+
+    protected ?string $fileNamesPath = null;
+
+    /**
+     * Store each file under its original name, cleaned of anything unsafe. A
+     * name already on the disk gets a random suffix instead of being replaced.
+     */
+    public function preserveFilenames(bool $condition = true): static
+    {
+        $this->preservesFilenames = $condition;
+
+        return $this;
+    }
+
+    public function preservesFilenames(): bool
+    {
+        return $this->preservesFilenames;
+    }
+
+    /**
+     * Save each file's original name in another field, such as a Hidden one: a
+     * string, or path => name for multiple(). The field shows those names too.
+     */
+    public function storeFileNamesIn(?string $name): static
+    {
+        $this->fileNamesPath = $name;
+
+        return $this;
+    }
+
+    public function getFileNamesStatePath(): ?string
+    {
+        return $this->fileNamesPath === null ? null : StatePath::resolve($this->fileNamesPath, $this->container);
+    }
+
     /**
      * Types a web server may run, or a browser may treat as a page from this
      * site. Refused unless the field lists its own acceptedFileTypes().
@@ -541,12 +578,16 @@ trait HandlesUploads
         $accept = $this->takesImagesOnly() ? ['image/*'] : $this->acceptedFileTypes;
         $files = [];
         $store = app(TemporaryUploadStore::class);
+        $namesPath = $this->getFileNamesStatePath();
+        $names = $namesPath === null ? null : $this->getForm()->getStateValue($namesPath);
 
         foreach (Arr::wrap($this->getState()) as $file) {
             if (is_string($file) && $file !== '') {
+                $name = is_array($names) ? ($names[$file] ?? null) : (is_string($names) && ! $this->isMultiple() ? $names : null);
+
                 $files[$file] = $store->isToken($file)
                     ? $store->describe($store->idFromToken($file))
-                    : ['name' => basename($file), 'url' => $this->getFileUrl($file), 'size' => null];
+                    : ['name' => is_string($name) && $name !== '' ? $name : basename($file), 'url' => $this->getFileUrl($file), 'size' => null];
             }
         }
 

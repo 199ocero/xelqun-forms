@@ -76,7 +76,11 @@ const groups = computed(() => groupOptions(props.options));
                             :disabled="option.disabled"
                             :class="optionClass"
                         >
-                            <SelectItemText>{{ option.label }}</SelectItemText>
+                            <!-- The server cleaned it, as for a rich editor. -->
+                            <SelectItemText v-if="option.html"
+                                ><span v-html="option.html"
+                            /></SelectItemText>
+                            <SelectItemText v-else>{{ option.label }}</SelectItemText>
                             <SelectItemIndicator
                                 class="right-2 size-3.5 absolute flex items-center justify-center"
                             >

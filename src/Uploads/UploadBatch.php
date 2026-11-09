@@ -12,6 +12,7 @@ use Xelqun\Forms\Components\Component;
 use Xelqun\Forms\Components\Field;
 use Xelqun\Forms\Contracts\AcceptsUploads;
 use Xelqun\Forms\Contracts\EmbedsUploads;
+use Xelqun\Forms\Contracts\NamesStoredFiles;
 use Xelqun\Forms\Form;
 use Xelqun\Forms\Support\StatePath;
 
@@ -60,9 +61,13 @@ final class UploadBatch
                         data_set($output, $path, $component->replaceUploads($value, fn (string $token): string => $this->promoteToken($component, $token)));
                     }
                 } elseif (is_array($value)) {
-                    data_set($output, $path, array_map(fn (mixed $file): mixed => $this->promoteToken($component, $file), $value));
+                    $stored = array_map(fn (mixed $file): mixed => $this->promoteToken($component, $file), $value);
+                    data_set($output, $path, $stored);
+                    $this->storeFileNames($component, $value, $stored, true, $output);
                 } elseif ($this->store->isToken($value)) {
-                    data_set($output, $path, $this->promoteToken($component, $value));
+                    $stored = $this->promoteToken($component, $value);
+                    data_set($output, $path, $stored);
+                    $this->storeFileNames($component, [$value], [$stored], false, $output);
                 }
             });
         } catch (Throwable $exception) {
@@ -243,6 +248,38 @@ final class UploadBatch
     /**
      * A stored path passes through, because a list can mix old files and new ones.
      */
+    /**
+     * Write each file's original name where storeFileNamesIn() says. A file
+     * that was already stored keeps the name it had.
+     *
+     * @param  array<array-key, mixed>  $before  Tokens and paths as posted.
+     * @param  array<array-key, mixed>  $after  The same, stored.
+     * @param  array<string, mixed>  $output
+     */
+    private function storeFileNames(AcceptsUploads $field, array $before, array $after, bool $isList, array &$output): void
+    {
+        if (! $field instanceof NamesStoredFiles || ($namesPath = $field->getFileNamesStatePath()) === null) {
+            return;
+        }
+
+        $previous = data_get($output, $namesPath);
+        $names = [];
+
+        foreach ($before as $index => $file) {
+            $stored = $after[$index] ?? null;
+
+            if (! is_string($stored)) {
+                continue;
+            }
+
+            $names[$stored] = $this->store->isToken($file)
+                ? ($this->store->describe($this->store->idFromToken($file))['name'] ?? basename($stored))
+                : (is_array($previous) && is_string($previous[$stored] ?? null) ? $previous[$stored] : (is_string($previous) ? $previous : basename($stored)));
+        }
+
+        data_set($output, $namesPath, $isList ? $names : (array_values($names)[0] ?? null));
+    }
+
     private function promoteToken(AcceptsUploads $field, mixed $file): mixed
     {
         return $this->store->isToken($file) ? $this->promoteFile($field, $this->store->idFromToken($file)) : $file;
@@ -272,7 +309,7 @@ final class UploadBatch
         }
 
         $disk = $field->getDiskName();
-        $path = $this->store->promote($id, $disk, $field->getDirectory(), $field->getVisibility());
+        $path = $this->store->promote($id, $disk, $field->getDirectory(), $field->getVisibility(), $field instanceof NamesStoredFiles && $field->preservesFilenames());
         $this->stored[$id] = ['disk' => $disk, 'path' => $path];
 
         return $path;

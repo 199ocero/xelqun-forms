@@ -41,8 +41,11 @@ const props = defineProps<{
     searchFailed?: boolean;
     messages?: SelectMessages;
     reorderable?: boolean;
+    /** The most options drawn at once. */
+    limit?: number;
     class?: HTMLAttributes['class'];
 }>();
+const limit = computed(() => props.limit ?? OPTION_LIMIT);
 const emit = defineEmits<{ search: [term: string]; blur: [] }>();
 const model = defineModel<Value | Value[] | null>();
 const searchTerm = ref('');
@@ -58,8 +61,8 @@ const matches = computed(() => {
         ? props.options
         : props.options.filter((option) => option.label.toLocaleLowerCase().includes(term));
 });
-const groups = computed(() => groupOptions(matches.value.slice(0, OPTION_LIMIT)));
-const hiddenCount = computed(() => Math.max(0, matches.value.length - OPTION_LIMIT));
+const groups = computed(() => groupOptions(matches.value.slice(0, limit.value)));
+const hiddenCount = computed(() => Math.max(0, matches.value.length - limit.value));
 
 function onInput(event: Event): void {
     typed.value = (event.target as HTMLInputElement).value;
@@ -253,7 +256,9 @@ function clear(): void {
                             :disabled="option.disabled"
                             :class="optionClass"
                         >
-                            <span class="truncate">{{ option.label }}</span>
+                            <!-- The server cleaned it, as for a rich editor. -->
+                            <span v-if="option.html" class="truncate" v-html="option.html" />
+                            <span v-else class="truncate">{{ option.label }}</span>
                             <ComboboxItemIndicator
                                 class="right-2 size-3.5 absolute flex items-center justify-center"
                             >
@@ -269,7 +274,7 @@ function clear(): void {
                     >
                         {{
                             t('Showing :shown of :total. Type to narrow it down.', {
-                                shown: OPTION_LIMIT,
+                                shown: limit,
                                 total: matches.length,
                             })
                         }}

@@ -109,13 +109,20 @@ final class TemporaryUploadStore
      * The temporary file stays until the caller deletes it. Every call makes a
      * new copy at a new path, so the caller owns the file it gets back.
      */
-    public function promote(string $id, string $disk, string $directory, string $visibility): string
+    public function promote(string $id, string $disk, string $directory, string $visibility, bool $preserveName = false): string
     {
         $metadata = $this->metadata($id) ?? throw new RuntimeException("Temporary upload [{$id}] does not exist.");
-        $extension = $metadata['extension'];
-        $basename = Str::limit(Str::slug(pathinfo($metadata['name'], PATHINFO_FILENAME)), 60, '') ?: 'file';
-        $filename = $basename.'-'.Str::lower(Str::random(12)).($extension !== '' ? '.'.$extension : '');
-        $path = ltrim($directory.'/'.$filename, '/');
+        $extension = $metadata['extension'] !== '' ? '.'.$metadata['extension'] : '';
+        $suffix = '-'.Str::lower(Str::random(12));
+        // The name was cleaned on upload; trimming dots keeps it from being "." or "..".
+        $original = trim(pathinfo($metadata['name'], PATHINFO_FILENAME), '. ');
+        $basename = $preserveName ? ($original !== '' ? $original : 'file') : (Str::limit(Str::slug($original), 60, '') ?: 'file');
+        $path = ltrim($directory.'/'.$basename.($preserveName ? '' : $suffix).$extension, '/');
+
+        // shortcut: two saves of one name at the same moment can both see it free, and the second wins; take a lock per path if that happens.
+        if ($preserveName && Storage::disk($disk)->exists($path)) {
+            $path = ltrim($directory.'/'.$basename.$suffix.$extension, '/');
+        }
 
         $stream = $this->disk()->readStream($this->directory().'/'.$id);
 

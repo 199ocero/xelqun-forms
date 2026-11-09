@@ -31,6 +31,19 @@ abstract class Field extends Component implements NeedsServer
 
     protected string|Closure|ConditionalText|null $hint = null;
 
+    protected string|Closure|ConditionalText|null $helperText = null;
+
+    protected string|Closure|null $hintIcon = null;
+
+    protected string|Closure|null $hintIconTooltip = null;
+
+    protected string|Closure|null $hintColor = null;
+
+    protected bool|Closure|null $markedAsRequired = null;
+
+    /** @var array<string, mixed>|Closure */
+    protected array|Closure $extraInputAttributes = [];
+
     protected string|Closure|ConditionalText|null $placeholder = null;
 
     protected mixed $default = null;
@@ -103,9 +116,74 @@ abstract class Field extends Component implements NeedsServer
         return $this;
     }
 
+    /**
+     * A short note beside the label, at the end of its row.
+     */
     public function hint(string|Closure|ConditionalText|null $hint): static
     {
         $this->hint = $hint;
+
+        return $this;
+    }
+
+    /**
+     * An icon beside the label, with an optional tooltip.
+     */
+    public function hintIcon(string|Closure|null $icon, string|Closure|null $tooltip = null): static
+    {
+        $this->hintIcon = $icon;
+        $this->hintIconTooltip = $tooltip;
+
+        return $this;
+    }
+
+    /**
+     * neutral, primary, danger, info, success or warning, for the hint and its icon.
+     */
+    public function hintColor(string|Closure|null $color): static
+    {
+        $this->hintColor = $color;
+
+        return $this;
+    }
+
+    /**
+     * An action at the end of the label's row.
+     */
+    public function hintAction(Component $action): static
+    {
+        return $this->afterLabel($action);
+    }
+
+    /**
+     * Help under the field, which screen readers read with it.
+     */
+    public function helperText(string|Closure|ConditionalText|null $text): static
+    {
+        $this->helperText = $text;
+
+        return $this;
+    }
+
+    /**
+     * Show or hide the required asterisk, whatever the rules say. It changes no validation.
+     */
+    public function markAsRequired(bool|Closure $condition = true): static
+    {
+        $this->markedAsRequired = $condition;
+
+        return $this;
+    }
+
+    /**
+     * HTML attributes for the input itself, on a text input or textarea. They
+     * reach the page as given, so never put user input in an attribute name.
+     *
+     * @param  array<string, mixed>|Closure  $attributes
+     */
+    public function extraInputAttributes(array|Closure $attributes): static
+    {
+        $this->extraInputAttributes = $attributes;
 
         return $this;
     }
@@ -438,7 +516,7 @@ abstract class Field extends Component implements NeedsServer
     {
         $rules = [];
 
-        foreach (['label' => $this->label, 'hint' => $this->hint, 'placeholder' => $this->placeholder] as $key => $text) {
+        foreach (['label' => $this->label, 'hint' => $this->hint, 'helperText' => $this->helperText, 'placeholder' => $this->placeholder] as $key => $text) {
             if ($text instanceof ConditionalText) {
                 $rules[$key] = $text->toArray($this->container);
             }
@@ -911,7 +989,13 @@ abstract class Field extends Component implements NeedsServer
                 'autofocus' => $this->autofocus,
                 'hiddenLabel' => $this->hiddenLabel,
                 'inlineLabel' => $this->inlineLabel,
+                'hintIcon' => $this->hintIcon,
+                'hintIconTooltip' => $this->hintIconTooltip,
+                'hintColor' => $this->hintColor,
             ]),
+            ...($this->helperText === null ? [] : ['helperText' => $this->resolveText($this->helperText)]),
+            ...($this->markedAsRequired === null ? [] : ['markedAsRequired' => (bool) $this->evaluate($this->markedAsRequired)]),
+            ...(($attributes = $this->evaluate($this->extraInputAttributes)) === [] ? [] : ['extraInputAttributes' => $attributes]),
         ];
     }
 }

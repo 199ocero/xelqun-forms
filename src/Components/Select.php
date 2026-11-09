@@ -17,6 +17,7 @@ use Xelqun\Forms\Contracts\HasSearchResults;
 use Xelqun\Forms\Contracts\PersistsItself;
 use Xelqun\Forms\Exceptions\FormDefinitionException;
 use Xelqun\Forms\Form;
+use Xelqun\Forms\Support\RichTextSanitizer;
 
 /**
  * @api
@@ -27,6 +28,7 @@ class Select extends Field implements HasSearchResults, PersistsItself
         getOptions as getStaticOptions;
         formatStateFromRecord as formatOptionState;
         getDefaultState as getOptionDefaultState;
+        toOptionList as toPlainOptionList;
     }
     use ManagesOptions;
 
@@ -60,6 +62,14 @@ class Select extends Field implements HasSearchResults, PersistsItself
     protected array|Closure $pivotData = [];
 
     protected int $searchLimit = 50;
+
+    protected ?int $optionsLimit = null;
+
+    protected bool|Closure $allowsHtml = false;
+
+    protected int $minItems = 0;
+
+    protected ?int $maxItems = null;
 
     protected int $searchDebounce = 250;
 
@@ -307,6 +317,70 @@ class Select extends Field implements HasSearchResults, PersistsItself
         return $this;
     }
 
+    /**
+     * The most options the list draws at once, and the most a search finds.
+     * The rest are found by typing. 100 drawn and 50 found unless you choose.
+     */
+    public function optionsLimit(int $limit): static
+    {
+        $this->optionsLimit = $limit;
+        $this->searchLimit = $limit;
+
+        return $this;
+    }
+
+    /**
+     * Draw option labels as HTML. The server cleans each label the way it cleans
+     * a rich editor's content, and searching and the chosen value use its text.
+     */
+    public function allowHtml(bool|Closure $condition = true): static
+    {
+        $this->allowsHtml = $condition;
+
+        return $this;
+    }
+
+    /**
+     * The fewest values a multiple select takes.
+     */
+    public function minItems(int $count): static
+    {
+        $this->minItems = $count;
+
+        return $this;
+    }
+
+    /**
+     * The most values a multiple select takes.
+     */
+    public function maxItems(?int $count): static
+    {
+        $this->maxItems = $count;
+
+        return $this;
+    }
+
+    /**
+     * @param  array<array-key, string>  $options
+     * @return array<int, array{value: int|string, label: string, disabled?: true, html?: string}>
+     */
+    protected function toOptionList(array $options): array
+    {
+        $list = $this->toPlainOptionList($options);
+
+        if (! $this->evaluate($this->allowsHtml)) {
+            return $list;
+        }
+
+        $sanitizer = app(RichTextSanitizer::class);
+
+        return array_map(fn (array $option): array => [
+            ...$option,
+            'label' => trim(html_entity_decode(strip_tags($option['label']), ENT_QUOTES | ENT_HTML5)),
+            'html' => $sanitizer->sanitize($option['label']),
+        ], $list);
+    }
+
     public function isMultiple(): bool
     {
         return $this->isMultiple;
@@ -489,7 +563,7 @@ class Select extends Field implements HasSearchResults, PersistsItself
                 }
             };
 
-            return [...($this->isMultiple ? ['array', $exists] : [$exists]), ...$this->getDisabledOptionRules()];
+            return [...($this->isMultiple ? ['array', $exists] : [$exists]), ...$this->getDisabledOptionRules(), ...$this->getItemCountRules()];
         }
 
         if ($this->isAsync()) {
@@ -503,10 +577,25 @@ class Select extends Field implements HasSearchResults, PersistsItself
                 }
             };
 
-            return [...($this->isMultiple ? ['array', $validate] : [$validate]), ...$this->getDisabledOptionRules()];
+            return [...($this->isMultiple ? ['array', $validate] : [$validate]), ...$this->getDisabledOptionRules(), ...$this->getItemCountRules()];
         }
 
-        return $this->getOptionRules($this->isMultiple);
+        return [...$this->getOptionRules($this->isMultiple), ...$this->getItemCountRules()];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function getItemCountRules(): array
+    {
+        if (! $this->isMultiple) {
+            return [];
+        }
+
+        return [
+            ...($this->minItems > 0 ? ['min:'.$this->minItems] : []),
+            ...($this->maxItems !== null ? ['max:'.$this->maxItems] : []),
+        ];
     }
 
     public function formatStateFromRecord(mixed $value): mixed
@@ -540,7 +629,7 @@ class Select extends Field implements HasSearchResults, PersistsItself
             'async' => $isAsync,
             'searchDebounce' => $this->searchDebounce,
             ...($messages === [] ? [] : ['messages' => $messages]),
-            ...$this->evaluateConfigured(['reorderable' => $this->isReorderable]),
+            ...$this->evaluateConfigured(['reorderable' => $this->isReorderable, 'optionsLimit' => $this->optionsLimit]),
         ];
     }
 }

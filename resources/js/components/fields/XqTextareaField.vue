@@ -28,7 +28,9 @@ const inputDisabled = computed(() => disabled.value && !readOnly.value);
 <template>
     <XqFieldWrapper :node="node" :id="id" :error="error" :required="required" control-shows-loading>
         <div class="relative">
+            <!-- First, so the field's own attributes win over extra ones. -->
             <XqTextarea
+                v-bind="node.extraInputAttributes"
                 :id="id"
                 v-model="value"
                 :name="path"

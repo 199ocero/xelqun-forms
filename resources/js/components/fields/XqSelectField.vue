@@ -29,7 +29,7 @@ const options = computed<SelectOption[]>(() => props.node.props?.options ?? []);
 const useCombobox = computed(
     () =>
         !!(props.node.props?.searchable || props.node.props?.multiple) ||
-        options.value.length > OPTION_LIMIT,
+        options.value.length > (props.node.props?.optionsLimit ?? OPTION_LIMIT),
 );
 const isRemote = computed(() => !!props.node.props?.async);
 
@@ -144,6 +144,7 @@ const hasValue = computed(
             :search-failed="searchFailed"
             :messages="node.props?.messages"
             :reorderable="node.props?.reorderable"
+            :limit="node.props?.optionsLimit"
             @search="onSearch"
             @blur="onBlur"
         />

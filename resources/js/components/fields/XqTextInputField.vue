@@ -139,7 +139,9 @@ onBeforeUnmount(() => {
                 :name="options.prefixIcon"
                 class="ml-3 text-xq-muted-foreground"
             />
+            <!-- First, so the field's own attributes win over extra ones. -->
             <input
+                v-bind="node.extraInputAttributes"
                 :id="id"
                 :name="path"
                 :value="text"

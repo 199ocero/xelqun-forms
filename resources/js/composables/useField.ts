@@ -4,7 +4,7 @@ import type { FormStore } from '../core/store';
 import { useFormStore } from './context';
 
 /**
- * The id of a field's control. Its error and hint hang off this.
+ * The id of a field's control. Its error and helper text hang off this.
  */
 export function fieldId(store: FormStore, path: string): string {
     return `xq-${store.id}-${path}`.replace(/[^\w-]/g, '-');
@@ -20,7 +20,7 @@ export function useField<T = any>(nodeOrPath: SchemaNode | string) {
     const path = node.path ?? node.key;
     const id = fieldId(store, path);
     const error = computed(() => store.errors[path] ?? null);
-    const hint = computed(() => store.text(node, 'hint'));
+    const helperText = computed(() => store.text(node, 'helperText'));
 
     const value = computed<T>({
         get: () => store.get(path),
@@ -35,20 +35,23 @@ export function useField<T = any>(nodeOrPath: SchemaNode | string) {
         value,
         error,
         label: computed(() => store.text(node, 'label')),
-        hint,
+        hint: computed(() => store.text(node, 'hint')),
+        helperText,
         placeholder: computed(() => store.text(node, 'placeholder')),
-        /** The id for aria-describedby: the error when there is one, otherwise the hint. */
+        /** The id for aria-describedby: the error when there is one, otherwise the helper text. */
         describedBy: computed(() => {
             if (error.value) {
                 return `${id}-error`;
             }
 
-            return hint.value ? `${id}-hint` : undefined;
+            return helperText.value ? `${id}-helper` : undefined;
         }),
         loading: computed(() => store.isLoading(node)),
         /** Delayed version of loading, for the spinner: fast requests never show one. */
         showLoading: computed(() => store.showsLoadingIndicator(node)),
         required: computed(() => store.isRequired(node)),
+        /** Whether the label shows an asterisk, which markAsRequired() can change. */
+        showsRequired: computed(() => node.markedAsRequired ?? store.isRequired(node)),
         /** True when read-only too, so a control with no read-only mode can't be changed. */
         disabled: computed(
             () => store.isDisabled(node) || !!node.readOnly || store.processing.value,

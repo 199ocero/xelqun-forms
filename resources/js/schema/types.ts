@@ -19,7 +19,7 @@ export interface ConditionalText {
     otherwise: string | null;
 }
 
-export type TextKey = 'label' | 'hint' | 'placeholder';
+export type TextKey = 'label' | 'hint' | 'helperText' | 'placeholder';
 
 export type ExpressionNode =
     | { lit: unknown }
@@ -44,7 +44,17 @@ export interface SchemaNode {
     hidden: boolean;
     path?: string | null;
     label?: string | null;
+    /** A short note beside the label. */
     hint?: string | null;
+    hintIcon?: string;
+    hintIconTooltip?: string;
+    hintColor?: string;
+    /** Help under the field, which its control is described by. */
+    helperText?: string | null;
+    /** Shows or hides the asterisk, whatever the rules say. */
+    markedAsRequired?: boolean;
+    /** Attributes for the input itself, on fields that have one. */
+    extraInputAttributes?: Record<string, unknown>;
     placeholder?: string | null;
     required?: boolean;
     disabled?: boolean;
@@ -209,6 +219,8 @@ export interface ActionResult extends UpdatePatch {
 export interface SelectOption {
     value: string | number;
     label: string;
+    /** The label as HTML the server cleaned, for a select that allows it. */
+    html?: string;
     description?: string | null;
     disabled?: boolean;
     /** The group this option is listed under. */

@@ -392,10 +392,10 @@ describe('XqForm rendering', () => {
         });
 
         it.each(['text-input', 'toggle'])(
-            'links a %s to a hint that only exists in one branch',
+            'links a %s to helper text that only exists in one branch',
             async (type) => {
                 const { store, wrapper } = setup(
-                    { text: { hint: { when, text: 'Gift', otherwise: null } } },
+                    { text: { helperText: { when, text: 'Gift', otherwise: null } } },
                     type,
                 );
                 const describedBy = () =>

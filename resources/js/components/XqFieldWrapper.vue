@@ -5,6 +5,7 @@ import { FUSED_GROUP, useFormStore } from '../composables/context';
 import { cn } from '../lib/utils';
 import type { SchemaNode } from '../schema/types';
 import XqLabel from '../ui/XqLabel.vue';
+import XqFieldHint from './XqFieldHint.vue';
 import XqFieldSlot from './XqFieldSlot.vue';
 
 const props = defineProps<{
@@ -24,7 +25,9 @@ const props = defineProps<{
 const store = useFormStore();
 const loading = computed(() => store.isLoading(props.node));
 const label = computed(() => store.text(props.node, 'label'));
-const hint = computed(() => store.text(props.node, 'hint'));
+const helperText = computed(() => store.text(props.node, 'helperText'));
+const hasHint = computed(() => !!(store.text(props.node, 'hint') || props.node.hintIcon));
+const showsRequired = computed(() => props.node.markedAsRequired ?? props.required);
 // A hidden label takes no grid space, so two columns would squeeze the control.
 const inlineLabel = computed(() => props.node.inlineLabel && !props.node.hiddenLabel);
 const showLabelSpinner = computed(
@@ -32,7 +35,9 @@ const showLabelSpinner = computed(
 );
 const fused = inject(FUSED_GROUP, false);
 const hasSlot = (name: string) => props.node.children?.some((child) => child.slot === name);
-const hasLabelSlots = computed(() => hasSlot('beforeLabel') || hasSlot('afterLabel'));
+const hasLabelSlots = computed(
+    () => hasSlot('beforeLabel') || hasSlot('afterLabel') || hasHint.value,
+);
 // A wrapper around a screen-reader label would be an empty row with a gap.
 const hasStackedLabel = computed(
     () => hasLabelSlots.value || hasSlot('aboveLabel') || hasSlot('belowLabel'),
@@ -65,15 +70,18 @@ const hasContentSlots = computed(() =>
                     :class="cn('gap-0.5', node.hiddenLabel && 'sr-only', inlineLabel && 'sm:mt-2')"
                 >
                     {{ label }}
-                    <span v-if="required" class="text-xq-destructive" aria-hidden="true">*</span>
-                    <span v-if="required" class="sr-only">{{ store.t('(required)') }}</span>
+                    <span v-if="showsRequired" class="text-xq-destructive" aria-hidden="true">
+                        *
+                    </span>
+                    <span v-if="showsRequired" class="sr-only">{{ store.t('(required)') }}</span>
                     <LoaderCircle
                         v-if="showLabelSpinner"
                         class="ml-1 size-3 motion-safe:animate-spin text-xq-muted-foreground"
                         aria-hidden="true"
                     />
                 </XqLabel>
-                <XqFieldSlot class="ms-auto" :node="node" name="afterLabel" />
+                <XqFieldHint v-if="hasHint && !hideLabel" :node="node" />
+                <XqFieldSlot :class="!hasHint && 'ms-auto'" :node="node" name="afterLabel" />
             </div>
             <XqFieldSlot :node="node" name="belowLabel" />
         </div>
@@ -90,8 +98,12 @@ const hasContentSlots = computed(() =>
                 <XqFieldSlot :node="node" name="afterContent" />
             </div>
             <XqFieldSlot :node="node" name="belowContent" />
-            <p v-if="hint && !error" :id="`${id}-hint`" class="text-xs text-xq-muted-foreground">
-                {{ hint }}
+            <p
+                v-if="helperText && !error"
+                :id="`${id}-helper`"
+                class="text-xs text-xq-muted-foreground"
+            >
+                {{ helperText }}
             </p>
             <XqFieldSlot :node="node" name="aboveErrorMessage" />
             <p

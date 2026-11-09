@@ -49,8 +49,8 @@ describe('form accessibility', () => {
         wrapper.unmount();
     });
 
-    it.each(fields)('links the hint to the %s control', async (_name, node) => {
-        const { wrapper } = await mountFields([{ ...node, hint: 'A useful hint.' }], {
+    it.each(fields)('links the helper text to the %s control', async (_name, node) => {
+        const { wrapper } = await mountFields([{ ...node, helperText: 'A useful hint.' }], {
             value: null,
         });
         const hint = wrapper.findAll('p').find((element) => element.text() === 'A useful hint.');
@@ -64,6 +64,38 @@ describe('form accessibility', () => {
         const { wrapper } = await mountFields([{ ...node, required: true }], { value: null });
 
         expect(wrapper.find('label .sr-only').text()).toBe('(required)');
+        wrapper.unmount();
+    });
+
+    it.each(fields)('leaves the asterisk off a %s marked not required', async (_name, node) => {
+        const { wrapper } = await mountFields(
+            [{ ...node, required: true, markedAsRequired: false }],
+            { value: null },
+        );
+
+        expect(wrapper.text()).not.toContain('(required)');
+        wrapper.unmount();
+    });
+
+    it.each(fields)('shows a hint and its icon beside the label of a %s', async (_name, node) => {
+        const { wrapper } = await mountFields(
+            [
+                {
+                    ...node,
+                    hint: 'Public',
+                    hintIcon: 'info',
+                    hintIconTooltip: 'Why',
+                    hintColor: 'info',
+                },
+            ],
+            { value: null },
+        );
+        const hint = wrapper.find('[data-xq-field-hint]');
+
+        expect(hint.text()).toBe('Public');
+        expect(hint.classes()).toContain('text-xq-info');
+        expect(hint.find('[aria-label="Why"]').exists()).toBe(true);
+        expect(wrapper.find('[aria-describedby]').exists()).toBe(false);
         wrapper.unmount();
     });
 
@@ -263,6 +295,57 @@ describe('repeater keyboard focus', () => {
         await flushPromises();
 
         expect(focused()).toBe('Move Item 1 down');
+        wrapper.unmount();
+    });
+});
+
+describe('field options', () => {
+    it('puts extra attributes on the input, and keeps its own', async () => {
+        const { wrapper } = await mountFields(
+            [
+                field('data.value', 'text-input', {
+                    extraInputAttributes: { 'data-1p-ignore': 'true', id: 'x' },
+                }),
+            ],
+            { value: null },
+        );
+        const input = wrapper.find('input');
+
+        expect(input.attributes('data-1p-ignore')).toBe('true');
+        expect(input.attributes('id')).not.toBe('x');
+        wrapper.unmount();
+    });
+
+    it('colors a toggle and puts its icon in the knob', async () => {
+        const { wrapper } = await mountFields(
+            [field('data.value', 'toggle', { props: { onIcon: 'check', onColor: 'success' } })],
+            { value: true },
+        );
+        const toggle = wrapper.find('[data-slot="xq-switch"]');
+
+        expect(toggle.classes()).toContain('bg-xq-success');
+        expect(toggle.find('svg').exists()).toBe(true);
+        wrapper.unmount();
+    });
+
+    it('draws the HTML of an option the server cleaned', async () => {
+        const { wrapper } = await mountFields(
+            [
+                field('data.value', 'select', {
+                    props: {
+                        searchable: true,
+                        options: [{ value: 'a', label: 'Bold', html: '<b>Bold</b>' }],
+                    },
+                }),
+            ],
+            { value: null },
+        );
+
+        await wrapper.find('input').trigger('click');
+        await wrapper.find('input').trigger('keydown', { key: 'ArrowDown' });
+        await flushPromises();
+
+        expect(document.body.querySelector('[role="option"] b')?.textContent).toBe('Bold');
         wrapper.unmount();
     });
 });

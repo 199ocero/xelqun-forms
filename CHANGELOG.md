@@ -4,6 +4,11 @@ Xelqun Forms is alpha. Until 1.0, a minor version can break existing code, and e
 
 ## Unreleased
 
+### Upgrading
+
+- **`hint()` now sits beside the label**, as in Filament. For text under the field, which is what `hint()` did before, use **`helperText()`**. A plugin field that reads `hint` from `useField()` for that text should read `helperText`, and the id its control is described by now ends in `-helper`.
+- A Toggle's track color comes from `onColor()` and `offColor()`, so `data-[state=checked]:bg-xq-primary` is no longer on the switch.
+
 ### Added
 
 - **`Action::slideOver()`** opens the modal as a full-height panel that slides in from the side. A modal's header and buttons already stay in view while its fields scroll.
@@ -16,6 +21,12 @@ Xelqun Forms is alpha. Until 1.0, a minor version can break existing code, and e
 - **`Action::before()`** and **`after()`** run around `action()`, in its transaction. `after()` also gets `$result`.
 - **`$action->halt()`** stops an action from a closure that takes `$action`, keeping the modal open. **`$action->cancel()`** stops it and closes the modal. Both roll back what the action wrote, and notifications sent so far still show.
 - **`Action::steps()`** puts a wizard in the modal, with the submit button on the last step.
+- **`hintIcon()`** (with a tooltip), **`hintColor()`** and **`hintAction()`** go beside the label with `hint()`.
+- **`markAsRequired()`** shows or hides the asterisk, whatever the rules say.
+- **`extraInputAttributes()`** puts HTML attributes on the input of a text input or textarea.
+- **`Toggle::onIcon()`**, **`offIcon()`**, **`onColor()`** and **`offColor()`**.
+- **`Select::allowHtml()`** draws option labels as HTML, cleaned on the server like a rich editor's content. **`optionsLimit()`** sets how many options draw at once and how many a search finds. **`minItems()`** and **`maxItems()`** check a multiple select.
+- **`FileUpload::preserveFilenames()`** stores each file under its original name, with a random suffix when the name is taken. **`storeFileNamesIn()`** saves the original names in another field, such as a `Hidden` one, and the upload shows them. A plugin upload field can implement the new `NamesStoredFiles` contract to get both, since `HandlesUploads` has its methods.
 
 ## 0.8.1 - 2026-11-08
 
