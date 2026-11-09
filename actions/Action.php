@@ -3,9 +3,11 @@
 namespace Xelqun\Actions;
 
 use Closure;
+use Illuminate\Auth\Access\Response;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Xelqun\Forms\Components\Component;
 use Xelqun\Forms\Components\Field;
@@ -39,6 +41,23 @@ class Action extends Component implements NeedsServer
     protected string $style = 'button';
 
     protected bool|Closure $isDisabled = false;
+
+    protected int|string|Closure|null $badge = null;
+
+    protected string|Closure|null $badgeColor = null;
+
+    protected bool|Closure $isOutlined = false;
+
+    protected string|Closure|null $size = null;
+
+    /** @var array<int, string>|Closure */
+    protected array|Closure $keyBindings = [];
+
+    protected int|Closure|null $rateLimit = null;
+
+    protected bool|Closure $hasAuthorizationTooltip = false;
+
+    protected bool|Closure $isSlideOver = false;
 
     protected bool|string|Closure|null $authorization = null;
 
@@ -138,6 +157,92 @@ class Action extends Component implements NeedsServer
     public function tooltip(string|Closure|null $tooltip): static
     {
         $this->tooltip = $tooltip;
+
+        return $this;
+    }
+
+    /**
+     * A count or short word in the button's corner.
+     */
+    public function badge(int|string|Closure|null $badge): static
+    {
+        $this->badge = $badge;
+
+        return $this;
+    }
+
+    /**
+     * primary, danger, info, success, warning or gray. Primary unless you choose another.
+     */
+    public function badgeColor(string|Closure|null $color): static
+    {
+        $this->badgeColor = $color;
+
+        return $this;
+    }
+
+    /**
+     * A border in the action's color instead of a filled button.
+     */
+    public function outlined(bool|Closure $condition = true): static
+    {
+        $this->isOutlined = $condition;
+
+        return $this;
+    }
+
+    /**
+     * sm, md or lg. Small unless you choose another.
+     */
+    public function size(string|Closure|null $size): static
+    {
+        $this->size = $size;
+
+        return $this;
+    }
+
+    /**
+     * Keys that click the button, such as ['mod+s'], where mod is Command on a
+     * Mac and Ctrl elsewhere. Combine ctrl, meta, shift and alt with one key.
+     *
+     * @param  array<int, string>|Closure  $keys
+     */
+    public function keyBindings(array|Closure $keys): static
+    {
+        $this->keyBindings = $keys;
+
+        return $this;
+    }
+
+    /**
+     * How many times a minute one user, or one address when signed out, may run
+     * this action. Past that the request is refused with a 429.
+     */
+    public function rateLimit(int|Closure|null $attempts): static
+    {
+        $this->rateLimit = $attempts;
+
+        return $this;
+    }
+
+    /**
+     * When authorize() says no, show the action disabled with the policy's
+     * message as its tooltip, instead of hiding it. A no without a message
+     * still hides it.
+     */
+    public function authorizationTooltip(bool|Closure $condition = true): static
+    {
+        $this->hasAuthorizationTooltip = $condition;
+
+        return $this;
+    }
+
+    /**
+     * Open the modal as a panel that slides in from the side.
+     */
+    public function slideOver(bool|Closure $condition = true): static
+    {
+        $this->isSlideOver = $condition;
 
         return $this;
     }
@@ -441,37 +546,61 @@ class Action extends Component implements NeedsServer
 
     public function isAuthorized(): bool
     {
+        return $this->inspectAuthorization()->allowed();
+    }
+
+    /**
+     * Why authorize() said yes or no, with the policy's message when it gave one.
+     */
+    protected function inspectAuthorization(): Response
+    {
         if (is_string($this->authorization)) {
             if ($this->recordUsing !== null) {
                 $record = $this->getRecord();
 
-                return $record !== null && Gate::allows($this->authorization, $record);
+                return $record === null ? Response::deny() : Gate::inspect($this->authorization, $record);
             }
 
             $subject = $this->getRecord() ?? $this->getModel();
 
             // With nothing to ask a policy about, as on a page of its own, the ability is a plain gate.
             if ($subject !== null) {
-                return Gate::allows($this->authorization, $subject);
+                return Gate::inspect($this->authorization, $subject);
             }
 
             // A gate that wants a model can't be asked without one, and that means no, not a crash.
-            return rescue(fn (): bool => Gate::allows($this->authorization), false, report: false);
+            return rescue(fn (): Response => Gate::inspect($this->authorization), Response::deny(), report: false);
         }
 
-        return (bool) $this->evaluate($this->authorization);
+        $result = $this->evaluate($this->authorization);
+
+        return $result instanceof Response ? $result : ($result ? Response::allow() : Response::deny());
+    }
+
+    /**
+     * The policy's message to show on a disabled action, or null to hide it.
+     */
+    protected function getAuthorizationTooltip(): ?string
+    {
+        if (! $this->evaluate($this->hasAuthorizationTooltip)) {
+            return null;
+        }
+
+        $response = $this->inspectAuthorization();
+
+        return $response->allowed() ? null : $response->message();
     }
 
     public function isDisabled(): bool
     {
-        return (bool) $this->evaluate($this->isDisabled);
+        return (bool) $this->evaluate($this->isDisabled) || $this->getAuthorizationTooltip() !== null;
     }
 
     public function isHiddenDynamically(): bool
     {
         // In this order, so a policy only sees an action that could show.
         return parent::isHiddenDynamically()
-            || ! $this->isAuthorized()
+            || (! $this->isAuthorized() && $this->getAuthorizationTooltip() === null)
             || ($this->url !== null && $this->getUrl() === null);
     }
 
@@ -541,6 +670,8 @@ class Action extends Component implements NeedsServer
      */
     public function run(array $parentData, array $input): mixed
     {
+        $this->ensureWithinRateLimit();
+
         $data = $this->hasModalForm() ? $this->makeForm($parentData)->validate([StatePath::ROOT => $input]) : [];
 
         $result = $this->evaluate($this->action, ['data' => $data]);
@@ -553,6 +684,27 @@ class Action extends Component implements NeedsServer
         return $result;
     }
 
+    /**
+     * Here, so every place that runs an action counts it: forms, tables and panels.
+     */
+    protected function ensureWithinRateLimit(): void
+    {
+        $attempts = $this->evaluate($this->rateLimit);
+
+        if ($attempts === null) {
+            return;
+        }
+
+        $request = request();
+        $key = 'xelqun-action:'.sha1(implode('|', [$request->user()?->getAuthIdentifier() ?? $request->ip(), $this->getForm()::class, $this->getKey()]));
+
+        if (RateLimiter::tooManyAttempts($key, $attempts)) {
+            abort(429, headers: ['Retry-After' => (string) RateLimiter::availableIn($key)]);
+        }
+
+        RateLimiter::hit($key);
+    }
+
     public function evaluate(mixed $value, array $parameters = []): mixed
     {
         return parent::evaluate($value, ['record' => $this->getRecord(), ...$parameters]);
@@ -561,6 +713,7 @@ class Action extends Component implements NeedsServer
     protected function getProps(): array
     {
         $label = $this->evaluate($this->label) ?? Str::headline($this->name);
+        $authorizationTooltip = $this->getAuthorizationTooltip();
 
         return [
             'label' => $label,
@@ -579,13 +732,19 @@ class Action extends Component implements NeedsServer
             ...$this->evaluateConfigured([
                 'icon' => $this->icon,
                 'color' => $this->color,
-                'tooltip' => $this->tooltip,
+                'tooltip' => $authorizationTooltip ?? $this->tooltip,
+                'badge' => $this->badge,
+                'badgeColor' => $this->badgeColor,
+                'size' => $this->size,
                 'width' => $this->modalWidth,
                 'modalIcon' => $this->modalIcon,
                 'modalIconColor' => $this->modalIconColor,
                 'alignment' => $this->modalAlignment,
                 'footerAlignment' => $this->modalFooterActionsAlignment,
             ]),
+            ...($this->evaluate($this->isOutlined) ? ['outlined' => true] : []),
+            ...($this->evaluate($this->isSlideOver) ? ['slideOver' => true] : []),
+            ...(($keys = $this->evaluate($this->keyBindings)) === [] ? [] : ['keyBindings' => array_values($keys)]),
             ...($this->evaluate($this->hasModalCloseButton) ? [] : ['closeButton' => false]),
             ...($this->evaluate($this->closesModalByClickingAway) ? [] : ['closeOnClickAway' => false]),
         ];

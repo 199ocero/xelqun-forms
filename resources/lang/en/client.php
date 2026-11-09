@@ -119,6 +119,7 @@ return [
     'Waiting for uploads…' => 'Waiting for uploads…',
     'Write' => 'Write',
     'You are not allowed to do that.' => 'You are not allowed to do that.',
+    'Too many attempts. Wait a moment and try again.' => 'Too many attempts. Wait a moment and try again.',
     'You can add 1 more file.' => 'You can add 1 more file.',
     'You can add :count more files.' => 'You can add :count more files.',
     'You have unsaved changes. Leave this page?' => 'You have unsaved changes. Leave this page?',

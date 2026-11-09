@@ -12,8 +12,9 @@ import type { ComponentPublicInstance } from 'vue';
 import { useFormStore } from '../composables/context';
 import { cn, isOwnUrl } from '../lib/utils';
 import type { SchemaNode } from '../schema/types';
-import { actionVariants, optionClass, popoverClass } from '../ui/classes';
+import { actionSizes, actionVariants, optionClass, popoverClass } from '../ui/classes';
 import XqButton from '../ui/XqButton.vue';
+import XqActionBadge from './XqActionBadge.vue';
 import XqIcon from '../ui/XqIcon.vue';
 import XqMenuGlide from '../ui/XqMenuGlide.vue';
 import XqAction from './XqAction.vue';
@@ -34,6 +35,11 @@ const items = computed(() =>
 );
 const headlessActions = computed(() => items.value.filter((item) => !item.props?.url));
 const hasLabel = computed(() => !!options.value.label);
+const size = computed(() => {
+    const chosen = actionSizes[options.value.size] ?? actionSizes.sm;
+
+    return hasLabel.value ? chosen.button : chosen.icon;
+});
 const showsSpinner = ref(false);
 const outcome = ref<ActionOutcome>(null);
 const actions = new Map<string, { open: () => Promise<void> }>();
@@ -60,13 +66,18 @@ function openSelected(): void {
 </script>
 
 <template>
-    <div class="inline-flex" data-xq-action-group>
+    <div class="relative inline-flex" data-xq-action-group>
+        <XqActionBadge
+            v-if="items.length > 0 && options.badge != null"
+            :badge="options.badge"
+            :color="options.badgeColor"
+        />
         <DropdownMenuRoot v-if="items.length > 0" :modal="false">
             <DropdownMenuTrigger as-child>
                 <XqButton
                     type="button"
                     :variant="hasLabel ? (actionVariants[options.color] ?? 'outline') : 'ghost'"
-                    :size="hasLabel ? 'sm' : 'icon-sm'"
+                    :size="size"
                     :class="
                         cn(
                             showsSpinner && 'pointer-events-none',

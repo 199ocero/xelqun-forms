@@ -26,6 +26,12 @@ class ActionGroup extends Layout
 
     protected string|Closure|null $tooltip = null;
 
+    protected int|string|Closure|null $badge = null;
+
+    protected string|Closure|null $badgeColor = null;
+
+    protected string|Closure|null $size = null;
+
     /**
      * @param  array<int, Action>  $actions
      */
@@ -113,6 +119,36 @@ class ActionGroup extends Layout
         return $this;
     }
 
+    /**
+     * A count or short word in the button's corner.
+     */
+    public function badge(int|string|Closure|null $badge): static
+    {
+        $this->badge = $badge;
+
+        return $this;
+    }
+
+    /**
+     * primary, danger, info, success, warning or gray.
+     */
+    public function badgeColor(string|Closure|null $color): static
+    {
+        $this->badgeColor = $color;
+
+        return $this;
+    }
+
+    /**
+     * sm, md or lg.
+     */
+    public function size(string|Closure|null $size): static
+    {
+        $this->size = $size;
+
+        return $this;
+    }
+
     public function isHiddenDynamically(): bool
     {
         if (parent::isHiddenDynamically()) {
@@ -147,6 +183,9 @@ class ActionGroup extends Layout
             'icon' => $this->icon,
             'color' => $this->color,
             'tooltip' => $this->tooltip,
+            'badge' => $this->badge,
+            'badgeColor' => $this->badgeColor,
+            'size' => $this->size,
         ]);
     }
 }

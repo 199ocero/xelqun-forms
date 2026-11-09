@@ -13,17 +13,18 @@ export type ActionOutcome = 'done' | 'failed' | null;
 <script setup lang="ts">
 import { Link, router } from '@inertiajs/vue3';
 import { LoaderCircle } from '@lucide/vue';
-import { computed, onScopeDispose, ref, shallowRef, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, onScopeDispose, ref, shallowRef, watch } from 'vue';
 import { useFormStore } from '../composables/context';
 import { createFormStore, LOADING_INDICATOR_DELAY } from '../core/store';
 import { cn, isOwnUrl } from '../lib/utils';
 import type { SchemaNode } from '../schema/types';
-import { actionVariants } from '../ui/classes';
+import { actionSizes, actionVariants, outlinedActionClasses } from '../ui/classes';
 import XqButton from '../ui/XqButton.vue';
 import XqConfirmDialog from '../ui/XqConfirmDialog.vue';
 import XqDialog from '../ui/XqDialog.vue';
 import XqDialogFooter from '../ui/XqDialogFooter.vue';
 import XqIcon from '../ui/XqIcon.vue';
+import XqActionBadge from './XqActionBadge.vue';
 import XqActionContent from './XqActionContent.vue';
 import XqForm from './XqForm.vue';
 
@@ -42,13 +43,28 @@ const confirming = ref(false);
 const modalOpen = ref(false);
 const modal = shallowRef<FormStore | null>(null);
 const outcome = ref<ActionOutcome>(null);
+const root = ref<HTMLElement | null>(null);
 
 const variant = computed(() =>
     options.value.style === 'link'
         ? 'link'
         : options.value.style === 'icon'
           ? 'ghost'
-          : (actionVariants[options.value.color] ?? 'outline'),
+          : options.value.outlined
+            ? 'outline'
+            : (actionVariants[options.value.color] ?? 'outline'),
+);
+
+const size = computed(() => {
+    const chosen = actionSizes[options.value.size] ?? actionSizes.sm;
+
+    return options.value.style === 'icon' ? chosen.icon : chosen.button;
+});
+
+const buttonClass = computed(() =>
+    options.value.outlined && options.value.style === 'button'
+        ? outlinedActionClasses[options.value.color]
+        : undefined,
 );
 
 // A new tab isn't a visit.
@@ -153,6 +169,65 @@ watch(showsSpinner, (shows) => emit('spinner', shows));
 
 defineExpose({ open });
 
+/** Whether a keydown matches a binding such as mod+s or ctrl+shift+k. */
+function matchesBinding(event: KeyboardEvent, binding: string): boolean {
+    const parts = binding.toLowerCase().split('+');
+    const key = parts.pop();
+    const isMac = /mac|iphone|ipad/i.test(navigator.platform);
+    const wants = (name: string) =>
+        parts.includes(name) ||
+        (name === 'meta' && parts.includes('command')) ||
+        (name === 'alt' && parts.includes('option')) ||
+        (parts.includes('mod') && name === (isMac ? 'meta' : 'ctrl'));
+
+    return (
+        event.key.toLowerCase() === key &&
+        event.ctrlKey === wants('ctrl') &&
+        event.metaKey === wants('meta') &&
+        event.shiftKey === wants('shift') &&
+        event.altKey === wants('alt')
+    );
+}
+
+function isTyping(event: KeyboardEvent): boolean {
+    const target = event.target as HTMLElement | null;
+
+    return (
+        !event.ctrlKey &&
+        !event.metaKey &&
+        !event.altKey &&
+        !!target?.closest?.(
+            'input, textarea, select, [contenteditable]:not([contenteditable="false"])',
+        )
+    );
+}
+
+function onKeydown(event: KeyboardEvent): void {
+    const bindings: string[] = options.value.keyBindings ?? [];
+
+    if (isTyping(event)) {
+        return;
+    }
+
+    if (options.value.disabled || !bindings.some((binding) => matchesBinding(event, binding))) {
+        return;
+    }
+
+    event.preventDefault();
+
+    // The button already knows how to open, visit or confirm. In a menu there's none, so open.
+    const button = root.value?.querySelector<HTMLElement>('[data-slot="xq-button"]');
+
+    if (button) {
+        button.click();
+    } else {
+        void open();
+    }
+}
+
+onMounted(() => window.addEventListener('keydown', onKeydown));
+onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
+
 onScopeDispose(() => {
     clearTimeout(spinnerTimer);
     clearTimeout(outcomeTimer);
@@ -161,13 +236,19 @@ onScopeDispose(() => {
 </script>
 
 <template>
-    <div class="inline-flex" data-xq-action>
+    <div ref="root" class="relative inline-flex" data-xq-action>
+        <XqActionBadge
+            v-if="!headless && options.badge != null"
+            :badge="options.badge"
+            :color="options.badgeColor"
+        />
         <template v-if="!headless">
             <XqButton
                 v-if="options.url"
                 as-child
                 :variant="variant"
-                :size="options.style === 'icon' ? 'icon-sm' : 'sm'"
+                :size="size"
+                :class="buttonClass"
                 :title="options.tooltip"
                 :aria-label="options.style === 'icon' ? options.label : undefined"
             >
@@ -185,9 +266,10 @@ onScopeDispose(() => {
                 v-else
                 type="button"
                 :variant="variant"
-                :size="options.style === 'icon' ? 'icon-sm' : 'sm'"
+                :size="size"
                 :class="
                     cn(
+                        buttonClass,
                         showsSpinner && 'pointer-events-none',
                         outcome === 'failed' && 'animate-xq-shake',
                     )
@@ -231,6 +313,7 @@ onScopeDispose(() => {
             :alignment="options.alignment"
             :close-button="options.closeButton !== false"
             :close-on-click-away="options.closeOnClickAway !== false"
+            :slide-over="!!options.slideOver"
         >
             <XqForm :form="modal" @submit="run">
                 <template #actions>

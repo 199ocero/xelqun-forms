@@ -79,7 +79,7 @@ class GroupInFormTestForm extends Form
                     Action::make('ping')->authorize(true)->action(function (): void {
                         self::$ran++;
                     }),
-                ])->label('More')->icon('settings')->color('danger')->tooltip('More things'),
+                ])->label('More')->icon('settings')->color('danger')->tooltip('More things')->badge(3)->badgeColor('warning')->size('md'),
             ]),
         ];
     }
@@ -180,5 +180,8 @@ it('works inside a form, and sends how the button should look', function () {
             'icon' => 'settings',
             'color' => 'danger',
             'tooltip' => 'More things',
+            'badge' => 3,
+            'badgeColor' => 'warning',
+            'size' => 'md',
         ]);
 });

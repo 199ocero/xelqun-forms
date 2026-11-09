@@ -380,6 +380,14 @@ describe('actions', () => {
             wrapper.unmount();
         });
 
+        it('slides in from the side when asked', async () => {
+            const { wrapper } = await openForm({ slideOver: true });
+
+            expect(inModal()!.className).toContain('animate-xq-slide-in');
+            expect(inModal()!.className).not.toContain('-translate-x-1/2');
+            wrapper.unmount();
+        });
+
         it('falls back to the primary tint for a color it does not know', async () => {
             const { wrapper } = await openForm({ modalIcon: 'heart', modalIconColor: 'teal' });
 
@@ -537,6 +545,79 @@ describe('actions', () => {
             expect(fetchMock).toHaveBeenCalledOnce();
             wrapper.unmount();
         });
+    });
+
+    it('shows a badge, a size and an outline from the server', async () => {
+        const { button, wrapper } = await mountAction(
+            action({
+                badge: 3,
+                badgeColor: 'danger',
+                size: 'lg',
+                outlined: true,
+                color: 'primary',
+            }),
+        );
+        const badge = wrapper.find('[data-xq-action-badge]');
+
+        expect(badge.text()).toBe('3');
+        expect(badge.classes()).toContain('bg-xq-destructive');
+        expect(button.classes()).toContain('h-10');
+        expect(button.classes()).toContain('text-xq-primary');
+        expect(button.classes()).not.toContain('bg-xq-primary');
+        wrapper.unmount();
+    });
+
+    it('runs from its key binding, and not from other keys', async () => {
+        const { wrapper } = await mountAction(action({ keyBindings: ['ctrl+shift+k'] }));
+
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }));
+        await flushPromises();
+        expect(fetchMock).not.toHaveBeenCalled();
+        wrapper.unmount();
+    });
+
+    it('leaves bare keys alone while the user types', async () => {
+        const { wrapper } = await mountAction(action({ keyBindings: ['n'] }));
+        const input = document.createElement('input');
+
+        document.body.append(input);
+        input.dispatchEvent(new KeyboardEvent('keydown', { key: 'n', bubbles: true }));
+        await flushPromises();
+        expect(fetchMock).not.toHaveBeenCalled();
+
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'n' }));
+        await flushPromises();
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        wrapper.unmount();
+    });
+
+    it('runs from a binding with modifiers', async () => {
+        const { wrapper } = await mountAction(action({ keyBindings: ['ctrl+shift+k'] }));
+
+        window.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'K', ctrlKey: true, shiftKey: true }),
+        );
+        await flushPromises();
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        wrapper.unmount();
+
+        window.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'K', ctrlKey: true, shiftKey: true }),
+        );
+        await flushPromises();
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('says to wait when the server rate limits it', async () => {
+        fetchMock.mockImplementation(() => respond({ message: 'Too Many Attempts.' }, 429));
+
+        const { store, button, wrapper } = await mountAction();
+
+        await button.trigger('click');
+        await flushPromises();
+
+        expect(store.liveError.value).toContain('Too many attempts');
+        wrapper.unmount();
     });
 
     it('says so when the request fails, and frees the button', async () => {

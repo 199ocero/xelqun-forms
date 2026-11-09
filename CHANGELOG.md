@@ -2,6 +2,17 @@
 
 Xelqun Forms is alpha. Until 1.0, a minor version can break existing code, and each break is listed here.
 
+## Unreleased
+
+### Added
+
+- **`Action::slideOver()`** opens the modal as a full-height panel that slides in from the side. A modal's header and buttons already stay in view while its fields scroll.
+- **`Action::badge()`** and **`badgeColor()`** put a count in the button's corner. `ActionGroup` has them too.
+- **`Action::outlined()`** draws the button as a border in its color, and **`size('sm'|'md'|'lg')`** sets its size, on `ActionGroup` too.
+- **`Action::keyBindings(['mod+s'])`** clicks the button from the keyboard. `mod` is Command on a Mac and Ctrl elsewhere.
+- **`Action::rateLimit(5)`** lets one user, or one address when signed out, run the action that many times a minute. Past that, the request gets a 429 and the form says to wait.
+- **`Action::authorizationTooltip()`** shows an action that `authorize()` refused as disabled, with the policy's message as its tooltip. A refusal with no message still hides it, and the server still refuses the click. `authorize()` closures can return a `Response` for the message.
+
 ## 0.8.1 - 2026-11-08
 
 The schema version (`$xq`) stays 1. Update both halves together: `composer update xelqun/forms` and `npm install @xelqun/forms@0.8.1`.

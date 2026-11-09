@@ -12,6 +12,8 @@
     --animate-xq-toast-out: xq-toast-out var(--xq-duration-base) var(--xq-ease-in) forwards;
     --animate-xq-dialog-in: xq-dialog-in var(--xq-duration-slow) var(--xq-ease-out);
     --animate-xq-dialog-out: xq-dialog-out var(--xq-duration-fast) var(--xq-ease-in) forwards;
+    --animate-xq-slide-in: xq-slide-in var(--xq-duration-slow) var(--xq-ease-out);
+    --animate-xq-slide-out: xq-slide-out var(--xq-duration-base) var(--xq-ease-in) forwards;
     --animate-xq-pop-in: xq-pop-in var(--xq-duration-base) var(--xq-ease-out);
     --animate-xq-pop-out: xq-pop-out var(--xq-duration-fast) var(--xq-ease-in) forwards;
     --animate-xq-rise-in: xq-rise-in var(--xq-duration-slow) var(--xq-ease-out) both;
@@ -397,6 +399,18 @@
         opacity: 0;
         scale: 0.97;
         filter: blur(2px);
+    }
+}
+
+@keyframes xq-slide-in {
+    from {
+        translate: 100% 0;
+    }
+}
+
+@keyframes xq-slide-out {
+    to {
+        translate: 100% 0;
     }
 }
 

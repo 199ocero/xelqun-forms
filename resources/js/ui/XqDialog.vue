@@ -11,7 +11,7 @@ import {
 } from 'reka-ui';
 import { useTranslator } from '../composables/context';
 import { cn } from '../lib/utils';
-import { dialogContentClass, dialogOverlayClass } from './classes';
+import { dialogContentClass, dialogOverlayClass, slideOverContentClass } from './classes';
 import XqButton from './XqButton.vue';
 import XqDialogHeader from './XqDialogHeader.vue';
 
@@ -26,6 +26,8 @@ const props = withDefaults(
         alignment?: 'start' | 'center' | null;
         closeButton?: boolean;
         closeOnClickAway?: boolean;
+        /** Slide in from the side at full height, with width as its widest. */
+        slideOver?: boolean;
     }>(),
     { closeButton: true, closeOnClickAway: true },
 );
@@ -55,7 +57,12 @@ function keepOpenUnlessAllowed(event: Event): void {
             <DialogOverlay :class="dialogOverlayClass" />
             <DialogContent
                 v-bind="description ? {} : { 'aria-describedby': undefined }"
-                :class="cn(dialogContentClass, widths[props.width ?? 'md'])"
+                :class="
+                    cn(
+                        slideOver ? slideOverContentClass : dialogContentClass,
+                        widths[props.width ?? 'md'],
+                    )
+                "
                 @interact-outside="keepOpenUnlessAllowed"
             >
                 <XqDialogHeader
@@ -76,7 +83,10 @@ function keepOpenUnlessAllowed(event: Event): void {
                     </DialogDescription>
                 </XqDialogHeader>
                 <!-- A sticky footer can't leave its parent, so it brings its own space. -->
-                <div class="px-6 pt-5 pb-6 has-data-xq-dialog-footer:pb-0 min-h-0 overflow-y-auto">
+                <div
+                    class="px-6 pt-5 pb-6 has-data-xq-dialog-footer:pb-0 min-h-0 overflow-y-auto"
+                    :class="slideOver && 'flex-1'"
+                >
                     <slot />
                 </div>
                 <!-- Last, so a modal's first field gets the focus and not this. -->

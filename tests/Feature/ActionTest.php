@@ -1,7 +1,9 @@
 <?php
 
+use Illuminate\Auth\Access\Response;
 use Illuminate\Foundation\Auth\User;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Testing\TestResponse;
@@ -412,3 +414,66 @@ it('lets a link work in a form with no class to rebuild', function () {
 it('still requires a class for an action that runs', function () {
     Form::make([Actions::make([Action::make('run')->authorize(true)])])->toSchema();
 })->throws(FormDefinitionException::class);
+
+class ActionLookTestForm extends Form
+{
+    public static int $runs = 0;
+
+    public function schema(): array
+    {
+        return [
+            Actions::make([
+                Action::make('styled')->authorize(true)->badge(4)->badgeColor('danger')->outlined()->size('lg')->keyBindings(['mod+s'])->slideOver()->action(fn () => null),
+                Action::make('explained')->authorize(fn () => Response::deny('Only owners can archive.'))->authorizationTooltip()->action(fn () => self::$runs++),
+                Action::make('unexplained')->authorize(false)->authorizationTooltip()->action(fn () => self::$runs++),
+                Action::make('limited')->authorize(true)->rateLimit(2)->action(fn () => self::$runs++),
+            ]),
+        ];
+    }
+}
+
+function lookActions(): Collection
+{
+    return collect(json_decode(json_encode(ActionLookTestForm::make()->toSchema()), true)['components'][0]['children'])->keyBy('key');
+}
+
+function callLookAction(string $key): TestResponse
+{
+    return test()->postJson(route('xelqun.forms.action'), [
+        'token' => ActionLookTestForm::make()->makeToken(),
+        'action' => $key,
+        'phase' => 'run',
+        'state' => ['data' => []],
+        'deps' => (object) [],
+    ]);
+}
+
+it('sends how an action looks', function () {
+    expect(lookActions()['data#0.0']['props'])->toMatchArray([
+        'badge' => 4, 'badgeColor' => 'danger', 'outlined' => true, 'size' => 'lg', 'keyBindings' => ['mod+s'], 'slideOver' => true,
+    ]);
+});
+
+it('shows a refused action disabled with the policy message, and still refuses it', function () {
+    ActionLookTestForm::$runs = 0;
+
+    $explained = lookActions()['data#0.1'];
+
+    expect($explained['hidden'])->toBeFalse()
+        ->and($explained['props'])->toMatchArray(['disabled' => true, 'tooltip' => 'Only owners can archive.'])
+        ->and(lookActions()['data#0.2']['hidden'])->toBeTrue();
+
+    callLookAction('data#0.1')->assertForbidden();
+
+    expect(ActionLookTestForm::$runs)->toBe(0);
+});
+
+it('refuses an action past its rate limit', function () {
+    ActionLookTestForm::$runs = 0;
+
+    callLookAction('data#0.3')->assertOk();
+    callLookAction('data#0.3')->assertOk();
+    callLookAction('data#0.3')->assertStatus(429)->assertHeader('Retry-After');
+
+    expect(ActionLookTestForm::$runs)->toBe(2);
+});

@@ -122,6 +122,13 @@ describe('XqActionGroup', () => {
         expect(wrapper.find('[data-xq-action-group] button').exists()).toBe(false);
     });
 
+    it('shows a badge and a size on its button', () => {
+        render(group([action('data#0.edit', 'Edit')], { label: 'More', badge: 2, size: 'lg' }));
+
+        expect(wrapper.find('[data-xq-action-badge]').text()).toBe('2');
+        expect(wrapper.find('button').classes()).toContain('h-10');
+    });
+
     it('names an icon-only button for screen readers, and shows a label when it has one', () => {
         render(group([action('data#0.edit', 'Edit')]));
 

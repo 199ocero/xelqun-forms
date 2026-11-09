@@ -28,6 +28,36 @@ export const dialogOverlayClass =
 export const dialogContentClass =
     'shadow-xl fixed top-1/2 left-1/2 z-50 flex max-h-[85vh] w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xq-xl border border-xq-border bg-xq-popover text-xq-popover-foreground outline-none data-[state=open]:animate-xq-dialog-in data-[state=closed]:animate-xq-dialog-out';
 
+/** A dialog that slides in from the end of the page and fills its height. */
+export const slideOverContentClass =
+    'shadow-xl fixed inset-y-0 right-0 z-50 flex h-dvh w-full flex-col overflow-hidden border-l border-xq-border bg-xq-popover text-xq-popover-foreground outline-none data-[state=open]:animate-xq-slide-in data-[state=closed]:animate-xq-slide-out';
+
+/** An outlined action keeps its color in the border and text. */
+export const outlinedActionClasses: Record<string, string> = {
+    primary: 'border-xq-primary/60 text-xq-primary hover:text-xq-primary',
+    danger: 'border-xq-destructive/60 text-xq-destructive hover:text-xq-destructive',
+};
+
+/** An action's size, as a button with a label and as an icon. */
+export const actionSizes: Record<
+    string,
+    { button: 'sm' | 'default' | 'lg'; icon: 'icon-sm' | 'icon' }
+> = {
+    sm: { button: 'sm', icon: 'icon-sm' },
+    md: { button: 'default', icon: 'icon' },
+    lg: { button: 'lg', icon: 'icon' },
+};
+
+/** The count in an action's corner. */
+export const actionBadgeClasses: Record<string, string> = {
+    primary: 'bg-xq-primary text-xq-primary-foreground',
+    danger: 'bg-xq-destructive text-xq-destructive-foreground',
+    info: 'bg-xq-info text-white',
+    success: 'bg-xq-success text-white',
+    warning: 'bg-xq-warning text-white',
+    gray: 'bg-xq-muted text-xq-muted-foreground',
+};
+
 /** The tinted circle behind a dialog's icon. */
 export const dialogIconClasses: Record<string, string> = {
     primary: 'bg-xq-primary/10 text-xq-primary',
