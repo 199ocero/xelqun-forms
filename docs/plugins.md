@@ -138,7 +138,7 @@ Implement a contract from `Xelqun\Forms\Contracts` and the matching endpoint sta
 | `AcceptsUploads` | The upload endpoint and storage on save | `store.upload(path, file, onProgress, signal)` |
 | `NamesStoredFiles` | Keeping each upload's original file name, and storing the names in another field | None |
 | `EmbedsUploads` | The same for uploads kept inside a field's text. See `HasFileAttachments` | `store.upload(path, file, onProgress, signal)` |
-| `ContainsRows` | Rows with their own components | `store.addRow`, `removeRow`, `moveRow` |
+| Extend `Repeater` | Rows with their own components. `ContainsRows` is internal, because the browser also needs props only `Repeater` sends | `store.addRow`, `removeRow`, `moveRow` |
 | `PersistsItself` | Saving somewhere other than a column | None |
 | `PersistsBeforeSave` | Also doing something before the record is saved, such as setting a foreign key | None |
 | `NeedsServer` | A clear error on forms the server can't rebuild | None |
@@ -294,7 +294,7 @@ mount(XqForm, {
 
 ## What you can rely on
 
-Classes and methods tagged `@api` are the public API. `@internal` marks exceptions inside an `@api` class, and anything untagged may change without notice. Before 1.0, changes to `@api` items are listed in the release notes.
+Classes and methods tagged `@api` are the public API. `@internal` marks exceptions inside an `@api` class, and anything untagged may change without notice. Before 1.0, changes to `@api` items are listed in the release notes. An `@internal` method that Xelqun's own packages call says so, and changes only in a major version, so any mix of 1.x packages keeps working.
 
 On the browser side, the public API is what `@xelqun/forms` and `@xelqun/forms/testing` export.
 

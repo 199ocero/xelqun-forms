@@ -357,6 +357,9 @@ abstract class Component
         return null;
     }
 
+    /**
+     * @internal
+     */
     public function getContainerPattern(): string
     {
         return $this->containerPattern;
@@ -364,6 +367,8 @@ abstract class Component
 
     /**
      * The key with every repeater row key replaced by "*".
+     *
+     * @internal
      */
     public function getKeyPattern(): string
     {
@@ -426,11 +431,17 @@ abstract class Component
         }
     }
 
+    /**
+     * @internal
+     */
     public function isHiddenStatically(): bool
     {
         return $this->hidden === true;
     }
 
+    /**
+     * @internal
+     */
     public function isHiddenDynamically(): bool
     {
         return $this->hidden instanceof Closure && (bool) $this->evaluate($this->hidden);
@@ -440,6 +451,8 @@ abstract class Component
      * Whether a server rule hides this component or one of its ancestors. These
      * rules are the security boundary, unlike visibleWhen(), which the browser
      * evaluates against state it controls.
+     *
+     * @internal
      */
     public function isHiddenOnServer(): bool
     {
@@ -455,6 +468,8 @@ abstract class Component
     /**
      * Whether a server rule could hide this component or one of its ancestors.
      * Such a field's value only reaches the browser while the field is showing.
+     *
+     * @internal
      */
     public function canBeHiddenOnServer(): bool
     {
@@ -524,7 +539,7 @@ abstract class Component
     /**
      * Serialize to a schema node, or null when the server hides it entirely.
      *
-     * @internal Add to a node through getProps() instead.
+     * @internal Add to a node through getProps() instead. Xelqun's own packages call this, so it changes only in a major version.
      *
      * @return array<string, mixed>|null
      */

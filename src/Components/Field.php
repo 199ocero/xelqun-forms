@@ -476,6 +476,8 @@ abstract class Field extends Component implements NeedsServer
 
     /**
      * The state path with every repeater row key replaced by "*".
+     *
+     * @internal
      */
     public function getStatePathPattern(): string
     {
@@ -596,6 +598,9 @@ abstract class Field extends Component implements NeedsServer
         return $this->getForm()->isDisabled() || (bool) $this->evaluate($this->disabled);
     }
 
+    /**
+     * @internal
+     */
     public function isDisabledStatically(): bool
     {
         return $this->disabled === true || $this->getForm()->isDisabled();
@@ -661,6 +666,9 @@ abstract class Field extends Component implements NeedsServer
         return $this->container !== StatePath::ROOT && $form->getModelInstanceFor($this) === $record;
     }
 
+    /**
+     * @internal
+     */
     public function isReadOnlyStatically(): bool
     {
         return $this->readOnly === true;
@@ -689,11 +697,17 @@ abstract class Field extends Component implements NeedsServer
         return ! $this->isDisabledInState();
     }
 
+    /**
+     * @internal
+     */
     public function getComputed(): ?Expression
     {
         return $this->computed;
     }
 
+    /**
+     * @internal
+     */
     public function hasAfterStateUpdatedHooks(): bool
     {
         return $this->afterStateUpdated !== [];
@@ -726,6 +740,8 @@ abstract class Field extends Component implements NeedsServer
 
     /**
      * @return array{mode: string, ms: int|null}|null
+     *
+     * @internal
      */
     public function getLiveConfig(): ?array
     {
@@ -913,6 +929,8 @@ abstract class Field extends Component implements NeedsServer
     /**
      * What ties an upload to this field: the form, the path, and anything around
      * it that a path can't tell apart.
+     *
+     * @internal
      */
     protected function makeUploadScope(): string
     {

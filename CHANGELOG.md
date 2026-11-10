@@ -4,6 +4,12 @@ Xelqun Forms is alpha. Until 1.0, a minor version can break existing code, and e
 
 ## Unreleased
 
+### Upgrading
+
+- **`Fieldset::make()` names its argument `$label`**, as in Filament. Code that passed `legend:` by name should pass `label:`.
+- **More methods are `@internal`**, so they can change before 1.0 and in any minor version after it. On `Form`: `fillFields`, `recomputeComputedFields`, `validateKeyed`, `getModelInstanceFor` and `getRootPosition`. On `Component`: `getContainerPattern`, `getKeyPattern`, and the four `isHidden*`/`canBeHiddenOnServer` checks. On `Field`: `getStatePathPattern`, `isDisabledStatically`, `isReadOnlyStatically`, `getComputed`, `hasAfterStateUpdatedHooks`, `getLiveConfig` and `makeUploadScope`.
+- **The `ContainsRows` contract is `@internal`.** Extend `Repeater` for a field with rows, as the docs already said.
+
 ### Fixed
 
 - **`hiddenWhen()` and `visibleWhen()` no longer replace each other.** With both set, the component shows only while both allow it, as in Filament. Before, the one called last won.

@@ -11,7 +11,7 @@ use Xelqun\Forms\Components\Field;
  * Repeater rather than implementing this: the browser also needs the row
  * props Repeater sends (template, rowPlaceholder, rows and newRow).
  *
- * @api
+ * @internal Extend Repeater instead.
  *
  * @phpstan-require-extends Field
  */

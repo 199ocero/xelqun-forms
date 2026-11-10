@@ -41,8 +41,8 @@ it('has no check on a built-in field type in the client core', function (): void
     expect($found)->toBe([]);
 });
 
-it('declares what plugins build on as public API', function (string $directory): void {
+it('declares whether each class plugins see is public API', function (string $directory): void {
     foreach (File::files(__DIR__.'/../../src/'.$directory) as $file) {
-        expect($file->getContents())->toContain('@api');
+        expect($file->getContents())->toMatch('/^ \\* @(api|internal)\b/m');
     }
 })->with(['Contracts', 'Components', 'Components/Concerns', 'Conditions', 'Layouts', 'State']);

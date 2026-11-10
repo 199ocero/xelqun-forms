@@ -235,7 +235,7 @@ class Form
      * Put the record back after a rollback. The model in memory can look saved
      * while the database is not, and a retry would then write nothing.
      *
-     * @internal
+     * @internal Xelqun's own packages call this, so it changes only in a major version.
      *
      * @param  TModel|null  $record
      */
@@ -279,6 +279,8 @@ class Form
     /**
      * The model a component reads relationships from: the closest ancestor's
      * child model, or the form's model.
+     *
+     * @internal
      */
     public function getModelInstanceFor(Component $component): Model
     {
@@ -330,6 +332,8 @@ class Form
 
     /**
      * What identifies a top-level component in its key.
+     *
+     * @internal
      */
     protected function getRootPosition(Component $component, int $index): string
     {
@@ -526,6 +530,8 @@ class Form
      *
      * @param  array<int, Component>  $components
      * @param  Model|array<string, mixed>|null  $source
+     *
+     * @internal
      */
     public static function fillFields(array $components, Model|array|null $source): void
     {
@@ -622,6 +628,8 @@ class Form
     /**
      * Recalculate every computed field with the server-side evaluator. Runs a
      * few passes so computed values that depend on other computed values settle.
+     *
+     * @internal
      */
     public function recomputeComputedFields(): void
     {
@@ -778,7 +786,7 @@ class Form
     /**
      * What an upload is tied to, along with the field. See AcceptsUploads.
      *
-     * @internal
+     * @internal Xelqun's own packages call this, so it changes only in a major version.
      */
     public function getUploadScope(): string
     {
@@ -807,6 +815,8 @@ class Form
      *
      * @param  Request|array<string, mixed>  $input
      * @return array<string, mixed>
+     *
+     * @internal
      */
     public function validateKeyed(Request|array $input): array
     {

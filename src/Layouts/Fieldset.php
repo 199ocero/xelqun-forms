@@ -9,11 +9,11 @@ use Closure;
  */
 class Fieldset extends Layout
 {
-    final public function __construct(protected string|Closure|null $legend = null) {}
+    final public function __construct(protected string|Closure|null $label = null) {}
 
-    public static function make(string|Closure|null $legend = null): static
+    public static function make(string|Closure|null $label = null): static
     {
-        return (new static($legend))->configure();
+        return (new static($label))->configure();
     }
 
     public function getType(): string
@@ -23,6 +23,6 @@ class Fieldset extends Layout
 
     protected function getNodeAttributes(): array
     {
-        return [...parent::getNodeAttributes(), 'label' => $this->evaluate($this->legend)];
+        return [...parent::getNodeAttributes(), 'label' => $this->evaluate($this->label)];
     }
 }
