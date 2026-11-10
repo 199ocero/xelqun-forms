@@ -46,6 +46,44 @@ describe('createXelqunForms', () => {
         expect(resolveIcon('mail')).not.toBeNull();
     });
 
+    it('warns when two plugins register the same icon, and not when the app overrides one', () => {
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        const second = marker('second');
+
+        render(
+            {
+                icons: { 'shared-icon': marker('app') },
+                plugins: [
+                    { id: 'acme/one', icons: { 'shared-icon': marker('first') } },
+                    { id: 'acme/two', icons: { 'shared-icon': second } },
+                ],
+            },
+            'text-input',
+        ).unmount();
+
+        expect(warn).toHaveBeenCalledOnce();
+        expect(warn.mock.calls[0][0]).toContain('"acme/one" and "acme/two"');
+    });
+
+    it('warns when a plugin replaces a built-in icon with a different one', () => {
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+        const same = { mail: resolveIcon('mail')! };
+
+        render(
+            {
+                plugins: [
+                    { id: 'acme/icons', icons: { x: marker('x') } },
+                    { id: 'acme/same', icons: same },
+                ],
+            },
+            'text-input',
+        ).unmount();
+
+        expect(warn).toHaveBeenCalledOnce();
+        expect(warn.mock.calls[0][0]).toContain('built-in icon "x"');
+    });
+
     it('renders a type from a plugin', () => {
         const plugin: XelqunPlugin = {
             id: 'acme/fields',

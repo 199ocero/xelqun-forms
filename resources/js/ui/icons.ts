@@ -85,6 +85,9 @@ const icons: Record<string, Component> = {
     x: X,
 };
 
+/** The names Xelqun ships, taken before any plugin or app adds its own. */
+export const BUILT_IN_ICONS: ReadonlyMap<string, Component> = new Map(Object.entries(icons));
+
 /**
  * Add icons that PHP can name, as { name: component }.
  */

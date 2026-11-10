@@ -8,7 +8,12 @@ Xelqun Forms is alpha. Until 1.0, a minor version can break existing code, and e
 
 - **`Fieldset::make()` names its argument `$label`**, as in Filament. Code that passed `legend:` by name should pass `label:`.
 - **More methods are `@internal`**, so they can change before 1.0 and in any minor version after it. On `Form`: `fillFields`, `recomputeComputedFields`, `validateKeyed`, `getModelInstanceFor` and `getRootPosition`. On `Component`: `getContainerPattern`, `getKeyPattern`, and the four `isHidden*`/`canBeHiddenOnServer` checks. On `Field`: `getStatePathPattern`, `isDisabledStatically`, `isReadOnlyStatically`, `getComputed`, `hasAfterStateUpdatedHooks`, `getLiveConfig` and `makeUploadScope`.
+- **Browser internals moved to `@xelqun/forms/internal`:** `createFormStore`, `defaultLiveConfig`, `reportRequestFailure`, `postJson`, `HttpError`, `getPath`, `overlaps`, `evaluateCondition` and `evaluateExpression`. The main entry still exports them, deprecated, until 1.0.0-beta.1. They're meant for Xelqun's own packages, so a plugin should use `useField()` and `useFormStore()` instead.
 - **The `ContainsRows` contract is `@internal`.** Extend `Repeater` for a field with rows, as the docs already said.
+
+### Added
+
+- A warning in the console when a plugin registers a different icon under a name that a built-in or another plugin already uses. The app's own `icons` still override without one.
 
 ### Fixed
 

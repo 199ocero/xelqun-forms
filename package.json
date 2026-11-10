@@ -18,6 +18,7 @@
     ],
     "exports": {
         ".": "./resources/js/index.ts",
+        "./internal": "./resources/js/internal.ts",
         "./style.css": "./resources/css/xelqun.css",
         "./testing": "./resources/js/testing.ts"
     },

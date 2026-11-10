@@ -296,7 +296,7 @@ mount(XqForm, {
 
 Classes and methods tagged `@api` are the public API. `@internal` marks exceptions inside an `@api` class, and anything untagged may change without notice. Before 1.0, changes to `@api` items are listed in the release notes. An `@internal` method that Xelqun's own packages call says so, and changes only in a major version, so any mix of 1.x packages keeps working.
 
-On the browser side, the public API is what `@xelqun/forms` and `@xelqun/forms/testing` export.
+On the browser side, the public API is what `@xelqun/forms` and `@xelqun/forms/testing` export. `@xelqun/forms/internal` is shared by Xelqun's own packages and isn't for plugins.
 
 ## Current limits
 

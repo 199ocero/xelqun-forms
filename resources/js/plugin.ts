@@ -6,7 +6,7 @@ import { REGISTRY, toComponent } from './composables/registry';
 import type { ComponentRegistry, ComponentResolver } from './composables/registry';
 import { FLASH_KEY, notify } from './core/notifications';
 import type { XqNotification } from './schema/types';
-import { registerIcons } from './ui/icons';
+import { BUILT_IN_ICONS, registerIcons } from './ui/icons';
 import XqNotifications from './ui/XqNotifications.vue';
 
 export interface XelqunPluginContext {
@@ -129,7 +129,30 @@ export function createXelqunForms(options: XelqunFormsOptions = {}): Plugin {
             const registry = createRegistry();
 
             registerPlugins(registry, plugins, import.meta.env?.DEV ?? false);
-            plugins.forEach((plugin) => registerIcons(plugin.icons ?? {}));
+            const iconOwners = new Map(
+                [...BUILT_IN_ICONS].map(([name, icon]) => [name, { id: BUILT_IN, icon }]),
+            );
+
+            for (const plugin of plugins) {
+                for (const [name, icon] of Object.entries(plugin.icons ?? {})) {
+                    const owner = iconOwners.get(name)?.id;
+
+                    // The last one still wins, as before. Registering the same component again is harmless,
+                    // and the app's own icons override on purpose, so neither warns.
+                    if (owner && owner !== plugin.id && iconOwners.get(name)?.icon !== icon) {
+                        console.warn(
+                            owner === BUILT_IN
+                                ? `[xelqun] The plugin "${plugin.id}" replaces the built-in icon "${name}" everywhere. To change an icon for your app, pass it in the "icons" option instead.`
+                                : `[xelqun] The plugins "${owner}" and "${plugin.id}" both register the icon "${name}". The one from "${plugin.id}" is used.`,
+                        );
+                    }
+
+                    iconOwners.set(name, { id: plugin.id, icon });
+                }
+
+                registerIcons(plugin.icons ?? {});
+            }
+
             registerIcons(options.icons ?? {});
 
             for (const [type, resolver] of Object.entries(options.components ?? {})) {
