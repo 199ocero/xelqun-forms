@@ -2,6 +2,13 @@
 
 Xelqun Forms is alpha. Until 1.0, a minor version can break existing code, and each break is listed here.
 
+## Unreleased
+
+### Fixed
+
+- **`hiddenWhen()` and `visibleWhen()` no longer replace each other.** With both set, the component shows only while both allow it, as in Filament. Before, the one called last won.
+- **A form whose schema version the installed `@xelqun/forms` doesn't support can no longer submit or run actions.** It still shows the error, which is now translatable.
+
 ## 0.9.0 - 2026-11-09
 
 The schema version (`$xq`) stays 1. Update both halves together: `composer update xelqun/forms` and `npm install @xelqun/forms@0.9.0`.

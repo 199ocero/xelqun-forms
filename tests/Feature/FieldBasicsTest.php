@@ -276,6 +276,19 @@ describe('state hooks', function () {
             ->and(nodeOf($form, 'shown')['rules']['visible']['path'])->toBe('data.data');
     });
 
+    it('keeps both visibleWhen and hiddenWhen', function () {
+        $form = Form::make([
+            TextInput::make('type'),
+            Checkbox::make('vip'),
+            TextInput::make('perk')->hiddenWhen(When::eq('type', 'personal'))->visibleWhen(When::eq('vip', true)),
+        ]);
+
+        expect($form->validate(['type' => 'business', 'vip' => true, 'perk' => 'lounge'])['perk'])->toBe('lounge')
+            ->and($form->validate(['type' => 'personal', 'vip' => true, 'perk' => 'lounge'])['perk'] ?? null)->toBeNull()
+            ->and($form->validate(['type' => 'business', 'vip' => false, 'perk' => 'lounge'])['perk'] ?? null)->toBeNull()
+            ->and(nodeOf($form, 'perk')['rules']['visible']['op'])->toBe('and');
+    });
+
     it('reads every other field after the form is filled', function () {
         $form = Form::make([
             TextInput::make('slug')->afterStateHydrated(fn (Get $get, Field $component) => $component->state($get('name').'-slug')),

@@ -55,6 +55,8 @@ abstract class Component
 
     protected ?Condition $visibleWhen = null;
 
+    protected ?Condition $hiddenWhen = null;
+
     /** @var int|string|array<string, int|string>|null */
     protected int|string|array|null $columnSpan = null;
 
@@ -192,7 +194,8 @@ abstract class Component
 
     /**
      * Show the component only while the condition is true. Evaluated in the
-     * browser without a server call, and re-checked on submit.
+     * browser without a server call, and re-checked on submit. Combines with
+     * hiddenWhen(): the component shows only when both allow it.
      */
     public function visibleWhen(Condition $condition): static
     {
@@ -201,9 +204,25 @@ abstract class Component
         return $this;
     }
 
+    /**
+     * Hide the component while the condition is true. See visibleWhen().
+     */
     public function hiddenWhen(Condition $condition): static
     {
-        return $this->visibleWhen(When::not($condition));
+        $this->hiddenWhen = $condition;
+
+        return $this;
+    }
+
+    private function getVisibleCondition(): ?Condition
+    {
+        $hidden = $this->hiddenWhen === null ? null : When::not($this->hiddenWhen);
+
+        return match (true) {
+            $this->visibleWhen === null => $hidden,
+            $hidden === null => $this->visibleWhen,
+            default => When::and($this->visibleWhen, $hidden),
+        };
     }
 
     /**
@@ -471,8 +490,7 @@ abstract class Component
             return false;
         }
 
-        return $this->visibleWhen === null
-            || $this->visibleWhen->evaluate($this->getForm()->getState(), $this->container);
+        return $this->getVisibleCondition()?->evaluate($this->getForm()->getState(), $this->container) ?? true;
     }
 
     /**
@@ -549,7 +567,7 @@ abstract class Component
             $node['grow'] = (bool) $this->evaluate($this->grow);
         }
 
-        $node['rules']['visible'] = $this->visibleWhen?->toArray($this->container);
+        $node['rules']['visible'] = $this->getVisibleCondition()?->toArray($this->container);
         $node['deps'] = $this->recordedDependencies;
 
         return $node;

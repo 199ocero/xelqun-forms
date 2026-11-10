@@ -124,6 +124,7 @@ return [
     'The image could not be edited.' => 'The image could not be edited.',
     'The upload failed. Please try again.' => 'The upload failed. Please try again.',
     'This form has expired. Reload the page to continue.' => 'This form has expired. Reload the page to continue.',
+    'This page uses Xelqun Forms schema v:schema, but the installed @xelqun/forms supports v:supported. Update the npm package to match the PHP package.' => 'This page uses Xelqun Forms schema v:schema, but the installed @xelqun/forms supports v:supported. Update the npm package to match the PHP package.',
     'Too many attempts. Wait a moment and try again.' => 'Too many attempts. Wait a moment and try again.',
     'Try again' => 'Try again',
     'Type to search' => 'Type to search',

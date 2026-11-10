@@ -46,7 +46,7 @@ Without `extra.xelqun`, `acme/rating` means `ratingPlugin()` from `@acme/rating`
     "files": ["resources/js"],
     "exports": { ".": "./resources/js/index.ts" },
     "peerDependencies": {
-        "@xelqun/forms": "^0.7.0",
+        "@xelqun/forms": "^0.10.0",
         "reka-ui": "^2.11.0",
         "vue": "^3.5.0"
     }
@@ -136,6 +136,7 @@ Implement a contract from `Xelqun\Forms\Contracts` and the matching endpoint sta
 |---|---|---|
 | `HasSearchResults` | The search endpoint | `store.search(path, term, signal)` |
 | `AcceptsUploads` | The upload endpoint and storage on save | `store.upload(path, file, onProgress, signal)` |
+| `NamesStoredFiles` | Keeping each upload's original file name, and storing the names in another field | None |
 | `EmbedsUploads` | The same for uploads kept inside a field's text. See `HasFileAttachments` | `store.upload(path, file, onProgress, signal)` |
 | `ContainsRows` | Rows with their own components | `store.addRow`, `removeRow`, `moveRow` |
 | `PersistsItself` | Saving somewhere other than a column | None |

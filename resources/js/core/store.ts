@@ -122,7 +122,10 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
     const scope = effectScope(true);
     const versionError = SUPPORTED_SCHEMA_VERSIONS.includes(schema.$xq as 1)
         ? null
-        : `This page uses Xelqun Forms schema v${schema.$xq}, but the installed @xelqun/forms supports v${SUPPORTED_SCHEMA_VERSIONS.join(', v')}. Update the npm package to match the PHP package.`;
+        : t(
+              'This page uses Xelqun Forms schema v:schema, but the installed @xelqun/forms supports v:supported. Update the npm package to match the PHP package.',
+              { schema: String(schema.$xq), supported: SUPPORTED_SCHEMA_VERSIONS.join(', v') },
+          );
 
     if (versionError) {
         console.error(`[xelqun] ${versionError}`);
@@ -762,6 +765,10 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
      * so a modal knows to stay open and show its errors.
      */
     async function runAction(node: SchemaNode, modal?: ActionModal): Promise<ActionResult | null> {
+        if (versionError) {
+            return null;
+        }
+
         await settled();
         await modal?.settled();
 
@@ -905,7 +912,8 @@ export function createFormStore(schema: FormSchema, options: FormStoreOptions = 
     }
 
     async function submit(url: string, submitOptions: SubmitOptions = {}): Promise<void> {
-        if (processing.value || schema.disabled) {
+        // A schema this build can't read could post the wrong data, so it never saves.
+        if (processing.value || schema.disabled || versionError) {
             return;
         }
 

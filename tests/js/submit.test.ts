@@ -17,6 +17,24 @@ function mountForm() {
     return { store, wrapper };
 }
 
+describe('unsupported schema', () => {
+    afterEach(() => visit.mockReset());
+
+    it('never submits a schema this build cannot read', async () => {
+        const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const store = createFormStore({
+            ...schema([field('data.name')], { name: 'Ada' }, null),
+            $xq: 99,
+        });
+
+        await store.submit('/orders');
+
+        expect(visit).not.toHaveBeenCalled();
+        expect(await store.runAction(field('data.save', 'action'))).toBeNull();
+        error.mockRestore();
+    });
+});
+
 describe('failed submit', () => {
     afterEach(() => visit.mockReset());
 

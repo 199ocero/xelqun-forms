@@ -1,3 +1,4 @@
+import { SUPPORTED_SCHEMA_VERSIONS } from './schema/types';
 import type { FormSchema, SchemaNode } from './schema/types';
 
 /**
@@ -33,8 +34,9 @@ export function formSchema(
     token: string | null = 'token',
 ): FormSchema {
     return {
-        $xq: 1,
-        pkg: '0.1.0',
+        $xq: SUPPORTED_SCHEMA_VERSIONS[SUPPORTED_SCHEMA_VERSIONS.length - 1],
+        // Nothing in the browser reads pkg; it only names the PHP package in the payload.
+        pkg: 'testing',
         id: 'test-form',
         token,
         endpoints: {
