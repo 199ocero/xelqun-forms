@@ -2,6 +2,12 @@
 
 Xelqun Forms is alpha. Until 1.0, a minor version can break existing code, and each break is listed here.
 
+## Unreleased
+
+### Added
+
+- **`make:xelqun-form`** creates a form class, as `make:xelqun-table` does for tables. `make:xelqun-form OrderForm` edits `Order`, and `--model=` picks another model. It starts from a column the model's table has: `name`, `title`, `label`, `number`, `email`, `slug`, or its first text column.
+
 ## 0.10.0 - 2026-11-10
 
 The schema version (`$xq`) stays 1. Update both halves together: `composer update xelqun/forms` and `npm install @xelqun/forms@0.10.0`.

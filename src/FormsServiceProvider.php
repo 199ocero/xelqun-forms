@@ -8,6 +8,7 @@ use Illuminate\Support\ServiceProvider;
 use Xelqun\Forms\Commands\InstallCommand;
 use Xelqun\Forms\Commands\InstallPluginCommand;
 use Xelqun\Forms\Commands\MakeFieldCommand;
+use Xelqun\Forms\Commands\MakeFormCommand;
 use Xelqun\Forms\Commands\PruneTemporaryUploadsCommand;
 use Xelqun\Forms\Security\FormTokenEncrypter;
 use Xelqun\Forms\Uploads\TemporaryUploadStore;
@@ -49,6 +50,7 @@ class FormsServiceProvider extends ServiceProvider
                 InstallCommand::class,
                 InstallPluginCommand::class,
                 MakeFieldCommand::class,
+                MakeFormCommand::class,
                 PruneTemporaryUploadsCommand::class,
             ]);
         }
