@@ -2,6 +2,12 @@
 
 Xelqun Forms is alpha. Until 1.0, a minor version can break existing code, and each break is listed here.
 
+## Unreleased
+
+### Fixed
+
+- With `APP_DEBUG` on, a request that fails on the server shows the exception's message in the form or modal, instead of only "Something went wrong on the server". Production still shows the plain message, as Laravel leaves the exception out there.
+
 ## 0.10.1 - 2026-11-11
 
 The schema version (`$xq`) stays 1. Update both halves together: `composer update xelqun/forms` and `npm install @xelqun/forms@0.10.1`.

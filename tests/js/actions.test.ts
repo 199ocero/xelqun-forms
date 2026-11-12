@@ -721,6 +721,30 @@ describe('actions', () => {
         wrapper.unmount();
     });
 
+    it("shows the exception's message when the app is in debug mode", async () => {
+        fetchMock
+            .mockImplementationOnce(() => respond({ form: modalSchema }))
+            .mockImplementationOnce(() =>
+                respond(
+                    {
+                        message: 'Add [name] to fillable property.',
+                        exception: 'Illuminate\\Database\\Eloquent\\MassAssignmentException',
+                    },
+                    500,
+                ),
+            );
+
+        const { wrapper, button } = await mountAction(action({ hasForm: true }));
+
+        await button.trigger('click');
+        await flushPromises();
+        submitModal();
+        await flushPromises();
+
+        expect(inModal()!.textContent).toContain('Add [name] to fillable property.');
+        wrapper.unmount();
+    });
+
     it('takes the failure message away when a retry works', async () => {
         fetchMock
             .mockImplementationOnce(() => Promise.reject(new TypeError('offline')))
