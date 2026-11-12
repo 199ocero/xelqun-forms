@@ -2,7 +2,9 @@
 
 Xelqun Forms is beta. Until 1.0, a patch release never breaks existing code except to fix a security issue, and a minor release can, with each break listed here under "Upgrading". See [version support](https://xelqun.com/introduction/version-support).
 
-## Unreleased
+## 0.11.0 - 2026-11-12
+
+The schema version (`$xq`) stays 1. Update both halves together: `composer update xelqun/forms` and `npm install @xelqun/forms@0.11.0`. Tables and panels need their releases from the same day, which require forms ^0.11.
 
 ### Upgrading
 
