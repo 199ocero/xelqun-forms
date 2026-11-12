@@ -105,7 +105,7 @@ describe('live update feedback', () => {
     it.each([
         ['select', { props: { options: [] } }, '[data-slot="xq-select"]'],
         ['select', { props: { options: [], searchable: true } }, '[data-slot="xq-combobox"]'],
-        ['text-input', {}, '.h-9'],
+        ['text-input', {}, '.h-10'],
         ['textarea', {}, '.relative'],
         ['date-picker', {}, 'button'],
     ])(

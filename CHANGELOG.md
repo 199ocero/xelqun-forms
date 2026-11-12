@@ -2,6 +2,21 @@
 
 Xelqun Forms is beta. Until 1.0, a patch release never breaks existing code except to fix a security issue, and a minor release can, with each break listed here under "Upgrading". See [version support](https://xelqun.com/introduction/version-support).
 
+## Unreleased
+
+### Upgrading
+
+- **The colors come from a few seed tokens.** Set `--xq-color-primary`, `--xq-color-secondary`, `--xq-color-gray`, `--xq-color-danger`, `--xq-color-success`, `--xq-color-warning` or `--xq-color-info` on `:root`, and every surface, border, ring and text color follows, in both themes. An app that overrode the `--xq-*` tokens directly keeps working. The default primary is now `#0071e3`, and the default radius `0.75rem`.
+- **Secondary is a soft tint of `--xq-color-secondary`**, with text in the same hue, used by secondary buttons, gray badges, gray action counts, tags and select chips. It stays gray unless it's set, so it looks much as before.
+- **Buttons and the controls beside them are 40px tall** (they were 36px): text inputs, selects, date and time pickers, tags, toggle buttons and color swatches, so a button and a field still line up. Small buttons stay 32px and use `text-sm`. Large buttons are 44px. Buttons have 8px corners (6px when small), and a leading or trailing icon gets a tighter side.
+
+### Added
+
+- **A dim gray dark theme.** The page sits near 26% lightness, each surface is a step lighter, borders are solid, and text is off-white, so it's easier on the eyes than near-black.
+- **A new button look:** a thin light edge along a solid button's top, a fine dark border, and outline buttons on a raised surface that sits lighter than the page in the dark theme.
+- **Style presets**, free, which change shape only: set `data-xq-preset` on `<html>` to `soft` (rounder, pill buttons, softer shadows), `sharp` (square corners, firmer borders) or `mono` (black, white and neutral grays only, focus rings and links included).
+- Tokens `--xq-raised`, `--xq-secondary-hover`, `--xq-primary-text`, `--xq-button-radius`, `--xq-pill-radius` (badges, counts, chips and round icon buttons), `--xq-button-highlight` and `--xq-button-shadow`, for apps that want to restyle buttons without touching components.
+
 ## 0.10.2 - 2026-11-12
 
 The schema version (`$xq`) stays 1. Update both halves together: `composer update xelqun/forms` and `npm install @xelqun/forms@0.10.2`.

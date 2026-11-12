@@ -30,6 +30,8 @@
     --color-xq-primary-foreground: var(--xq-primary-foreground);
     --color-xq-secondary: var(--xq-secondary);
     --color-xq-secondary-foreground: var(--xq-secondary-foreground);
+    --color-xq-secondary-hover: var(--xq-secondary-hover);
+    --color-xq-raised: var(--xq-raised);
     --color-xq-muted: var(--xq-muted);
     --color-xq-muted-foreground: var(--xq-muted-foreground);
     --color-xq-accent: var(--xq-accent);
@@ -48,56 +50,208 @@
     --radius-xq-xl: calc(var(--xq-radius) + 4px);
 }
 
+/*
+ * Theme seeds. Every color below comes from these, so a new look is a few lines in
+ * the app's CSS:
+ *   :root { --xq-color-primary: #7c3aed; --xq-color-secondary: #0d9488; }
+ * Primary is the brand color. Secondary is a quiet tint for secondary buttons,
+ * badges and chips, gray unless it's set. A panel sets the seeds from
+ * Panel::colors(), with a primary fill deep enough for white text.
+ */
 :root {
-    --xq-radius: 0.625rem;
-    --xq-background: oklch(1 0 0);
-    --xq-foreground: oklch(0.2 0.01 270);
-    --xq-card: oklch(1 0 0);
-    --xq-card-foreground: oklch(0.2 0.01 270);
-    --xq-popover: oklch(1 0 0);
-    --xq-popover-foreground: oklch(0.2 0.01 270);
-    --xq-primary: oklch(0.5 0.2 272);
-    --xq-primary-foreground: oklch(0.99 0 0);
-    --xq-secondary: oklch(0.96 0.006 270);
-    --xq-secondary-foreground: oklch(0.25 0.02 270);
-    --xq-muted: oklch(0.965 0.004 270);
-    --xq-muted-foreground: oklch(0.52 0.015 270);
-    --xq-accent: oklch(0.955 0.012 272);
-    --xq-accent-foreground: oklch(0.25 0.04 272);
-    --xq-destructive: oklch(0.54 0.22 27);
-    --xq-destructive-foreground: oklch(0.99 0 0);
-    --xq-success: oklch(0.47 0.12 155);
-    --xq-warning: oklch(0.55 0.13 75);
-    --xq-info: oklch(0.5 0.13 240);
-    --xq-border: oklch(0.915 0.006 270);
-    --xq-input: oklch(0.885 0.008 270);
-    --xq-ring: oklch(0.55 0.19 272);
+    --xq-color-primary: #0071e3;
+    --xq-color-gray: #52525b;
+    --xq-color-danger: #dc2626;
+    --xq-color-success: #16a34a;
+    --xq-color-warning: #d97706;
+    --xq-color-info: #2563eb;
+    --xq-radius: 0.75rem;
+    --xq-button-radius: 0.5rem;
+    /* Badges, counts, chips and round icon buttons. */
+    --xq-pill-radius: 9999px;
+    /* The thin light edge along a solid button's top. */
+    --xq-button-highlight: inset 0 1px rgb(255 255 255 / 0.2);
+    --xq-button-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
+    /* Each neutral keeps its lightness, and takes only its tint from the gray seed. */
+    --xq-background: oklch(from var(--xq-color-gray) 0.973 calc(c * 0.35) h);
+    --xq-foreground: #1c1c1e;
+    --xq-card: #ffffff;
+    --xq-card-foreground: #1c1c1e;
+    --xq-popover: #ffffff;
+    --xq-popover-foreground: #1c1c1e;
+    --xq-raised: #ffffff;
+    --xq-primary: var(
+        --xq-color-primary-fill,
+        oklch(from var(--xq-color-primary) min(l, 0.55) c h)
+    );
+    --xq-primary-foreground: var(--xq-color-primary-foreground, #ffffff);
+    --xq-primary-text: oklch(from var(--xq-color-primary) min(l, 0.52) c h);
+    /* A soft tint with text in the same hue. */
+    --xq-secondary: color-mix(
+        in oklab,
+        var(--xq-color-secondary, var(--xq-color-gray)) 11%,
+        transparent
+    );
+    --xq-secondary-hover: color-mix(
+        in oklab,
+        var(--xq-color-secondary, var(--xq-color-gray)) 18%,
+        transparent
+    );
+    --xq-secondary-foreground: oklch(
+        from var(--xq-color-secondary, var(--xq-color-gray)) min(l, 0.45) c h
+    );
+    --xq-muted: oklch(from var(--xq-color-gray) 0.956 calc(c * 0.35) h);
+    --xq-muted-foreground: oklch(from var(--xq-color-gray) 0.513 calc(c * 0.35) h);
+    --xq-accent: oklch(from var(--xq-color-gray) 0.95 calc(c * 0.35) h);
+    --xq-accent-foreground: #1c1c1e;
+    --xq-border: oklch(from var(--xq-color-gray) 0.926 calc(c * 0.35) h);
+    --xq-input: oklch(from var(--xq-color-gray) 0.896 calc(c * 0.35) h);
+    --xq-ring: oklch(from var(--xq-color-primary) min(l, 0.6) c h);
+    --xq-destructive: oklch(from var(--xq-color-danger) min(l, 0.52) c h);
+    --xq-destructive-foreground: #ffffff;
+    --xq-success: oklch(from var(--xq-color-success) min(l, 0.5) c h);
+    --xq-warning: oklch(from var(--xq-color-warning) min(l, 0.52) c h);
+    --xq-info: oklch(from var(--xq-color-info) min(l, 0.52) c h);
 }
 
+/*
+ * A dim gray dark, not a black one: the page sits near 26% lightness and each
+ * surface above it is a step lighter, with solid borders. Text is off-white.
+ * A solid fill stays as it is, so a button reads the same in both themes.
+ */
 .dark,
 [data-xq-theme='dark'] {
-    --xq-background: oklch(0.17 0.008 270);
-    --xq-foreground: oklch(0.97 0.004 270);
-    --xq-card: oklch(0.205 0.01 270);
-    --xq-card-foreground: oklch(0.97 0.004 270);
-    --xq-popover: oklch(0.22 0.01 270);
-    --xq-popover-foreground: oklch(0.97 0.004 270);
-    --xq-primary: oklch(0.68 0.16 272);
-    --xq-primary-foreground: oklch(0.16 0.02 272);
-    --xq-secondary: oklch(0.27 0.012 270);
-    --xq-secondary-foreground: oklch(0.95 0.004 270);
-    --xq-muted: oklch(0.25 0.01 270);
-    --xq-muted-foreground: oklch(0.7 0.012 270);
-    --xq-accent: oklch(0.28 0.025 272);
-    --xq-accent-foreground: oklch(0.96 0.01 272);
-    --xq-destructive: oklch(0.68 0.19 25);
-    --xq-destructive-foreground: oklch(0.17 0.02 25);
-    --xq-success: oklch(0.72 0.15 155);
-    --xq-warning: oklch(0.8 0.14 85);
-    --xq-info: oklch(0.74 0.12 240);
-    --xq-border: oklch(1 0 0 / 10%);
-    --xq-input: oklch(1 0 0 / 14%);
-    --xq-ring: oklch(0.68 0.16 272);
+    color-scheme: dark;
+    --xq-button-shadow: 0 1px 2px rgb(0 0 0 / 0.2);
+    --xq-background: oklch(from var(--xq-color-gray) 0.26 calc(c * 0.35) h);
+    --xq-foreground: oklch(from var(--xq-color-gray) 0.93 calc(c * 0.2) h);
+    --xq-card: oklch(from var(--xq-color-gray) 0.3 calc(c * 0.35) h);
+    --xq-card-foreground: var(--xq-foreground);
+    --xq-popover: oklch(from var(--xq-color-gray) 0.32 calc(c * 0.35) h);
+    --xq-popover-foreground: var(--xq-foreground);
+    --xq-raised: oklch(from var(--xq-color-gray) 0.355 calc(c * 0.35) h);
+    --xq-primary-text: oklch(from var(--xq-color-primary) 0.76 c h);
+    --xq-secondary: color-mix(
+        in oklab,
+        var(--xq-color-secondary, var(--xq-color-gray)) 20%,
+        transparent
+    );
+    --xq-secondary-hover: color-mix(
+        in oklab,
+        var(--xq-color-secondary, var(--xq-color-gray)) 28%,
+        transparent
+    );
+    --xq-secondary-foreground: oklch(from var(--xq-color-secondary, var(--xq-color-gray)) 0.82 c h);
+    --xq-muted: oklch(from var(--xq-color-gray) 0.335 calc(c * 0.35) h);
+    --xq-muted-foreground: oklch(from var(--xq-color-gray) 0.7 calc(c * 0.35) h);
+    --xq-accent: oklch(from var(--xq-color-gray) 0.355 calc(c * 0.35) h);
+    --xq-accent-foreground: var(--xq-foreground);
+    --xq-border: oklch(from var(--xq-color-gray) 0.37 calc(c * 0.35) h);
+    --xq-input: oklch(from var(--xq-color-gray) 0.41 calc(c * 0.35) h);
+    --xq-ring: oklch(from var(--xq-color-primary) 0.74 c h);
+    --xq-destructive: oklch(from var(--xq-color-danger) 0.7 c h);
+    --xq-success: oklch(from var(--xq-color-success) 0.74 c h);
+    --xq-warning: oklch(from var(--xq-color-warning) 0.8 c h);
+    --xq-info: oklch(from var(--xq-color-info) 0.74 c h);
+}
+
+/*
+ * Style presets. Set one on <html> with data-xq-preset (a panel does it from
+ * Panel::preset()). They change shape only: corners, shadows and borders. Color
+ * comes from the seeds, except in Mono, which is black and white by design.
+ */
+
+/* Soft: round corners, pill buttons, softer shadows and quieter borders. */
+:root[data-xq-preset='soft'] {
+    --xq-radius: 1rem;
+    --xq-button-radius: 9999px;
+    --xq-button-highlight: inset 0 1px rgb(255 255 255 / 0.25), 0 2px 6px -2px rgb(0 0 0 / 0.18);
+    --xq-button-shadow: 0 2px 6px -2px rgb(0 0 0 / 0.08);
+    --xq-border: oklch(from var(--xq-color-gray) 0.94 calc(c * 0.35) h);
+    --xq-input: oklch(from var(--xq-color-gray) 0.91 calc(c * 0.35) h);
+}
+
+:root[data-xq-preset='soft']:is(.dark, [data-xq-theme='dark']) {
+    --xq-button-highlight: inset 0 1px rgb(255 255 255 / 0.15), 0 2px 6px -2px rgb(0 0 0 / 0.4);
+    --xq-button-shadow: 0 2px 6px -2px rgb(0 0 0 / 0.3);
+    --xq-border: oklch(from var(--xq-color-gray) 0.35 calc(c * 0.35) h);
+    --xq-input: oklch(from var(--xq-color-gray) 0.39 calc(c * 0.35) h);
+}
+
+/* Sharp: square corners and a firmer line on every edge. */
+:root[data-xq-preset='sharp'] {
+    --xq-radius: 0.125rem;
+    --xq-button-radius: 0.125rem;
+    --xq-pill-radius: 0.125rem;
+    --xq-border: oklch(from var(--xq-color-gray) 0.885 calc(c * 0.35) h);
+    --xq-input: oklch(from var(--xq-color-gray) 0.83 calc(c * 0.35) h);
+}
+
+:root[data-xq-preset='sharp']:is(.dark, [data-xq-theme='dark']) {
+    --xq-border: oklch(from var(--xq-color-gray) 0.42 calc(c * 0.35) h);
+    --xq-input: oklch(from var(--xq-color-gray) 0.47 calc(c * 0.35) h);
+}
+
+/*
+ * Mono: black, white and neutral grays only, with no tint. The primary button
+ * is near-black (near-white in the dark), and so are focus rings and links.
+ */
+:root[data-xq-preset='mono'] {
+    --xq-background: oklch(0.975 0 0);
+    --xq-foreground: oklch(0.18 0 0);
+    --xq-card-foreground: oklch(0.18 0 0);
+    --xq-popover-foreground: oklch(0.18 0 0);
+    --xq-primary: oklch(0.21 0 0);
+    --xq-primary-foreground: oklch(0.99 0 0);
+    --xq-primary-text: oklch(0.21 0 0);
+    --xq-ring: oklch(0.35 0 0);
+    --xq-secondary: oklch(0.94 0 0);
+    --xq-secondary-hover: oklch(0.91 0 0);
+    --xq-secondary-foreground: oklch(0.25 0 0);
+    --xq-muted: oklch(0.96 0 0);
+    --xq-muted-foreground: oklch(0.52 0 0);
+    --xq-accent: oklch(0.95 0 0);
+    --xq-accent-foreground: oklch(0.18 0 0);
+    --xq-border: oklch(0.92 0 0);
+    --xq-input: oklch(0.885 0 0);
+}
+
+:root[data-xq-preset='mono']:is(.dark, [data-xq-theme='dark']) {
+    --xq-background: oklch(0.24 0 0);
+    --xq-foreground: oklch(0.94 0 0);
+    --xq-card: oklch(0.28 0 0);
+    --xq-card-foreground: oklch(0.94 0 0);
+    --xq-popover: oklch(0.3 0 0);
+    --xq-popover-foreground: oklch(0.94 0 0);
+    --xq-raised: oklch(0.33 0 0);
+    --xq-primary: oklch(0.95 0 0);
+    --xq-primary-foreground: oklch(0.2 0 0);
+    --xq-primary-text: oklch(0.95 0 0);
+    --xq-ring: oklch(0.8 0 0);
+    --xq-secondary: oklch(0.33 0 0);
+    --xq-secondary-hover: oklch(0.37 0 0);
+    --xq-secondary-foreground: oklch(0.94 0 0);
+    --xq-muted: oklch(0.31 0 0);
+    --xq-muted-foreground: oklch(0.7 0 0);
+    --xq-accent: oklch(0.33 0 0);
+    --xq-accent-foreground: oklch(0.94 0 0);
+    --xq-border: oklch(0.35 0 0);
+    --xq-input: oklch(0.4 0 0);
+}
+
+/*
+ * A fill and text are different jobs. Colored text has to read on the page, so
+ * it's capped in lightness on the light theme and lifted on the dark one, keeping
+ * its hue. Plain 600 shades miss AA as text on white: green-600 is 3.3:1.
+ */
+.text-xq-primary {
+    color: var(--xq-primary-text);
+}
+
+/* The danger token is lifted for text on the dark theme, so a solid fill stays deep, with white text. */
+:is(.dark, [data-xq-theme='dark']) .bg-xq-destructive {
+    background-color: oklch(from var(--xq-color-danger) min(l, 0.52) c h);
+    color: #ffffff;
 }
 
 /*

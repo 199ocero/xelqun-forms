@@ -615,7 +615,7 @@ describe('actions', () => {
 
         expect(badge.text()).toBe('3');
         expect(badge.classes()).toContain('bg-xq-destructive');
-        expect(button.classes()).toContain('h-10');
+        expect(button.classes()).toContain('h-11');
         expect(button.classes()).toContain('text-xq-primary');
         expect(button.classes()).not.toContain('bg-xq-primary');
         wrapper.unmount();

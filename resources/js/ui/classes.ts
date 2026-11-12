@@ -55,7 +55,7 @@ export const actionBadgeClasses: Record<string, string> = {
     info: 'bg-xq-info text-white',
     success: 'bg-xq-success text-white',
     warning: 'bg-xq-warning text-white',
-    gray: 'bg-xq-muted text-xq-muted-foreground',
+    gray: 'bg-xq-secondary text-xq-secondary-foreground',
 };
 
 /** The tinted circle behind a dialog's icon. */

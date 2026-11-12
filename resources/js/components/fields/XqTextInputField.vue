@@ -122,7 +122,7 @@ onBeforeUnmount(() => {
             :class="
                 cn(
                     controlClass,
-                    'h-9 flex items-center overflow-hidden focus-within:border-xq-ring focus-within:ring-[3px] focus-within:ring-xq-ring/25',
+                    'h-10 flex items-center overflow-hidden focus-within:border-xq-ring focus-within:ring-[3px] focus-within:ring-xq-ring/25',
                     error && 'border-xq-destructive',
                     inputDisabled && 'bg-xq-muted/60',
                 )

@@ -138,7 +138,7 @@ function clear(): void {
             :class="
                 cn(
                     controlClass,
-                    'min-h-9 gap-1 py-0.5 pr-1.5 pl-2 flex flex-wrap items-center has-[input:focus-visible]:border-xq-ring has-[input:focus-visible]:ring-[3px] has-[input:focus-visible]:ring-xq-ring/25',
+                    'min-h-10 gap-1 py-0.5 pr-1.5 pl-2 flex flex-wrap items-center has-[input:focus-visible]:border-xq-ring has-[input:focus-visible]:ring-[3px] has-[input:focus-visible]:ring-xq-ring/25',
                     invalid && 'border-xq-destructive',
                     props.class,
                 )

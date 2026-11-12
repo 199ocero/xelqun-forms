@@ -82,7 +82,7 @@ function type(text: string | number | null | undefined): void {
                         :class="
                             cn(
                                 controlClass,
-                                'size-9 shrink-0 cursor-pointer',
+                                'size-10 shrink-0 cursor-pointer',
                                 error && 'border-xq-destructive',
                             )
                         "

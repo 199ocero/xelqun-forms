@@ -66,7 +66,7 @@ const vertical = computed(() => !!props.node.props?.vertical);
                     v-if="tab.props?.badge != null && !errorCount(tab)"
                     :class="
                         cn(
-                            'px-1.5 font-semibold leading-4 min-w-4 rounded-full text-center text-[0.65rem] tabular-nums',
+                            'px-1.5 font-semibold leading-4 min-w-4 rounded-(--xq-pill-radius) text-center text-[0.65rem] tabular-nums',
                             actionBadgeClasses[tab.props?.badgeColor ?? 'gray'] ??
                                 actionBadgeClasses.gray,
                         )

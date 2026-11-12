@@ -5,7 +5,7 @@ import type { HTMLAttributes } from 'vue';
 import { cn } from '../lib/utils';
 
 const badgeVariants = cva(
-    'gap-1 px-2 py-0.5 text-xs font-medium [&>svg]:size-3 inline-flex w-fit shrink-0 items-center rounded-full border whitespace-nowrap',
+    'gap-1 px-2 py-0.5 text-xs font-medium [&>svg]:size-3 inline-flex w-fit shrink-0 items-center rounded-(--xq-pill-radius) border whitespace-nowrap',
     {
         variants: {
             variant: {

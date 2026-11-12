@@ -11,6 +11,6 @@ const model = defineModel<string | number | null>();
     <input
         v-model="model"
         data-slot="xq-input"
-        :class="cn(controlClass, 'h-9 px-3 py-1', props.class)"
+        :class="cn(controlClass, 'h-10 px-3 py-1', props.class)"
     />
 </template>

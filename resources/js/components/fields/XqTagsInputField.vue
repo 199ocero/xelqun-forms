@@ -65,7 +65,7 @@ useSortable(tagList, {
             :class="
                 cn(
                     controlClass,
-                    'min-h-9 gap-1 px-2 py-1 flex flex-wrap items-center focus-within:border-xq-ring focus-within:ring-[3px] focus-within:ring-xq-ring/25',
+                    'min-h-10 gap-1 px-2 py-1 flex flex-wrap items-center focus-within:border-xq-ring focus-within:ring-[3px] focus-within:ring-xq-ring/25',
                     error && 'border-xq-destructive',
                 )
             "

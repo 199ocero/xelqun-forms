@@ -129,7 +129,7 @@ const label = computed(() => {
                             :class="
                                 cn(
                                     controlClass,
-                                    'h-9 gap-2 px-3 flex cursor-pointer items-center text-left',
+                                    'h-10 gap-2 px-3 flex cursor-pointer items-center text-left',
                                     !label && 'text-xq-muted-foreground',
                                 )
                             "

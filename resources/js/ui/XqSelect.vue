@@ -48,7 +48,7 @@ const groups = computed(() => groupOptions(props.options));
             :class="
                 cn(
                     controlClass,
-                    'h-9 gap-2 px-3 py-1 flex cursor-pointer items-center justify-between text-left data-[placeholder]:text-xq-muted-foreground',
+                    'h-10 gap-2 px-3 py-1 flex cursor-pointer items-center justify-between text-left data-[placeholder]:text-xq-muted-foreground',
                     props.class,
                 )
             "

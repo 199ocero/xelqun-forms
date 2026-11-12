@@ -48,7 +48,7 @@ const time = computed<Time | undefined>({
         :aria-describedby="describedBy"
         :aria-label="label ?? undefined"
         data-slot="xq-time-field"
-        :class="cn(controlClass, 'h-9 px-3 flex items-center tabular-nums', props.class)"
+        :class="cn(controlClass, 'h-10 px-3 flex items-center tabular-nums', props.class)"
     >
         <template v-for="segment in segments" :key="segment.part">
             <TimeFieldInput v-if="segment.part === 'literal'" :part="segment.part">
