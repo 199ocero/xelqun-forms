@@ -2,7 +2,9 @@
 
 Xelqun Forms is alpha. Until 1.0, a minor version can break existing code, and each break is listed here.
 
-## Unreleased
+## 0.10.2 - 2026-11-12
+
+The schema version (`$xq`) stays 1. Update both halves together: `composer update xelqun/forms` and `npm install @xelqun/forms@0.10.2`.
 
 ### Fixed
 
