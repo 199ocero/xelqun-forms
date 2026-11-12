@@ -10,7 +10,7 @@
 
 Describe a form in PHP and generic Vue components render it. Normal forms need no Vue at all.
 
-> **Alpha:** the API will change. Requires Laravel 13, Inertia 3, Vue 3.5 and Tailwind 4.
+> **Beta:** a patch release never breaks your code, and a minor release lists every break in the [changelog](CHANGELOG.md). Requires Laravel 13, Inertia 3, Vue 3.5 and Tailwind 4.
 
 ## Installation
 

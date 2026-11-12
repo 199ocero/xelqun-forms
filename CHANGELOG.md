@@ -1,6 +1,6 @@
 # Changelog
 
-Xelqun Forms is alpha. Until 1.0, a minor version can break existing code, and each break is listed here.
+Xelqun Forms is beta. Until 1.0, a patch release never breaks existing code except to fix a security issue, and a minor release can, with each break listed here under "Upgrading". See [version support](https://xelqun.com/introduction/version-support).
 
 ## 0.10.2 - 2026-11-12
 
